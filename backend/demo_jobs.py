@@ -11,6 +11,7 @@ import tarfile
 import time
 from pathlib import Path,PurePosixPath
 from botocore.config import Config
+from botocore.exceptions import ClientError
 from . import budget,data,db,graph,registry,entitlements
 from .config import DATA,TERMINAL,aws_session
 
@@ -28,6 +29,32 @@ def runtime():
     if not queue or not definition:return None
     return queue,definition
 
+def extract_outputs(body,folder):
+    folder=Path(folder);folder.mkdir(parents=True,exist_ok=True)
+    with tarfile.open(fileobj=io.BytesIO(body),mode='r:gz') as archive:
+        members=archive.getmembers();by_name={m.name:m for m in members}
+        if len(members)>512 or len(by_name)!=len(members):raise ValueError('Sandbox archive has too many or duplicate members')
+        expanded=0
+        for m in members:
+            name=PurePosixPath(m.name)
+            if name.is_absolute() or '..' in name.parts or (m.name!='manifest.json' and not m.name.startswith('files/')):raise ValueError('Unsafe sandbox output path')
+            if m.islnk():
+                # Older reviewed workers emitted TAR hardlinks for duplicate
+                # inodes. Copy bytes from one verified regular archive member;
+                # never create a filesystem link or follow a chain of links.
+                target=by_name.get(m.linkname)
+                if not target or not target.isfile() or not target.name.startswith('files/') or '..' in PurePosixPath(target.name).parts or PurePosixPath(target.name).is_absolute():raise ValueError('Unsafe sandbox hardlink target')
+                expanded+=target.size
+            elif m.isfile():expanded+=m.size
+            else:raise ValueError('Unsafe sandbox output member')
+        if expanded>64*1024**2:raise ValueError('Sandbox output expansion exceeds its ceiling')
+        for m in members:
+            target=folder/m.name
+            if not target.resolve().is_relative_to(folder.resolve()):raise ValueError('Output escaped publication root')
+            target.parent.mkdir(parents=True,exist_ok=True)
+            with archive.extractfile(m) as src,target.open('wb') as dest:
+                for chunk in iter(lambda:src.read(1024*1024),b''):dest.write(chunk)
+
 def cache_digest(run):
     return hashlib.sha256((graph.graph_digest(json.loads(run['graph']))+os.getenv('NGS_DEMO_IMAGE','')+os.getenv('NGS_SAMPLE_MANIFEST_SHA','')).encode()).hexdigest()
 
@@ -39,7 +66,18 @@ def finish(row,state,used,error=None):
         c.execute('UPDATE users SET reserved_seconds=MAX(0,reserved_seconds-?),used_seconds=used_seconds+? WHERE id=?',(row['reserved'],used,row['user_id']))
         entitlements.settle(c,row['id'],used)
         db.audit(c,row['user_id'],'run.'+state,row['id'],{'allocated_cpu_seconds':used,'provider':'Fargate','sample_only':True})
-    budget.reconcile(row['operation_id'],row['user_id'],'scientific')
+    from . import metering
+    task=db.query('SELECT provider_id FROM demo_tasks WHERE run_id=?',(row['id'],),one=True)
+    actual=None
+    if task and task['provider_id']:
+        try:
+            job=aws_session().client('batch').describe_jobs(jobs=[task['provider_id']])['jobs'][0]
+            usage=metering.fargate(job,2,4096)
+            if usage:
+                actual=usage['upper_pretax_usd']+.03
+                with db.tx() as c:db.audit(c,'metering-service','usage.observed',row['id'],usage)
+        except Exception:pass  # Preserve the full reservation when provider usage is unavailable.
+    budget.reconcile(row['operation_id'],row['user_id'],'scientific',actual)
     db.event(row['id'],'run.state',state=state,error=error,used_cpu_seconds=used)
 
 def drain_logs(row,task,job):
@@ -88,6 +126,16 @@ def submit(row):
     with db.tx() as c:c.execute("INSERT INTO demo_tasks VALUES(?,'submitting',NULL,?,?,?,?,NULL)",(rid,manifest_key,output_key,time.time(),time.time()))
     try:
         response=batch.submit_job(jobName='demo-'+rid,jobQueue=config[0],jobDefinition=config[1],containerOverrides={'command':[url]},retryStrategy={'attempts':1},tags={'Project':'OpenNGS','RunId':rid})
+    except ClientError as error:
+        if error.response.get('ResponseMetadata',{}).get('HTTPStatusCode',500)<500:
+            code=error.response.get('Error',{}).get('Code','provider-denied')
+            with db.tx() as c:
+                c.execute("UPDATE demo_tasks SET state='dispatch-blocked',updated=? WHERE run_id=?",(time.time(),rid))
+                db.audit(c,uid,'cloud.dispatch.denied',rid,{'provider_code':code,'operation':'SubmitJob'})
+            db.event(rid,'run.state',state='queued',reason='Cloud dispatch configuration needs correction; accepted work is preserved',provider_code=code)
+            return
+        with db.tx() as c:c.execute("UPDATE demo_tasks SET state='reconciling',updated=? WHERE run_id=?",(time.time(),rid))
+        return
     except Exception:
         with db.tx() as c:c.execute("UPDATE demo_tasks SET state='reconciling',updated=? WHERE run_id=?",(time.time(),rid))
         db.event(rid,'run.state',state='queued',reason='Confirming cloud submission; work and quota reservation are preserved')
@@ -105,15 +153,7 @@ def publish(row,task):
     body=obj['Body'].read(64*1024**2+1);obj['Body'].close()
     if len(body)>64*1024**2:raise ValueError('Sandbox archive exceeds its size ceiling')
     folder=DATA/'published'/uid/rid;folder.mkdir(parents=True,exist_ok=True)
-    with tarfile.open(fileobj=io.BytesIO(body),mode='r:gz') as archive:
-        members=archive.getmembers()
-        if len(members)>512 or sum(m.size for m in members)>64*1024**2:raise ValueError('Sandbox output expansion exceeds its ceiling')
-        for m in members:
-            name=PurePosixPath(m.name)
-            if not m.isfile() or name.is_absolute() or '..' in name.parts or m.name not in ['manifest.json'] and not m.name.startswith('files/'):raise ValueError('Unsafe sandbox output member')
-            target=folder/m.name;target.parent.mkdir(parents=True,exist_ok=True)
-            with archive.extractfile(m) as src,target.open('wb') as dest:
-                for chunk in iter(lambda:src.read(1024*1024),b''):dest.write(chunk)
+    extract_outputs(body,folder)
     result=json.loads((folder/'manifest.json').read_text())
     if result.get('schema')!=1 or result.get('run')!=rid:raise ValueError('Sandbox output identity does not match the accepted run')
     expected=json.loads(row['graph']).get('_execution',{}).get('sample_manifest')
@@ -125,7 +165,12 @@ def publish(row,task):
         p=(folder/relative).resolve()
         if not p.is_relative_to(folder.resolve()) or not p.is_file() or p.is_symlink():raise ValueError('Output file escaped the verified archive')
         digest=data.hash_file(p);key=f'tenants/{uid}/runs/{rid}/outputs/{relative}'
-        uploaded=s3.put_object(Bucket=bucket,Key=key,Body=p.read_bytes(),ServerSideEncryption='aws:kms',SSEKMSKeyId=kms,Metadata={'sha256':digest})
+        try:
+            uploaded=s3.head_object(Bucket=bucket,Key=key)
+            if uploaded.get('Metadata',{}).get('sha256')!=digest:raise ValueError('Published object identity changed')
+        except s3.exceptions.ClientError as error:
+            if error.response['Error']['Code'] not in ['404','NoSuchKey','NotFound']:raise
+            uploaded=s3.put_object(Bucket=bucket,Key=key,Body=p.read_bytes(),ServerSideEncryption='aws:kms',SSEKMSKeyId=kms,Metadata={'sha256':digest},IfNoneMatch='*')
         files[relative]={'uri':'s3://'+bucket+'/'+key,'sha256':digest,'version':uploaded.get('VersionId'),'bytes':p.stat().st_size}
         return files[relative]
     for nid,ports in result['outputs'].items():

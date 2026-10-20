@@ -1,0 +1,186 @@
+{
+  "date": "2026-10-20",
+  "service": "https://d2j3o1re9v00qo.cloudfront.net/",
+  "tests": {
+    "backend": 69,
+    "javascript": 5,
+    "status": "passed"
+  },
+  "scientific": [
+    {
+      "workflow": "core-recovered",
+      "state": "succeeded",
+      "artifacts": 23,
+      "scope": "Resume from verified upstream cache after fixing metadata-only export; all original native scientific stages succeeded"
+    },
+    {
+      "workflow": "wes",
+      "run": "run_cf41a3ae0fd64cd69afdd19e4e8f6d68",
+      "state": "succeeded",
+      "elapsed_seconds": 504.59,
+      "artifacts": 31,
+      "scope": "All 1,000 synthetic pairs; exact 20-kb reference; synthetic 1,000-base capture target with 50-base padding. Core alignment/BQSR may be reused from verified cache; native calling uses explicit WES intervals. Not assay accuracy validation.",
+      "reports": [
+        {
+          "name": "capture-manifest.json",
+          "report": {
+            "calling_sha256": "b49748cacbdc894079332ef231e75f09539a7cfb16e80aa922a0d5ad5d1a49ab",
+            "clinical_validation": false,
+            "coordinate_system": "zero-based half-open BED",
+            "kit": "Synthetic engineering capture kit",
+            "padding_bp": 50,
+            "target_bases": 1000,
+            "targets_sha256": "58a83931435f147655b246bc5c0a1e6829592f087e3de5e2a369850fb8fe4a72",
+            "version": "v1"
+          }
+        },
+        {
+          "name": "capture-coverage.json",
+          "report": {
+            "capture_kit": "Synthetic engineering capture kit",
+            "clinical_validation": false,
+            "excluded_reads": "unmapped,duplicate,secondary,supplementary,QC-fail",
+            "fraction_at_depth": {
+              "1": 1.0,
+              "10": 0.501,
+              "20": 0.0,
+              "30": 0.0
+            },
+            "mean_depth": 9.481,
+            "method": "Full target-base A/C/G/T coverage after declared read/base filters",
+            "minimum_base_quality": 20,
+            "minimum_mapping_quality": 20,
+            "not_picard_hs_metrics": true,
+            "overlapping_mates": "Counted as reads; not fragment-deduplicated coverage",
+            "target_bases": 1000,
+            "targets_sha256": "58a83931435f147655b246bc5c0a1e6829592f087e3de5e2a369850fb8fe4a72"
+          }
+        }
+      ]
+    },
+    {
+      "workflow": "mtdna",
+      "run": "run_2680c67d051e48beaa975bdf8cda7c23",
+      "state": "succeeded",
+      "elapsed_seconds": 1220.93,
+      "artifacts": 29,
+      "scope": "Synthetic 100-read indexed BAM, 20-kb engineered mitochondrial contig and 1-kb nuclear stub; explicit nuclear candidate interval; 5 engineered alternate bases at 1-based position 981. This tests execution and one positive control only, not NUMT discrimination or clinical heteroplasmy sensitivity.",
+      "reports": [
+        {
+          "name": "mitochondrial-allele-fractions.json",
+          "report": {
+            "clinical_validation": false,
+            "eligible_positions": 101,
+            "limitations": [
+              "No NUMT classification",
+              "No strand-bias model",
+              "No circular/rotated-reference reconciliation",
+              "No indel heteroplasmy model"
+            ],
+            "method": "Quality-filtered pileup base-count QC",
+            "observed_positions": 199,
+            "parameters": {
+              "contig": "engineering_contig",
+              "minimum_base_quality": 20,
+              "minimum_depth": 50,
+              "minimum_fraction": 0.01,
+              "minimum_mapping_quality": 30
+            },
+            "sites": [
+              {
+                "alternate_fractions": {
+                  "A": {
+                    "fraction": 0.06172839506172839,
+                    "reads": 5
+                  }
+                },
+                "base_counts": {
+                  "A": 5,
+                  "G": 76
+                },
+                "contig": "engineering_contig",
+                "depth": 81,
+                "position": 981,
+                "reference": "G"
+              }
+            ]
+          }
+        },
+        {
+          "name": "circular-callset-reconciliation.json",
+          "report": {
+            "boundary_bases": 150,
+            "clinical_validation": false,
+            "counts": {
+              "excluded_overlapping_source": 1,
+              "original_interior": 1
+            },
+            "limitation": "Not a NUMT classifier, contamination model, haplogroup inference or clinical heteroplasmy validation",
+            "method": "Filtered original-reference calls in interior; separately filtered, explicitly lifted calls at circular boundaries. REF alleles checked against the original reference."
+          }
+        }
+      ]
+    }
+  ],
+  "performance": {
+    "url": "https://d2j3o1re9v00qo.cloudfront.net",
+    "started": 1792496624.632124,
+    "phases": [
+      {
+        "independent_users": 10,
+        "seconds": 22.56,
+        "requests": 83,
+        "statuses": {
+          "200": 83
+        },
+        "successful_latency_ms": {
+          "p50": 333.42,
+          "p95": 682.12,
+          "p99": 806.93,
+          "maximum": 806.93
+        },
+        "scope": "Authenticated session, workflow list, catalogue and allowance reads with human-like think time; not 100 simultaneous genomic analyses"
+      },
+      {
+        "independent_users": 100,
+        "seconds": 63.09,
+        "requests": 2307,
+        "statuses": {
+          "200": 2307
+        },
+        "successful_latency_ms": {
+          "p50": 305.78,
+          "p95": 598.42,
+          "p99": 744.55,
+          "maximum": 1311.09
+        },
+        "scope": "Authenticated session, workflow list, catalogue and allowance reads with human-like think time; not 100 simultaneous genomic analyses"
+      }
+    ]
+  },
+  "budget": {
+    "limit_usd": 200.0,
+    "fixed_pretax_usd": 110.0,
+    "tax_fraction": 0.18,
+    "safety_usd": 15.0,
+    "forecast_including_tax_usd": 134.385413,
+    "available_after_safety_usd": 50.614587,
+    "admission_open": true
+  },
+  "audit": {
+    "retained_chain_prefix_valid": true,
+    "mode": "GOVERNANCE",
+    "days": 30
+  },
+  "limits": [
+    "No full-size WGS/WES/mtDNA assay accuracy validation",
+    "No sampled peak RSS or scratch",
+    "No clinical/regulatory certification",
+    "Only 32-MiB resumed upload and 32-GiB scratch VM tested"
+  ],
+  "deadline_reaper": {
+    "state": "terminated",
+    "independent_termination_logged": true,
+    "elapsed_seconds": 99.28
+  }
+}

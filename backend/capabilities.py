@@ -29,11 +29,25 @@ def matrix(uid=None):
         elif n['id'] in VERIFIED_OPERATORS:status='implemented-verified';reason='Known-count or round-trip operator tests; representative full-scale clinical workflow validation is not established'
         else:status='awaiting-validation';reason='Executable implementation exists; representative dataset and runtime validation are pending'
         rows.append({'id':n['id'],'name':n['name'],'category':n['group'],'status':status,'reason':reason,'implementation':'portable' if n.get('builtin') else 'native-command' if n['id'] in profiles else 'provider-contract' if n.get('api') else None,'declared_image':n.get('image'),'verified_hosted_image':os.getenv('NGS_DEMO_IMAGE') if n['id'] in {'fastqc','fastp','minimap2','samtools','bcftools','bowtie2','hisat2','freebayes'} else None,'input_contracts':n['inputs'],'output_contracts':n['outputs'],'resources':n['resources'],'license':n['license'],'documentation':n.get('docs'),'validation_scope':'Research operator behavior; no clinical certification'})
-    return {'schema':1,'capabilities':rows,'counts':{s:sum(x['status']==s for x in rows) for s in ['implemented-verified','awaiting-validation','requires-entitlement','unsupported']},'note':'Image pull/build success is not scientific validation. Readiness requires all exact dependencies and a published execution profile.'}
+    from .provisioning import CORE_TOOLS
+    runtime=db.query("SELECT value FROM controls WHERE key='research-runtime-release'",one=True)
+    runtime=json.loads(runtime['value']) if runtime else {}
+    cloud_evidence={'fastqc':'run_eaaafb925caa4a4c9c09700859e1bc55','fastp':'run_e106a3c7ab27488bbdaa6d2a339f659e','minimap2':'run_c39ae6f2722746cfb7ce11a99d5fc853','freebayes':'run_c39ae6f2722746cfb7ce11a99d5fc853','bam.sort':'run_c39ae6f2722746cfb7ce11a99d5fc853','bam.index':'run_c39ae6f2722746cfb7ce11a99d5fc853'}
+    cloud_evidence.update({t:'run_b16dc51e09ec4a13b8e5a49c53a69e54' for t in ['bwa-mem2','picard','gatk-bqsr','gatk-apply-bqsr','haplotypecaller','bcftools.annotate']})
+    cloud_evidence.update({t:'run_cf41a3ae0fd64cd69afdd19e4e8f6d68' for t in ['wes.capture','wes.coverage']})
+    cloud_evidence.update({t:'run_2680c67d051e48beaa975bdf8cda7c23' for t in ['mito.extract','mito.shift-reference','mito.realign','gatk.mt.call','gatk.mt.filter','mito.liftover','mito.reconcile','mito.regions','mt.qc']})
+    for row in rows:
+        row.pop('verified_hosted_image',None)
+        core_sample=row['id'] in cloud_evidence and cloud_evidence[row['id']] in {'run_b16dc51e09ec4a13b8e5a49c53a69e54','run_cf41a3ae0fd64cd69afdd19e4e8f6d68','run_2680c67d051e48beaa975bdf8cda7c23'}
+        row['hosted_runtime_image']=runtime.get('image') if row['id'] in CORE_TOOLS or core_sample else os.getenv('NGS_DEMO_IMAGE') if row['id'] in cloud_evidence else None
+        row['runtime_status']=('Published digest; small-data execution recorded' if row['id'] in cloud_evidence else 'Published digest; build/version checks only') if row['hosted_runtime_image'] else 'Requires a reviewed publication or portable worker contract'
+        row['sample_execution']=({'run_id':cloud_evidence[row['id']],'scope':'Small synthetic/public integration data; no full-scale or assay accuracy claim'} if row['id'] in cloud_evidence else None)
+    return {'schema':2,'capabilities':rows,'counts':{s:sum(x['status']==s for x in rows) for s in ['implemented-verified','awaiting-validation','requires-entitlement','unsupported']},'note':'Image pull/build success is not scientific validation. Readiness requires all exact dependencies and a published execution profile.'}
 
 def dependencies():
     rows=[]
     definitions=[('grch38-core','GRCh38','FASTA, FAI, sequence dictionary, aligner index','exact assembly/contig convention and digest'),('grch37-core','GRCh37','FASTA, FAI, sequence dictionary, aligner index','exact release and contig convention'),('t2t-core','T2T-CHM13','v2.0 FASTA, FAI, dictionary, matching indices','T2T coordinates cannot substitute for GRCh38'),('gatk-bqsr','GRCh38','known-sites VCFs, tabix, matching reference dictionary','per-release dbSNP/Mills/indel resources'),('vep-cache','GRCh38','Ensembl VEP executable/cache/FASTA release bundle','match VEP and cache versions; permitted terms'),('wes-capture','assay-specific','capture-kit manufacturer/version, target BED, padded intervals and coverage definition','must be supplied per kit; not inferred from a WGS template'),('mitochondrial','GRCh38/rCRS','exact whole-genome nuclear+mitochondrial reference, shifted mt reference, original-to-shifted coordinate map','NUMT-aware alignment and mitochondrial caller/filter profile required'),('giab-full','GRCh38','query reads, complete HG002 truth VCF, confident BED, stratifications and exact reference','same individual and release throughout'),('licensed-annotations','release-specific','HGMD/COSMIC and other restricted databases','vendor authorization and exact release')]
+    definitions[0:0]=[('grch38-fasta','GRCh38 / Broad hg38/v0','FASTA + FAI + sequence dictionary','Verified AWS component; does not include an aligner index'),('giab-truth-hg002-v4.2.1','GRCh38','HG002 v4.2.1 VCF + TBI + confident BED','Verified AWS component; matching reads and stratifications remain required')]
     for ident,assembly,files,reason in definitions:
         record=db.query('SELECT value FROM controls WHERE key=?',('reference-bundle:'+ident,),one=True)
         observed=json.loads(record['value']) if record else {}
@@ -50,4 +64,4 @@ def dependencies():
 def workflow_status():
     return [{'id':'wgs','status':'blocked','reason':'Full reference/index, validated germline caller and annotation bundles have not been provisioned or tested at WGS scale','clinical_validation':False},
       {'id':'wes','status':'blocked','reason':'Requires exact capture-kit metadata/targets, target coverage and caller/annotation validation','clinical_validation':False},
-      {'id':'mtdna','status':'blocked','reason':'Allele-fraction QC is implemented; complete NUMT-aware, shifted-reference heteroplasmy calling is not validated','clinical_validation':False}]
+      {'id':'mtdna','status':'blocked','reason':'Allele-fraction QC is implemented; shifted-reference caller/filter, liftover and reconciliation are implemented; representative heteroplasmy/NUMT performance is not validated','clinical_validation':False}]

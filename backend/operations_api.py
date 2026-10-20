@@ -1,8 +1,13 @@
 import json
 from fastapi import Body,Depends,HTTPException
-from . import budget,cloud_data,data,db,mfa,entitlements
+from . import budget,cloud_data,data,db,mfa,entitlements,billing
 
 def install(app,user,admin):
+    @app.get('/api/admin/audit/anchors')
+    def audit_anchors(current=Depends(admin)):
+        from . import audit_anchor
+        return audit_anchor.verify()
+
     @app.get('/api/operations/capabilities')
     def capability_matrix(current=Depends(user)):
         from . import capabilities
@@ -11,8 +16,27 @@ def install(app,user,admin):
     @app.get('/api/account/entitlements')
     def allowances(current=Depends(user)):return entitlements.limits(current['id'])
 
+    @app.get('/api/account/capacity')
+    def capacity(current=Depends(user)):
+        from .provisioning import profile
+        return profile(current['id'])
+
     @app.post('/api/admin/entitlements/{uid}')
     def grant(uid:str,payload:dict=Body(...),current=Depends(admin)):return entitlements.grant(current,uid,payload)
+
+    @app.post('/api/admin/budget/reconcile')
+    def reconcile_budget(current=Depends(admin)):return billing.reconcile_posted()
+
+    @app.post('/api/admin/budget/acknowledge')
+    def acknowledge_budget(payload:dict=Body(...),current=Depends(admin)):
+        reason=str(payload.get('reason','')).strip()
+        if len(reason)<10:raise ValueError('Explain the cost reconciliation before reopening paid admission')
+        billing.reconcile_posted()
+        if budget.snapshot()['available_after_safety_usd']<=0:raise ValueError('The conservative ledger still has no budget headroom')
+        with db.tx() as c:
+            c.execute('DELETE FROM controls WHERE key=?',('baseline-admission-hold:'+budget.period(),))
+            db.audit(c,current['id'],'billing.admission.reopened',budget.period(),{'reason':reason,'baseline_ceiling_usd':200})
+        return budget.snapshot()
 
     @app.get('/api/operations/accounting')
     def accounting(current=Depends(admin)):
@@ -24,7 +48,12 @@ def install(app,user,admin):
         from . import graph,registry,runner
         g=payload.get('graph');check=graph.preflight(g,current,runner.capabilities())
         estimated=budget.graph_estimate(g,registry.definitions(current['id']),current['id']) if check['ok'] else None
-        return {'preflight':check,'estimate':estimated,'allowance':entitlements.limits(current['id']),'currency':'USD','note':'Conservative upper reservation; queue and image/staging startup time are additional. No scientific truncation is performed.'}
+        remaining=entitlements.remaining(current['id'])
+        allowance=entitlements.limits(current['id'])
+        output_bytes=allowance['max_output_bytes'] if allowance['access']=='explore' else g.get('maximum_output_bytes',remaining['storage_bytes'])
+        output_fits=type(output_bytes)==int and 0<output_bytes<=min(allowance['max_output_bytes'],remaining['storage_bytes'])
+        compute_fits=bool(check['ok'] and estimated and remaining['admission_open'] and estimated['pretax_usd']*(1+budget.policy()['tax_fraction'])<=remaining['budget_usd'] and check['reservation_cpu_seconds']<=min(remaining['daily_cpu_seconds'],remaining['monthly_cpu_seconds']))
+        return {'preflight':check,'estimate':estimated,'allowance':allowance,'remaining':remaining,'compute_fits':compute_fits,'output_fits':output_fits,'output_reservation_bytes':output_bytes,'fits_allowance':compute_fits and output_fits,'currency':'USD','note':'Conservative upper reservation includes bounded startup. Queue delay is additional. No scientific truncation is performed; admission rechecks remaining allowances transactionally.'}
     @app.post('/api/account/mfa/setup')
     def setup_mfa(current=Depends(user)):return mfa.setup(current)
 
@@ -39,6 +68,7 @@ def install(app,user,admin):
     @app.get('/api/operations/budget')
     def cost(current=Depends(user)):
         result=budget.snapshot()
+        result['alerts']=db.query('SELECT at,severity,message,period FROM billing_alerts '+('' if current['role']=='admin' else 'WHERE tenant IS NULL OR tenant=? ')+'ORDER BY at DESC LIMIT 10',() if current['role']=='admin' else (current['id'],))
         result['reservations']=db.query('SELECT id,kind,reserved_micro,charged_micro,state,created FROM cost_reservations WHERE user_id=? ORDER BY created DESC LIMIT 30',(current['id'],))
         return result
 
@@ -47,6 +77,11 @@ def install(app,user,admin):
         rows=db.query('SELECT id,source_asset,name,bytes,sha256,state,created,updated FROM datasets WHERE user_id=? ORDER BY created DESC LIMIT 100',(current['id'],))
         inventory=db.query("SELECT COUNT(*) AS files,COALESCE(SUM(bytes),0) AS bytes FROM assets WHERE user_id=? AND path NOT LIKE 's3://%'",(current['id'],),one=True)
         return {'datasets':rows,'local_only_inventory':inventory}
+
+    @app.post('/api/operations/datasets/{ident}/companions')
+    def companions(ident:str,payload:dict=Body(...),current=Depends(user)):
+        if entitlements.restricted(current['id']):raise ValueError('Personal dataset binding requires funded Research Pro access')
+        return cloud_data.bind(current['id'],ident,payload)
 
     @app.post('/api/operations/transfers')
     def initiate(payload:dict=Body(...),current=Depends(user)):return cloud_data.initiate(current,payload)

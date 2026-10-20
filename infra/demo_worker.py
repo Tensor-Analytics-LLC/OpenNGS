@@ -97,7 +97,7 @@ def main():
         manifest=Path('/work/manifest.json');manifest.write_text(json.dumps(result,allow_nan=False))
         bundle=Path('/work/result.tar.gz')
         if sum(p.stat().st_size for p in files.values())>64*1024**2:raise ValueError('Published output ceiling exceeded')
-        with tarfile.open(bundle,'w:gz') as archive:
+        with tarfile.open(bundle,'w:gz',dereference=True) as archive:
             archive.add(manifest,arcname='manifest.json')
             for name,path in files.items():archive.add(path,arcname=name)
         with bundle.open('rb') as f:

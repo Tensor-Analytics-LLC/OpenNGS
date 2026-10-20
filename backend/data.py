@@ -33,7 +33,10 @@ def settings(uid):
     if restricted(uid):result.update(ssd_roots=[],backend='hosted-demo',max_node_seconds=120,max_upload_gib=1)
     elif DEMO:
         allowance=limits(uid)
-        result.update(ssd_roots=[],backend='aws-batch',max_node_seconds=allowance['max_node_seconds'],max_upload_gib=max(1,allowance['max_scratch_mb']//1024),s3_bucket=os.getenv('NGS_BUCKET',''),kms_key_arn=os.getenv('NGS_KMS_KEY',''))
+        from .provisioning import profile
+        capacity=profile(uid)
+        result.update(ssd_roots=[],backend='aws-batch',max_node_seconds=allowance['max_node_seconds'],max_upload_gib=max(1,allowance['max_scratch_mb']//1024),s3_bucket=capacity.get('bucket',''),kms_key_arn=os.getenv('NGS_KMS_KEY',''),batch_queue=capacity.get('queue',''),batch_job_definition=capacity.get('definition',''),max_concurrency=allowance['max_concurrent_jobs'],research_profile=capacity)
+        result['image_approvals']={k:capacity['image'] for k in capacity.get('tools',[]) } if capacity.get('image') else {}
     return result
 
 def update_settings(user, patch):
@@ -74,7 +77,7 @@ def permitted_path(uid,path):
 
 def file_type(path):
     n=path.name.lower()
-    if n.endswith(('.fai','.gzi','.bai','.crai','.csi','.tbi','.mmi','.bt2','.ht2','.dict')):return 'INDEX'
+    if n.endswith(('.fai','.gzi','.bai','.crai','.csi','.tbi','.mmi','.bt2','.ht2','.dict','.idx','.gzi')):return 'INDEX'
     if n.endswith(('.vcf','.vcf.gz','.vcf.bgz')):
         return 'INDEXED_VCF' if Path(str(path)+'.tbi').exists() or Path(str(path)+'.csi').exists() else 'VCF'
     for endings,fmt in [(('.fastq','.fastq.gz','.fq','.fq.gz'),'FASTQ'),(('.fasta','.fa','.fa.gz','.fasta.gz','.fa.bgz','.fna','.fna.gz'),'FASTA'),(('.bam',),'BAM'),(('.sam',),'SAM'),(('.cram',),'CRAM'),(('.bed','.bed.gz'),'BED'),(('.interval_list',),'INTERVALLIST'),(('.h5ad',),'H5AD'),(('.rds',),'RDS'),(('.pod5',),'POD5'),(('.zip','.tar','.tar.gz','.tgz'),'ARCHIVE'),(('.bcf',),'BCF'),(('.chain','.chain.gz'),'CHAIN'),(('.gtf','.gtf.gz'),'GTF'),(('.gff','.gff3','.gff3.gz'),'GFF3'),(('.csv',),'CSV'),(('.tsv','.tsv.gz'),'TSV'),(('.json',),'REPORT'),(('.bw','.bigwig'),'BIGWIG')]:

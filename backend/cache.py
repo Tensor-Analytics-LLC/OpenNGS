@@ -15,9 +15,9 @@ def initialize():
             c.execute('ALTER TABLE file_digests ALTER COLUMN size TYPE BIGINT')
             c.execute('ALTER TABLE file_digests ALTER COLUMN mtime_ns TYPE BIGINT')
 
-def file_identity(uid,path):
+def file_identity(uid,path,cloud_settings=None):
     if path.startswith('s3://'):
-        bucket,key=path[5:].split('/',1);s=data.settings(uid)
+        bucket,key=path[5:].split('/',1);s=cloud_settings or data.settings(uid)
         if bucket!=s['s3_bucket'] or not key.startswith('tenants/'+uid+'/'):raise ValueError('Cache input is outside the tenant prefix')
         head=aws_session().client('s3').head_object(Bucket=bucket,Key=key);digest=head.get('Metadata',{}).get('sha256')
         if not digest:raise ValueError('S3 cache object lacks a cryptographic content identity')
@@ -31,21 +31,21 @@ def file_identity(uid,path):
         with db.tx() as c:c.execute('INSERT INTO file_digests VALUES(?,?,?,?) ON CONFLICT(path) DO UPDATE SET size=excluded.size,mtime_ns=excluded.mtime_ns,digest=excluded.digest',(str(p),st.st_size,st.st_mtime_ns,digest))
     return {'digest':digest,'bytes':st.st_size}
 
-def key(uid,spec,node,inputs,backend,extra_spec=None):
+def key(uid,spec,node,inputs,backend,extra_spec=None,cloud_settings=None):
     if spec.get('api') or spec.get('asset_family') or spec.get('credential') or spec['id'] in ['oncokb','franklin','sample.clinvar','asset.file','reference.asset','database.asset','utility.export']:return None
     identities={}
     for port,rows in sorted(inputs.items()):
         identities[port]=[]
         for item in rows:
             meta={k:v for k,v in item.get('metadata',{}).items() if k not in ['report','mate','index','index_paths']}
-            identities[port].append({'format':item['format'],'file':file_identity(uid,item['path']),'metadata':meta,'secondary':{field:file_identity(uid,item['metadata'][field]) for field in ['mate','index'] if item.get('metadata',{}).get(field)}})
+            identities[port].append({'format':item['format'],'file':file_identity(uid,item['path'],cloud_settings),'metadata':meta,'indices':[file_identity(uid,p,cloud_settings) for p in item.get('metadata',{}).get('index_paths',[])],'secondary':{field:file_identity(uid,item['metadata'][field],cloud_settings) for field in ['mate','index','dictionary'] if item.get('metadata',{}).get(field)}})
     revision=hashlib.sha256()
     for name in ['portable.py','scientific.py','compiler.py']:
         revision.update(Path(__file__).with_name(name).read_bytes())
     payload={'schema':2,'implementation':revision.hexdigest(),'spec':spec,'published':extra_spec,'params':node.get('params',{}),'advanced':node.get('advanced',''),'resources':node.get('resources'),'image':node.get('_approved_image'),'backend':backend,'inputs':identities}
     return hashlib.sha256(db.encode(payload).encode()).hexdigest()
 
-def load(uid,key):
+def load(uid,key,cloud_settings=None):
     if not key:return None
     row=db.query('SELECT * FROM node_cache WHERE user_id=? AND cache_key=?',(uid,key),one=True)
     if not row:return None
@@ -53,22 +53,25 @@ def load(uid,key):
     try:
         for items in outputs.values():
             for item in items:
-                identity=file_identity(uid,item['path'])
+                identity=file_identity(uid,item['path'],cloud_settings)
                 if item.get('digest','').removeprefix('sha256:')!=identity['digest']:return None
-                for field in ['mate','index']:
+                for path,expected in item.get('metadata',{}).get('index_digests',{}).items():
+                    if file_identity(uid,path,cloud_settings)['digest']!=expected:return None
+                for field in ['mate','index','dictionary']:
                     if item.get('metadata',{}).get(field):
                         expected=item['metadata'].get(field+'_sha256')
-                        if not expected or file_identity(uid,item['metadata'][field])['digest']!=expected.removeprefix('sha256:'):return None
+                        if not expected or file_identity(uid,item['metadata'][field],cloud_settings)['digest']!=expected.removeprefix('sha256:'):return None
         with db.tx() as c:c.execute('UPDATE node_cache SET last_hit=?,hits=hits+1 WHERE user_id=? AND cache_key=?',(time.time(),uid,key))
         return outputs
     except (ValueError,OSError):return None
 
-def store(uid,key,outputs):
+def store(uid,key,outputs,cloud_settings=None):
     if not key:return
     for items in outputs.values():
         for item in items:
-            for field in ['mate','index']:
-                if item.get('metadata',{}).get(field):item['metadata'][field+'_sha256']=file_identity(uid,item['metadata'][field])['digest']
+            if item.get('metadata',{}).get('index_paths'):item['metadata']['index_digests']={p:file_identity(uid,p,cloud_settings)['digest'] for p in item['metadata']['index_paths']}
+            for field in ['mate','index','dictionary']:
+                if item.get('metadata',{}).get(field):item['metadata'][field+'_sha256']=file_identity(uid,item['metadata'][field],cloud_settings)['digest']
     with db.tx() as c:c.execute('INSERT INTO node_cache VALUES(?,?,?,?,?,0) ON CONFLICT(user_id,cache_key) DO UPDATE SET outputs=excluded.outputs,created=excluded.created',(uid,key,db.encode(outputs),time.time(),time.time()))
 
 initialize()

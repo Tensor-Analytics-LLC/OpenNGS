@@ -53,6 +53,8 @@ def execute(job):
     import pysam
     work=Path(job['workdir']);work.mkdir(parents=True,exist_ok=True)
     tool=job['tool'];params=job.get('params',{});inputs=job.get('inputs',{})
+    from .assays import TOOLS as ASSAY_TOOLS,execute as execute_assay
+    if tool in ASSAY_TOOLS:return execute_assay(job)
     bundled=Path(__file__).resolve().parents[1]/'demo-data'
     if tool.startswith(('sample.','reference.tiny')) and (bundled/'manifest.json').is_file() and os.getenv('NGS_USE_BUNDLED_SAMPLES','1')=='1':
         frozen=json.loads((bundled/'manifest.json').read_text())

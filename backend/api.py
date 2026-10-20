@@ -30,7 +30,6 @@ async def lifespan(app):
 app=FastAPI(title='OpenNGS by Tensor Analytics',version='1.0.0',lifespan=lifespan,docs_url='/api/docs',openapi_url='/api/openapi.json')
 app.add_middleware(TrustedHostMiddleware,allowed_hosts=ALLOWED_HOSTS)
 from .admission import Admission
-app.add_middleware(Admission)
 AUTH_ATTEMPTS=collections.OrderedDict()
 
 @app.middleware('http')
@@ -56,12 +55,22 @@ async def boundary(request,call_next):
         try:length=int(request.headers.get('content-length','0'))
         except ValueError:return Response('Invalid content length',400)
         if length>limit:return Response('Request exceeds its size limit',413)
-        if request.url.path!='/api/uploads' and len(await request.body())>limit:return Response('Request exceeds its size limit',413)
+        if request.url.path!='/api/uploads':
+            pieces=[];received=0
+            async for piece in request.stream():
+                received+=len(piece)
+                if received>limit:return Response('Request exceeds its size limit',413)
+                pieces.append(piece)
+            request._body=b''.join(pieces)
     response=await call_next(request)
     response.headers['X-Content-Type-Options']='nosniff'
     response.headers['Referrer-Policy']='no-referrer'
     response.headers['Cache-Control']='no-store' if request.url.path.startswith('/api') else 'no-cache'
     bucket=__import__('os').environ.get('NGS_BUCKET','')
+    if 'text/html' in response.headers.get('content-type','') and request.cookies.get('ngs_session'):
+        current=await run_in_threadpool(security.session_for,request.cookies.get('ngs_session'))
+        if current:
+            profile=await run_in_threadpool(data.settings,current['id']);bucket=profile.get('s3_bucket') or bucket
     storage_origins=(' https://'+bucket+'.s3.us-east-1.amazonaws.com https://'+bucket+'.s3.dualstack.us-east-1.amazonaws.com') if re.fullmatch(r'[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]',bucket) else ''
     response.headers['Content-Security-Policy']="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'"+storage_origins+"; worker-src 'self'; object-src 'none'; frame-ancestors 'self'; base-uri 'none'"
     return response
@@ -140,9 +149,15 @@ def session(current=Depends(user)):return {'user':security.public_user(current),
 
 @app.get('/api/catalog')
 def catalog(current=Depends(user)):
-    nodes=[n for n in registry.catalogue(current['id']) if demo.enabled(n,current['id'])]
-    templates=[t for t in registry.templates() if all(demo.enabled({'id':n['tool']},current['id']) for n in t['graph']['nodes'])]
-    return {'nodes':nodes,'templates':templates,'capabilities':runner.capabilities(),'demo':demo.public_info(current['id']),'full_catalogue_count':len(registry.catalogue(current['id']))}
+    limited=entitlements.restricted(current['id'])
+    all_nodes=registry.catalogue(None if limited else current['id'])
+    nodes=[n for n in all_nodes if not limited or n['id'] in demo.TOOLS]
+    templates=[t for t in registry.templates() if not limited or all(n['tool'] in demo.TOOLS for n in t['graph']['nodes'])]
+    if CLOUD and not limited:
+        capacity=data.settings(current['id']).get('research_profile',{})
+        for node in nodes:
+            node['support_note']='Portable operation; validation scope is reported separately' if node.get('builtin') else 'Core runtime; representative assay validation pending' if node['id'] in capacity.get('tools',[]) else 'Runtime not published; review the capability matrix'
+    return {'nodes':nodes,'templates':templates,'capabilities':runner.capabilities(),'demo':demo.public_info(current['id']),'full_catalogue_count':len(all_nodes)}
 
 @app.get('/api/settings')
 def settings(current=Depends(user)):return data.settings(current['id'])
@@ -154,7 +169,8 @@ def update_settings(patch:dict=Body(...),current=Depends(user)):return data.upda
 def assets(q:str='',current=Depends(user)):
     if entitlements.restricted(current['id']):return {'assets':[],'scans':[],'public_sources':[],'transfers':[]}
     if len(q)>200:raise ValueError('Search is too long')
-    rows=db.query('SELECT * FROM assets WHERE user_id=? AND (name LIKE ? OR family LIKE ? OR format LIKE ?) ORDER BY family,name LIMIT 300',(current['id'],'%'+q+'%','%'+q+'%','%'+q+'%'))
+    staged=" AND id IN (SELECT id FROM datasets WHERE state='Ready')" if CLOUD else ''
+    rows=db.query('SELECT * FROM assets WHERE user_id=?'+staged+' AND (name LIKE ? OR family LIKE ? OR format LIKE ?) ORDER BY family,name LIMIT 300',(current['id'],'%'+q+'%','%'+q+'%','%'+q+'%'))
     for r in rows:r['metadata']=json.loads(r['metadata'])
     return {'assets':rows,'scans':db.query('SELECT * FROM scans WHERE user_id=? ORDER BY started DESC LIMIT 20',(current['id'],)),'public_sources':data.PUBLIC,'transfers':db.query('SELECT * FROM transfers WHERE user_id=? ORDER BY started DESC LIMIT 30',(current['id'],))}
 
@@ -321,7 +337,10 @@ def artifact(aid:str,request:Request,current=Depends(user)):
     if r['path'].startswith('s3://'):
         bucket,key=r['path'][5:].split('/',1)
         if not key.startswith(f"tenants/{current['id']}/"):raise HTTPException(403)
-        return RedirectResponse(aws_session().client('s3',config=__import__('botocore.config',fromlist=['Config']).Config(signature_version='s3v4')).generate_presigned_url('get_object',Params={'Bucket':bucket,'Key':key},ExpiresIn=60))
+        name=re.sub(r'[^A-Za-z0-9_. -]','_',r['name'])[:160] or 'OpenNGS-artifact.bin'
+        args={'Bucket':bucket,'Key':key,'ResponseContentType':'application/octet-stream','ResponseContentDisposition':'attachment; filename="'+name+'"','ResponseCacheControl':'private, no-store'}
+        if meta.get('version_id'):args['VersionId']=meta['version_id']
+        return RedirectResponse(aws_session().client('s3',config=__import__('botocore.config',fromlist=['Config']).Config(signature_version='s3v4')).generate_presigned_url('get_object',Params=args,ExpiresIn=60))
     p=data.permitted_path(current['id'],r['path'])
     return FileResponse(p,filename=r['name'],headers={'Content-Security-Policy':"sandbox; default-src 'none'"},media_type='application/octet-stream')
 
@@ -447,6 +466,7 @@ from .extension_api import install as install_extensions
 install_extensions(app,user,admin,publish_tool)
 from .operations_api import install as install_operations
 install_operations(app,user,admin)
+app.add_middleware(Admission)
 
 app.mount('/static',StaticFiles(directory=FRONTEND),name='static')
 @app.get('/')

@@ -1,5 +1,5 @@
 {
-  "schema": 1,
+  "schema": 2,
   "capabilities": [
     {
       "id": "sample.fastq",
@@ -9,7 +9,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [],
       "output_contracts": [
         {
@@ -26,7 +25,10 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "sample.rna",
@@ -36,7 +38,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [],
       "output_contracts": [
         {
@@ -53,7 +54,10 @@
       },
       "license": "FOSS",
       "documentation": "https://github.com/nf-core/test-datasets/tree/rnaseq",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "sample.giab",
@@ -63,7 +67,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [],
       "output_contracts": [
         {
@@ -80,7 +83,10 @@
       },
       "license": "FOSS",
       "documentation": "https://registry.opendata.aws/giab/",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "sample.somatic",
@@ -90,7 +96,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [],
       "output_contracts": [
         {
@@ -113,7 +118,10 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "asset.file",
@@ -123,7 +131,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [],
       "output_contracts": [
         {
@@ -140,7 +147,10 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "reference.tiny",
@@ -150,7 +160,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [],
       "output_contracts": [
         {
@@ -167,7 +176,10 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "reference.asset",
@@ -177,7 +189,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [],
       "output_contracts": [
         {
@@ -194,7 +205,10 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "database.asset",
@@ -204,7 +218,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [],
       "output_contracts": [
         {
@@ -221,7 +234,10 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "qc.summary",
@@ -231,7 +247,6 @@
       "reason": "Known-count or round-trip operator tests; representative full-scale clinical workflow validation is not established",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "reads",
@@ -255,7 +270,10 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "vcf.stats",
@@ -265,7 +283,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "variants",
@@ -289,7 +306,10 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "bam.stats",
@@ -299,7 +319,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "alignment",
@@ -323,7 +342,10 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "sam.bam",
@@ -333,7 +355,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "alignment",
@@ -357,7 +378,10 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "bam.sort",
@@ -367,7 +391,6 @@
       "reason": "Known-count or round-trip operator tests; representative full-scale clinical workflow validation is not established",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "alignment",
@@ -391,7 +414,13 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": "private-reviewed-runtime@sha256:7df875975b03f7602a3553e620291fa3b901d66ce515dacc1b7312fadb076237",
+      "runtime_status": "Published digest; small-data execution recorded",
+      "sample_execution": {
+        "run_id": "run_c39ae6f2722746cfb7ce11a99d5fc853",
+        "scope": "Small synthetic/public integration data; no full-scale or assay accuracy claim"
+      }
     },
     {
       "id": "bam.index",
@@ -401,7 +430,6 @@
       "reason": "Known-count or round-trip operator tests; representative full-scale clinical workflow validation is not established",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "alignment",
@@ -425,7 +453,13 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": "private-reviewed-runtime@sha256:7df875975b03f7602a3553e620291fa3b901d66ce515dacc1b7312fadb076237",
+      "runtime_status": "Published digest; small-data execution recorded",
+      "sample_execution": {
+        "run_id": "run_c39ae6f2722746cfb7ce11a99d5fc853",
+        "scope": "Small synthetic/public integration data; no full-scale or assay accuracy claim"
+      }
     },
     {
       "id": "vcf.bgzip",
@@ -435,7 +469,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "variants",
@@ -459,7 +492,10 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "vcf.index",
@@ -469,7 +505,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "variants",
@@ -493,7 +528,10 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "vcf.filter",
@@ -503,7 +541,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "variants",
@@ -527,7 +564,10 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "bed.intervals",
@@ -537,7 +577,6 @@
       "reason": "Known-count or round-trip operator tests; representative full-scale clinical workflow validation is not established",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "intervals",
@@ -567,7 +606,10 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "intervals.bed",
@@ -577,7 +619,6 @@
       "reason": "Known-count or round-trip operator tests; representative full-scale clinical workflow validation is not established",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "intervals",
@@ -601,7 +642,10 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "fastq.split",
@@ -611,7 +655,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "reads",
@@ -635,7 +678,10 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "fastq.merge",
@@ -645,7 +691,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "reads",
@@ -669,7 +714,10 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "utility.gather",
@@ -679,7 +727,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "items",
@@ -703,7 +750,10 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "utility.scatter",
@@ -713,7 +763,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "intervals",
@@ -737,7 +786,10 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "utility.condition",
@@ -747,7 +799,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "data",
@@ -771,7 +822,10 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "utility.export",
@@ -781,7 +835,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "data",
@@ -805,7 +858,10 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "fastqc",
@@ -815,7 +871,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "native-command",
       "declared_image": "quay.io/biocontainers/fastqc:0.12.1--hdfd78af_0",
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "reads",
@@ -839,7 +894,13 @@
       },
       "license": "FOSS",
       "documentation": "https://www.bioinformatics.babraham.ac.uk/projects/fastqc/",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": "private-reviewed-runtime@sha256:54ec87c6225bbb3cf26e7dd7a2755272ba6542fa0fd1442c0e5c7b7ebfe2f07a",
+      "runtime_status": "Published digest; small-data execution recorded",
+      "sample_execution": {
+        "run_id": "run_eaaafb925caa4a4c9c09700859e1bc55",
+        "scope": "Small synthetic/public integration data; no full-scale or assay accuracy claim"
+      }
     },
     {
       "id": "multiqc",
@@ -849,7 +910,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "native-command",
       "declared_image": "quay.io/biocontainers/multiqc:1.25.1--pyhdfd78af_0",
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "reports",
@@ -873,7 +933,10 @@
       },
       "license": "FOSS",
       "documentation": "https://docs.seqera.io/multiqc",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "fastp",
@@ -883,7 +946,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "native-command",
       "declared_image": "quay.io/biocontainers/fastp:0.23.4--hadf994f_2",
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "reads",
@@ -913,7 +975,13 @@
       },
       "license": "FOSS",
       "documentation": "https://github.com/OpenGene/fastp",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": "private-reviewed-runtime@sha256:54ec87c6225bbb3cf26e7dd7a2755272ba6542fa0fd1442c0e5c7b7ebfe2f07a",
+      "runtime_status": "Published digest; small-data execution recorded",
+      "sample_execution": {
+        "run_id": "run_e106a3c7ab27488bbdaa6d2a339f659e",
+        "scope": "Small synthetic/public integration data; no full-scale or assay accuracy claim"
+      }
     },
     {
       "id": "trimmomatic",
@@ -923,7 +991,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "native-command",
       "declared_image": "quay.io/biocontainers/trimmomatic:0.39--hdfd78af_2",
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "reads",
@@ -947,7 +1014,10 @@
       },
       "license": "FOSS",
       "documentation": "https://github.com/usadellab/Trimmomatic",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "dorado",
@@ -957,7 +1027,6 @@
       "reason": "Third-party rights, credentials or permitted database/model assets must be supplied and verified",
       "implementation": null,
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "signal",
@@ -981,7 +1050,10 @@
       },
       "license": "Academic",
       "documentation": "https://github.com/nanoporetech/dorado",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "bwa-mem2",
@@ -991,7 +1063,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "native-command",
       "declared_image": "quay.io/biocontainers/bwa-mem2:2.2.1--hd03093a_5",
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "reads",
@@ -1021,7 +1092,13 @@
       },
       "license": "FOSS",
       "documentation": "https://github.com/bwa-mem2/bwa-mem2",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": "private-reviewed-runtime@sha256:54ec87c6225bbb3cf26e7dd7a2755272ba6542fa0fd1442c0e5c7b7ebfe2f07a",
+      "runtime_status": "Published digest; small-data execution recorded",
+      "sample_execution": {
+        "run_id": "run_b16dc51e09ec4a13b8e5a49c53a69e54",
+        "scope": "Small synthetic/public integration data; no full-scale or assay accuracy claim"
+      }
     },
     {
       "id": "bowtie2",
@@ -1031,7 +1108,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "native-command",
       "declared_image": "quay.io/biocontainers/bowtie2:2.5.4--he96a11b_5",
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "reads",
@@ -1061,7 +1137,10 @@
       },
       "license": "FOSS",
       "documentation": "https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "minimap2",
@@ -1071,7 +1150,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "native-command",
       "declared_image": "quay.io/biocontainers/minimap2:2.28--he4a0461_3",
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "reads",
@@ -1101,7 +1179,13 @@
       },
       "license": "FOSS",
       "documentation": "https://github.com/lh3/minimap2",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": "private-reviewed-runtime@sha256:54ec87c6225bbb3cf26e7dd7a2755272ba6542fa0fd1442c0e5c7b7ebfe2f07a",
+      "runtime_status": "Published digest; small-data execution recorded",
+      "sample_execution": {
+        "run_id": "run_c39ae6f2722746cfb7ce11a99d5fc853",
+        "scope": "Small synthetic/public integration data; no full-scale or assay accuracy claim"
+      }
     },
     {
       "id": "star",
@@ -1111,7 +1195,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "native-command",
       "declared_image": "quay.io/biocontainers/star:2.7.11b--h43eeafb_2",
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "reads",
@@ -1141,7 +1224,10 @@
       },
       "license": "FOSS",
       "documentation": "https://github.com/alexdobin/STAR",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "hisat2",
@@ -1151,7 +1237,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "native-command",
       "declared_image": "quay.io/biocontainers/hisat2:2.2.1--h503566f_8",
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "reads",
@@ -1181,7 +1266,10 @@
       },
       "license": "FOSS",
       "documentation": "https://daehwankimlab.github.io/hisat2/",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "vg",
@@ -1191,7 +1279,6 @@
       "reason": "Requires an explicitly published and validated vendor/tool wrapper; the generic catalogue declaration has no executable native profile",
       "implementation": null,
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "reads",
@@ -1221,7 +1308,10 @@
       },
       "license": "FOSS",
       "documentation": "https://github.com/vgteam/vg",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "salmon",
@@ -1231,7 +1321,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "native-command",
       "declared_image": "quay.io/biocontainers/salmon:1.10.3--h6dccd9a_2",
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "reads",
@@ -1261,7 +1350,10 @@
       },
       "license": "FOSS",
       "documentation": "https://salmon.readthedocs.io/",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "samtools",
@@ -1271,7 +1363,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "native-command",
       "declared_image": "quay.io/biocontainers/samtools:1.21--h50ea8bc_0",
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "alignment",
@@ -1295,7 +1386,10 @@
       },
       "license": "FOSS",
       "documentation": "https://www.htslib.org/doc/samtools.html",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": "private-reviewed-runtime@sha256:54ec87c6225bbb3cf26e7dd7a2755272ba6542fa0fd1442c0e5c7b7ebfe2f07a",
+      "runtime_status": "Published digest; build/version checks only",
+      "sample_execution": null
     },
     {
       "id": "picard",
@@ -1305,7 +1399,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "native-command",
       "declared_image": "quay.io/biocontainers/picard:3.3.0--hdfd78af_0",
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "alignment",
@@ -1335,7 +1428,13 @@
       },
       "license": "FOSS",
       "documentation": "https://broadinstitute.github.io/picard/",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": "private-reviewed-runtime@sha256:54ec87c6225bbb3cf26e7dd7a2755272ba6542fa0fd1442c0e5c7b7ebfe2f07a",
+      "runtime_status": "Published digest; small-data execution recorded",
+      "sample_execution": {
+        "run_id": "run_b16dc51e09ec4a13b8e5a49c53a69e54",
+        "scope": "Small synthetic/public integration data; no full-scale or assay accuracy claim"
+      }
     },
     {
       "id": "gatk-bqsr",
@@ -1345,7 +1444,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "native-command",
       "declared_image": "broadinstitute/gatk:4.6.1.0",
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "alignment",
@@ -1381,7 +1479,13 @@
       },
       "license": "FOSS",
       "documentation": "https://gatk.broadinstitute.org/",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": "private-reviewed-runtime@sha256:54ec87c6225bbb3cf26e7dd7a2755272ba6542fa0fd1442c0e5c7b7ebfe2f07a",
+      "runtime_status": "Published digest; small-data execution recorded",
+      "sample_execution": {
+        "run_id": "run_b16dc51e09ec4a13b8e5a49c53a69e54",
+        "scope": "Small synthetic/public integration data; no full-scale or assay accuracy claim"
+      }
     },
     {
       "id": "haplotypecaller",
@@ -1391,7 +1495,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "native-command",
       "declared_image": "broadinstitute/gatk:4.6.1.0",
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "alignment",
@@ -1403,6 +1506,12 @@
           "key": "reference",
           "type": "FASTA",
           "required": true,
+          "many": false
+        },
+        {
+          "key": "intervals",
+          "type": "BED|INTERVALLIST",
+          "required": false,
           "many": false
         }
       ],
@@ -1421,7 +1530,13 @@
       },
       "license": "FOSS",
       "documentation": "https://gatk.broadinstitute.org/",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": "private-reviewed-runtime@sha256:54ec87c6225bbb3cf26e7dd7a2755272ba6542fa0fd1442c0e5c7b7ebfe2f07a",
+      "runtime_status": "Published digest; small-data execution recorded",
+      "sample_execution": {
+        "run_id": "run_b16dc51e09ec4a13b8e5a49c53a69e54",
+        "scope": "Small synthetic/public integration data; no full-scale or assay accuracy claim"
+      }
     },
     {
       "id": "deepvariant",
@@ -1431,7 +1546,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "native-command",
       "declared_image": "google/deepvariant:1.8.0",
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "alignment",
@@ -1461,7 +1575,10 @@
       },
       "license": "FOSS",
       "documentation": "https://github.com/google/deepvariant",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "mutect2",
@@ -1471,7 +1588,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "native-command",
       "declared_image": "broadinstitute/gatk:4.6.1.0",
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "tumor",
@@ -1513,7 +1629,10 @@
       },
       "license": "FOSS",
       "documentation": "https://gatk.broadinstitute.org/",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": "private-reviewed-runtime@sha256:54ec87c6225bbb3cf26e7dd7a2755272ba6542fa0fd1442c0e5c7b7ebfe2f07a",
+      "runtime_status": "Published digest; build/version checks only",
+      "sample_execution": null
     },
     {
       "id": "strelka2",
@@ -1523,7 +1642,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "native-command",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "alignment",
@@ -1553,7 +1671,10 @@
       },
       "license": "FOSS",
       "documentation": "https://github.com/Illumina/strelka",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "freebayes",
@@ -1563,7 +1684,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "native-command",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "alignment",
@@ -1593,7 +1713,13 @@
       },
       "license": "FOSS",
       "documentation": "https://github.com/freebayes/freebayes",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": "private-reviewed-runtime@sha256:54ec87c6225bbb3cf26e7dd7a2755272ba6542fa0fd1442c0e5c7b7ebfe2f07a",
+      "runtime_status": "Published digest; small-data execution recorded",
+      "sample_execution": {
+        "run_id": "run_c39ae6f2722746cfb7ce11a99d5fc853",
+        "scope": "Small synthetic/public integration data; no full-scale or assay accuracy claim"
+      }
     },
     {
       "id": "bcftools",
@@ -1603,7 +1729,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "native-command",
       "declared_image": "quay.io/biocontainers/bcftools:1.21--h3a4d415_1",
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "alignment",
@@ -1633,7 +1758,10 @@
       },
       "license": "FOSS",
       "documentation": "https://github.com/google/deepvariant",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": "private-reviewed-runtime@sha256:54ec87c6225bbb3cf26e7dd7a2755272ba6542fa0fd1442c0e5c7b7ebfe2f07a",
+      "runtime_status": "Published digest; build/version checks only",
+      "sample_execution": null
     },
     {
       "id": "manta",
@@ -1643,7 +1771,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "native-command",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "alignment",
@@ -1673,7 +1800,10 @@
       },
       "license": "FOSS",
       "documentation": "https://github.com/Illumina/manta",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "sniffles2",
@@ -1683,7 +1813,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "native-command",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "alignment",
@@ -1713,7 +1842,10 @@
       },
       "license": "FOSS",
       "documentation": "https://github.com/fritzsedlazeck/Sniffles",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "cnvkit",
@@ -1723,7 +1855,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "native-command",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "alignment",
@@ -1759,7 +1890,10 @@
       },
       "license": "FOSS",
       "documentation": "https://cnvkit.readthedocs.io/",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "vep",
@@ -1769,7 +1903,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "native-command",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "variants",
@@ -1799,7 +1932,10 @@
       },
       "license": "FOSS",
       "documentation": "https://www.ensembl.org/info/docs/tools/vep/",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "annovar",
@@ -1809,7 +1945,6 @@
       "reason": "Third-party rights, credentials or permitted database/model assets must be supplied and verified",
       "implementation": null,
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "variants",
@@ -1839,7 +1974,10 @@
       },
       "license": "Commercial BYOL",
       "documentation": "https://annovar.openbioinformatics.org/",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "snpeff",
@@ -1849,7 +1987,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "native-command",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "variants",
@@ -1879,7 +2016,10 @@
       },
       "license": "FOSS",
       "documentation": "https://pcingola.github.io/SnpEff/",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "exomiser",
@@ -1889,7 +2029,6 @@
       "reason": "Requires an explicitly published and validated vendor/tool wrapper; the generic catalogue declaration has no executable native profile",
       "implementation": null,
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "variants",
@@ -1919,7 +2058,10 @@
       },
       "license": "FOSS",
       "documentation": "https://github.com/exomiser/Exomiser",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "intervar",
@@ -1929,7 +2071,6 @@
       "reason": "Requires an explicitly published and validated vendor/tool wrapper; the generic catalogue declaration has no executable native profile",
       "implementation": null,
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "variants",
@@ -1959,7 +2100,10 @@
       },
       "license": "FOSS",
       "documentation": "https://github.com/WGLab/InterVar",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "alphamissense",
@@ -1969,7 +2113,6 @@
       "reason": "Third-party rights, credentials or permitted database/model assets must be supplied and verified",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "variants",
@@ -1999,7 +2142,10 @@
       },
       "license": "Academic",
       "documentation": "https://github.com/google-deepmind/alphamissense",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "spliceai",
@@ -2009,7 +2155,6 @@
       "reason": "Third-party rights, credentials or permitted database/model assets must be supplied and verified",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "variants",
@@ -2039,7 +2184,10 @@
       },
       "license": "Academic",
       "documentation": "https://github.com/Illumina/SpliceAI",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "cadd",
@@ -2049,7 +2197,6 @@
       "reason": "Third-party rights, credentials or permitted database/model assets must be supplied and verified",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "variants",
@@ -2079,7 +2226,10 @@
       },
       "license": "Academic",
       "documentation": "https://cadd.gs.washington.edu/",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "revel",
@@ -2089,7 +2239,6 @@
       "reason": "Third-party rights, credentials or permitted database/model assets must be supplied and verified",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "variants",
@@ -2119,7 +2268,10 @@
       },
       "license": "Academic",
       "documentation": "https://sites.google.com/site/revelgenomics/",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "enformer",
@@ -2129,7 +2281,6 @@
       "reason": "Third-party rights, credentials or permitted database/model assets must be supplied and verified",
       "implementation": null,
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "sequence",
@@ -2159,7 +2310,10 @@
       },
       "license": "Academic",
       "documentation": "https://github.com/google-deepmind/deepmind-research/tree/master/enformer",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "scanpy",
@@ -2169,7 +2323,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "native-command",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "counts",
@@ -2193,7 +2346,10 @@
       },
       "license": "FOSS",
       "documentation": "https://scanpy.readthedocs.io/",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "seurat",
@@ -2203,7 +2359,6 @@
       "reason": "Requires an explicitly published and validated vendor/tool wrapper; the generic catalogue declaration has no executable native profile",
       "implementation": null,
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "counts",
@@ -2227,7 +2382,10 @@
       },
       "license": "FOSS",
       "documentation": "https://satijalab.org/seurat/",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "macs3",
@@ -2237,7 +2395,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "native-command",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "treatment",
@@ -2267,7 +2424,10 @@
       },
       "license": "FOSS",
       "documentation": "https://macs3-project.github.io/MACS/",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "kraken2",
@@ -2277,7 +2437,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "native-command",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "reads",
@@ -2307,7 +2466,10 @@
       },
       "license": "FOSS",
       "documentation": "https://github.com/DerrickWood/kraken2",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "franklin",
@@ -2317,7 +2479,6 @@
       "reason": "Third-party rights, credentials or permitted database/model assets must be supplied and verified",
       "implementation": null,
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "variants",
@@ -2341,7 +2502,10 @@
       },
       "license": "Paid API BYOK",
       "documentation": "https://franklin.genoox.com/",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "oncokb",
@@ -2351,7 +2515,6 @@
       "reason": "Third-party rights, credentials or permitted database/model assets must be supplied and verified",
       "implementation": null,
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "variants",
@@ -2375,7 +2538,10 @@
       },
       "license": "Paid API BYOK",
       "documentation": "https://api.oncokb.org/",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "sentieon",
@@ -2385,7 +2551,6 @@
       "reason": "Third-party rights, credentials or permitted database/model assets must be supplied and verified",
       "implementation": null,
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "data",
@@ -2409,7 +2574,10 @@
       },
       "license": "Commercial BYOL",
       "documentation": "https://support.sentieon.com/",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "dragen",
@@ -2419,7 +2587,6 @@
       "reason": "Third-party rights, credentials or permitted database/model assets must be supplied and verified",
       "implementation": null,
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "data",
@@ -2443,7 +2610,10 @@
       },
       "license": "Commercial BYOL",
       "documentation": "https://help.dragen.illumina.com/",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "hgmd",
@@ -2453,7 +2623,6 @@
       "reason": "Third-party rights, credentials or permitted database/model assets must be supplied and verified",
       "implementation": null,
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "data",
@@ -2477,7 +2646,10 @@
       },
       "license": "Commercial BYOL",
       "documentation": "https://www.hgmd.cf.ac.uk/",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "custom",
@@ -2487,7 +2659,6 @@
       "reason": "Third-party rights, credentials or permitted database/model assets must be supplied and verified",
       "implementation": "native-command",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "data",
@@ -2511,7 +2682,10 @@
       },
       "license": "Review required",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "mt.qc",
@@ -2521,7 +2695,6 @@
       "reason": "Known-count or round-trip operator tests; representative full-scale clinical workflow validation is not established",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "alignment",
@@ -2551,7 +2724,13 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": "private-reviewed-runtime@sha256:54ec87c6225bbb3cf26e7dd7a2755272ba6542fa0fd1442c0e5c7b7ebfe2f07a",
+      "runtime_status": "Published digest; small-data execution recorded",
+      "sample_execution": {
+        "run_id": "run_2680c67d051e48beaa975bdf8cda7c23",
+        "scope": "Small synthetic/public integration data; no full-scale or assay accuracy claim"
+      }
     },
     {
       "id": "sample.clinvar",
@@ -2561,7 +2740,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [],
       "output_contracts": [
         {
@@ -2578,7 +2756,10 @@
       },
       "license": "FOSS",
       "documentation": "https://www.ncbi.nlm.nih.gov/clinvar/",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "sample.alignments",
@@ -2588,7 +2769,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [],
       "output_contracts": [
         {
@@ -2611,7 +2791,10 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "resource.grch37",
@@ -2621,7 +2804,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [],
       "output_contracts": [
         {
@@ -2638,7 +2820,10 @@
       },
       "license": "FOSS",
       "documentation": "https://www.ncbi.nlm.nih.gov/assembly/GCF_000001405.25/",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "resource.grch38",
@@ -2648,7 +2833,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [],
       "output_contracts": [
         {
@@ -2665,7 +2849,10 @@
       },
       "license": "FOSS",
       "documentation": "https://www.ncbi.nlm.nih.gov/assembly/GCF_000001405.40/",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "resource.chm13",
@@ -2675,7 +2862,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [],
       "output_contracts": [
         {
@@ -2692,7 +2878,10 @@
       },
       "license": "FOSS",
       "documentation": "https://github.com/marbl/CHM13",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "resource.gnomad",
@@ -2702,7 +2891,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [],
       "output_contracts": [
         {
@@ -2719,7 +2907,10 @@
       },
       "license": "FOSS",
       "documentation": "https://gnomad.broadinstitute.org/data",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "resource.clinvar",
@@ -2729,7 +2920,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [],
       "output_contracts": [
         {
@@ -2746,7 +2936,10 @@
       },
       "license": "FOSS",
       "documentation": "https://www.ncbi.nlm.nih.gov/clinvar/",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "resource.dbsnp",
@@ -2756,7 +2949,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [],
       "output_contracts": [
         {
@@ -2773,7 +2965,10 @@
       },
       "license": "FOSS",
       "documentation": "https://www.ncbi.nlm.nih.gov/snp/",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "resource.1000g",
@@ -2783,7 +2978,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [],
       "output_contracts": [
         {
@@ -2800,7 +2994,10 @@
       },
       "license": "FOSS",
       "documentation": "https://registry.opendata.aws/1000-genomes/",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "resource.giab",
@@ -2810,7 +3007,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [],
       "output_contracts": [
         {
@@ -2827,7 +3023,10 @@
       },
       "license": "FOSS",
       "documentation": "https://registry.opendata.aws/giab/",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "resource.omim",
@@ -2837,7 +3036,6 @@
       "reason": "Third-party rights, credentials or permitted database/model assets must be supplied and verified",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [],
       "output_contracts": [
         {
@@ -2854,7 +3052,10 @@
       },
       "license": "Academic",
       "documentation": "https://www.omim.org/",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "resource.cosmic",
@@ -2864,7 +3065,6 @@
       "reason": "Third-party rights, credentials or permitted database/model assets must be supplied and verified",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [],
       "output_contracts": [
         {
@@ -2881,7 +3081,10 @@
       },
       "license": "Academic",
       "documentation": "https://cancer.sanger.ac.uk/cosmic",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "varscan2",
@@ -2891,7 +3094,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "native-command",
       "declared_image": "quay.io/biocontainers/varscan:2.4.6--hdfd78af_0",
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "alignment",
@@ -2921,7 +3123,10 @@
       },
       "license": "FOSS",
       "documentation": "https://varscan.sourceforge.net/",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "delly",
@@ -2931,7 +3136,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "native-command",
       "declared_image": "quay.io/biocontainers/delly:1.3.3--h7b50bb2_0",
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "alignment",
@@ -2961,7 +3165,10 @@
       },
       "license": "FOSS",
       "documentation": "https://github.com/dellytools/delly",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "expansionhunter",
@@ -2971,7 +3178,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "native-command",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "alignment",
@@ -3013,7 +3219,10 @@
       },
       "license": "FOSS",
       "documentation": "https://github.com/Illumina/ExpansionHunter",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "whatshap",
@@ -3023,7 +3232,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "native-command",
       "declared_image": "quay.io/biocontainers/whatshap:2.5--py312h6c305fc_0",
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "alignment",
@@ -3059,7 +3267,10 @@
       },
       "license": "FOSS",
       "documentation": "https://whatshap.readthedocs.io/",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "bismark",
@@ -3069,7 +3280,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "native-command",
       "declared_image": "quay.io/biocontainers/bismark:0.24.2--hdfd78af_0",
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "reads",
@@ -3099,7 +3309,10 @@
       },
       "license": "FOSS",
       "documentation": "https://felixkrueger.github.io/Bismark/",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "gatk-apply-bqsr",
@@ -3109,7 +3322,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "native-command",
       "declared_image": "broadinstitute/gatk:4.6.1.0",
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "alignment",
@@ -3145,7 +3357,13 @@
       },
       "license": "FOSS",
       "documentation": "https://gatk.broadinstitute.org/",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": "private-reviewed-runtime@sha256:54ec87c6225bbb3cf26e7dd7a2755272ba6542fa0fd1442c0e5c7b7ebfe2f07a",
+      "runtime_status": "Published digest; small-data execution recorded",
+      "sample_execution": {
+        "run_id": "run_b16dc51e09ec4a13b8e5a49c53a69e54",
+        "scope": "Small synthetic/public integration data; no full-scale or assay accuracy claim"
+      }
     },
     {
       "id": "mutect-filter",
@@ -3155,7 +3373,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "native-command",
       "declared_image": "broadinstitute/gatk:4.6.1.0",
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "variants",
@@ -3203,7 +3420,10 @@
       },
       "license": "FOSS",
       "documentation": "https://gatk.broadinstitute.org/",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "bcl.convert",
@@ -3213,7 +3433,6 @@
       "reason": "Third-party rights, credentials or permitted database/model assets must be supplied and verified",
       "implementation": null,
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "run",
@@ -3243,7 +3462,10 @@
       },
       "license": "Commercial BYOL",
       "documentation": "https://support.illumina.com/sequencing/sequencing_software/bcl-convert.html",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "cosmic",
@@ -3253,7 +3475,6 @@
       "reason": "Third-party rights, credentials or permitted database/model assets must be supplied and verified",
       "implementation": null,
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "variants",
@@ -3283,7 +3504,10 @@
       },
       "license": "Commercial BYOL",
       "documentation": "https://cancer.sanger.ac.uk/cosmic",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "annotation.merge",
@@ -3293,7 +3517,6 @@
       "reason": "Known-count or round-trip operator tests; representative full-scale clinical workflow validation is not established",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "variants",
@@ -3329,7 +3552,10 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "contig.rename",
@@ -3339,7 +3565,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "data",
@@ -3363,7 +3588,10 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "contig.rename.bed",
@@ -3373,7 +3601,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "data",
@@ -3397,7 +3624,10 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "reference.dictionary",
@@ -3407,7 +3637,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "reference",
@@ -3431,7 +3660,10 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "bam.sam",
@@ -3441,7 +3673,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "alignment",
@@ -3465,7 +3696,10 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "bam.cram",
@@ -3475,7 +3709,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "alignment",
@@ -3505,7 +3738,10 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "cram.bam",
@@ -3515,7 +3751,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "alignment",
@@ -3545,7 +3780,10 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "cram.index",
@@ -3555,7 +3793,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "alignment",
@@ -3579,7 +3816,10 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "vcf.bcf",
@@ -3589,7 +3829,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "variants",
@@ -3613,7 +3852,10 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "bcf.vcf",
@@ -3623,7 +3865,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "variants",
@@ -3647,7 +3888,10 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "gtf.bed",
@@ -3657,7 +3901,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "intervals",
@@ -3681,7 +3924,10 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "bed.gtf",
@@ -3691,7 +3937,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "intervals",
@@ -3715,7 +3960,10 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "liftover.vcf",
@@ -3725,7 +3973,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "native-command",
       "declared_image": "quay.io/biocontainers/picard:3.3.0--hdfd78af_0",
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "variants",
@@ -3767,7 +4014,10 @@
       },
       "license": "FOSS",
       "documentation": "https://broadinstitute.github.io/picard/command-line-overview.html#LiftoverVcf",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "crossmap.bed",
@@ -3777,7 +4027,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "native-command",
       "declared_image": "quay.io/biocontainers/crossmap:0.7.3--pyhdfd78af_0",
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "intervals",
@@ -3807,7 +4056,10 @@
       },
       "license": "FOSS",
       "documentation": "https://crossmap.readthedocs.io/",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "bam.bigwig",
@@ -3817,7 +4069,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "native-command",
       "declared_image": "quay.io/biocontainers/deeptools:3.5.6--pyhdfd78af_0",
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "alignment",
@@ -3841,7 +4092,10 @@
       },
       "license": "FOSS",
       "documentation": "https://deeptools.readthedocs.io/",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "vcf.scatter",
@@ -3851,7 +4105,6 @@
       "reason": "Known-count or round-trip operator tests; representative full-scale clinical workflow validation is not established",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "variants",
@@ -3875,7 +4128,10 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "vcf.gather",
@@ -3885,7 +4141,6 @@
       "reason": "Known-count or round-trip operator tests; representative full-scale clinical workflow validation is not established",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "shards",
@@ -3909,7 +4164,10 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "qc.gate",
@@ -3919,7 +4177,6 @@
       "reason": "Known-count or round-trip operator tests; representative full-scale clinical workflow validation is not established",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "data",
@@ -3961,7 +4218,10 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "cohort.bind",
@@ -3971,7 +4231,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "samples",
@@ -4001,7 +4260,10 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "cohort.genotype",
@@ -4011,7 +4273,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "native-command",
       "declared_image": "broadinstitute/gatk:4.6.1.0",
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "gvcfs",
@@ -4041,7 +4302,10 @@
       },
       "license": "FOSS",
       "documentation": "https://gatk.broadinstitute.org/",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "vcf.ensemble",
@@ -4051,7 +4315,6 @@
       "reason": "Known-count or round-trip operator tests; representative full-scale clinical workflow validation is not established",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "callsets",
@@ -4081,7 +4344,10 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "variant.guard",
@@ -4091,7 +4357,6 @@
       "reason": "Known-count or round-trip operator tests; representative full-scale clinical workflow validation is not established",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "variants",
@@ -4121,7 +4386,10 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "benchmark.exact",
@@ -4131,7 +4399,6 @@
       "reason": "Known-count or round-trip operator tests; representative full-scale clinical workflow validation is not established",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "query",
@@ -4167,7 +4434,10 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "benchmark.happy",
@@ -4177,7 +4447,6 @@
       "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
       "implementation": "native-command",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "query",
@@ -4231,7 +4500,10 @@
       },
       "license": "FOSS",
       "documentation": "https://github.com/Illumina/hap.py",
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
     },
     {
       "id": "rna.fdr",
@@ -4241,7 +4513,6 @@
       "reason": "Known-count or round-trip operator tests; representative full-scale clinical workflow validation is not established",
       "implementation": "portable",
       "declared_image": null,
-      "verified_hosted_image": null,
       "input_contracts": [
         {
           "key": "table",
@@ -4271,12 +4542,588 @@
       },
       "license": "FOSS",
       "documentation": null,
-      "validation_scope": "Research operator behavior; no clinical certification"
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": null,
+      "runtime_status": "Requires a reviewed publication or portable worker contract",
+      "sample_execution": null
+    },
+    {
+      "id": "mito.regions",
+      "name": "Validate mitochondrial / NUMT candidate regions",
+      "category": "References",
+      "status": "awaiting-validation",
+      "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
+      "implementation": "portable",
+      "declared_image": null,
+      "input_contracts": [
+        {
+          "key": "regions",
+          "type": "BED",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "output_contracts": [
+        {
+          "key": "regions",
+          "type": "BED",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "report",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "resources": {
+        "threads": 2,
+        "memory_mb": 4096,
+        "timeout_seconds": 120
+      },
+      "license": "FOSS",
+      "documentation": null,
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": "private-reviewed-runtime@sha256:54ec87c6225bbb3cf26e7dd7a2755272ba6542fa0fd1442c0e5c7b7ebfe2f07a",
+      "runtime_status": "Published digest; small-data execution recorded",
+      "sample_execution": {
+        "run_id": "run_2680c67d051e48beaa975bdf8cda7c23",
+        "scope": "Small synthetic/public integration data; no full-scale or assay accuracy claim"
+      }
+    },
+    {
+      "id": "wes.capture",
+      "name": "WES capture-kit & calling intervals",
+      "category": "Validation",
+      "status": "awaiting-validation",
+      "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
+      "implementation": "portable",
+      "declared_image": null,
+      "input_contracts": [
+        {
+          "key": "targets",
+          "type": "BED",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "output_contracts": [
+        {
+          "key": "targets",
+          "type": "BED",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "calling",
+          "type": "BED",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "report",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "resources": {
+        "threads": 2,
+        "memory_mb": 4096,
+        "timeout_seconds": 120
+      },
+      "license": "FOSS",
+      "documentation": null,
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": "private-reviewed-runtime@sha256:54ec87c6225bbb3cf26e7dd7a2755272ba6542fa0fd1442c0e5c7b7ebfe2f07a",
+      "runtime_status": "Published digest; small-data execution recorded",
+      "sample_execution": {
+        "run_id": "run_cf41a3ae0fd64cd69afdd19e4e8f6d68",
+        "scope": "Small synthetic/public integration data; no full-scale or assay accuracy claim"
+      }
+    },
+    {
+      "id": "wes.coverage",
+      "name": "WES target coverage",
+      "category": "QC",
+      "status": "awaiting-validation",
+      "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
+      "implementation": "portable",
+      "declared_image": null,
+      "input_contracts": [
+        {
+          "key": "alignment",
+          "type": "INDEXED_BAM",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "targets",
+          "type": "BED",
+          "required": true,
+          "many": false
+        }
+      ],
+      "output_contracts": [
+        {
+          "key": "report",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "table",
+          "type": "TSV",
+          "required": true,
+          "many": false
+        }
+      ],
+      "resources": {
+        "threads": 2,
+        "memory_mb": 4096,
+        "timeout_seconds": 120
+      },
+      "license": "FOSS",
+      "documentation": null,
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": "private-reviewed-runtime@sha256:54ec87c6225bbb3cf26e7dd7a2755272ba6542fa0fd1442c0e5c7b7ebfe2f07a",
+      "runtime_status": "Published digest; small-data execution recorded",
+      "sample_execution": {
+        "run_id": "run_cf41a3ae0fd64cd69afdd19e4e8f6d68",
+        "scope": "Small synthetic/public integration data; no full-scale or assay accuracy claim"
+      }
+    },
+    {
+      "id": "mito.shift-reference",
+      "name": "Circular mtDNA reference bundle",
+      "category": "References",
+      "status": "awaiting-validation",
+      "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
+      "implementation": "portable",
+      "declared_image": null,
+      "input_contracts": [
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "output_contracts": [
+        {
+          "key": "original",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "shifted",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "chain",
+          "type": "CHAIN",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "report",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "resources": {
+        "threads": 2,
+        "memory_mb": 4096,
+        "timeout_seconds": 120
+      },
+      "license": "FOSS",
+      "documentation": null,
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": "private-reviewed-runtime@sha256:54ec87c6225bbb3cf26e7dd7a2755272ba6542fa0fd1442c0e5c7b7ebfe2f07a",
+      "runtime_status": "Published digest; small-data execution recorded",
+      "sample_execution": {
+        "run_id": "run_2680c67d051e48beaa975bdf8cda7c23",
+        "scope": "Small synthetic/public integration data; no full-scale or assay accuracy claim"
+      }
+    },
+    {
+      "id": "mito.reconcile",
+      "name": "Circular mtDNA callset reconciliation",
+      "category": "Variants",
+      "status": "awaiting-validation",
+      "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
+      "implementation": "portable",
+      "declared_image": null,
+      "input_contracts": [
+        {
+          "key": "original",
+          "type": "VCF|BGZIP_VCF|INDEXED_VCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "shifted_back",
+          "type": "VCF|BGZIP_VCF|INDEXED_VCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "output_contracts": [
+        {
+          "key": "variants",
+          "type": "VCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "report",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "resources": {
+        "threads": 2,
+        "memory_mb": 4096,
+        "timeout_seconds": 120
+      },
+      "license": "FOSS",
+      "documentation": null,
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": "private-reviewed-runtime@sha256:54ec87c6225bbb3cf26e7dd7a2755272ba6542fa0fd1442c0e5c7b7ebfe2f07a",
+      "runtime_status": "Published digest; small-data execution recorded",
+      "sample_execution": {
+        "run_id": "run_2680c67d051e48beaa975bdf8cda7c23",
+        "scope": "Small synthetic/public integration data; no full-scale or assay accuracy claim"
+      }
+    },
+    {
+      "id": "gatk.mt.call",
+      "name": "Mutect2 \u00b7 mitochondrial mode",
+      "category": "Variants",
+      "status": "awaiting-validation",
+      "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
+      "implementation": "native-command",
+      "declared_image": "broadinstitute/gatk:4.6.1.0",
+      "input_contracts": [
+        {
+          "key": "alignment",
+          "type": "INDEXED_BAM",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "output_contracts": [
+        {
+          "key": "variants",
+          "type": "VCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "statistics",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "resources": {
+        "threads": 2,
+        "memory_mb": 4096,
+        "timeout_seconds": 120
+      },
+      "license": "FOSS",
+      "documentation": "https://gatk.broadinstitute.org/",
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": "private-reviewed-runtime@sha256:54ec87c6225bbb3cf26e7dd7a2755272ba6542fa0fd1442c0e5c7b7ebfe2f07a",
+      "runtime_status": "Published digest; small-data execution recorded",
+      "sample_execution": {
+        "run_id": "run_2680c67d051e48beaa975bdf8cda7c23",
+        "scope": "Small synthetic/public integration data; no full-scale or assay accuracy claim"
+      }
+    },
+    {
+      "id": "gatk.mt.filter",
+      "name": "FilterMutectCalls \u00b7 mitochondrial mode",
+      "category": "Variants",
+      "status": "awaiting-validation",
+      "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
+      "implementation": "native-command",
+      "declared_image": "broadinstitute/gatk:4.6.1.0",
+      "input_contracts": [
+        {
+          "key": "variants",
+          "type": "VCF|BGZIP_VCF|INDEXED_VCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "statistics",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "output_contracts": [
+        {
+          "key": "variants",
+          "type": "VCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "resources": {
+        "threads": 2,
+        "memory_mb": 4096,
+        "timeout_seconds": 120
+      },
+      "license": "FOSS",
+      "documentation": "https://gatk.broadinstitute.org/",
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": "private-reviewed-runtime@sha256:54ec87c6225bbb3cf26e7dd7a2755272ba6542fa0fd1442c0e5c7b7ebfe2f07a",
+      "runtime_status": "Published digest; small-data execution recorded",
+      "sample_execution": {
+        "run_id": "run_2680c67d051e48beaa975bdf8cda7c23",
+        "scope": "Small synthetic/public integration data; no full-scale or assay accuracy claim"
+      }
+    },
+    {
+      "id": "mito.liftover",
+      "name": "Lift shifted mtDNA calls back",
+      "category": "Adapters",
+      "status": "awaiting-validation",
+      "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
+      "implementation": "native-command",
+      "declared_image": "broadinstitute/gatk:4.6.1.0",
+      "input_contracts": [
+        {
+          "key": "variants",
+          "type": "VCF|BGZIP_VCF|INDEXED_VCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "chain",
+          "type": "CHAIN",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "output_contracts": [
+        {
+          "key": "variants",
+          "type": "VCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "rejected",
+          "type": "VCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "resources": {
+        "threads": 2,
+        "memory_mb": 4096,
+        "timeout_seconds": 120
+      },
+      "license": "FOSS",
+      "documentation": "https://gatk.broadinstitute.org/",
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": "private-reviewed-runtime@sha256:54ec87c6225bbb3cf26e7dd7a2755272ba6542fa0fd1442c0e5c7b7ebfe2f07a",
+      "runtime_status": "Published digest; small-data execution recorded",
+      "sample_execution": {
+        "run_id": "run_2680c67d051e48beaa975bdf8cda7c23",
+        "scope": "Small synthetic/public integration data; no full-scale or assay accuracy claim"
+      }
+    },
+    {
+      "id": "mito.extract",
+      "name": "Mitochondrial + nuclear candidate extraction",
+      "category": "Adapters",
+      "status": "awaiting-validation",
+      "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
+      "implementation": "native-command",
+      "declared_image": "quay.io/biocontainers/samtools:1.21--h50ea8bc_0",
+      "input_contracts": [
+        {
+          "key": "alignment",
+          "type": "INDEXED_BAM",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "regions",
+          "type": "BED",
+          "required": true,
+          "many": false
+        }
+      ],
+      "output_contracts": [
+        {
+          "key": "alignment",
+          "type": "BAM",
+          "required": true,
+          "many": false
+        }
+      ],
+      "resources": {
+        "threads": 2,
+        "memory_mb": 4096,
+        "timeout_seconds": 120
+      },
+      "license": "FOSS",
+      "documentation": "https://www.htslib.org/doc/samtools-view.html",
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": "private-reviewed-runtime@sha256:54ec87c6225bbb3cf26e7dd7a2755272ba6542fa0fd1442c0e5c7b7ebfe2f07a",
+      "runtime_status": "Published digest; small-data execution recorded",
+      "sample_execution": {
+        "run_id": "run_2680c67d051e48beaa975bdf8cda7c23",
+        "scope": "Small synthetic/public integration data; no full-scale or assay accuracy claim"
+      }
+    },
+    {
+      "id": "mito.realign",
+      "name": "Realign candidate reads to mtDNA reference",
+      "category": "Alignment",
+      "status": "awaiting-validation",
+      "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
+      "implementation": "native-command",
+      "declared_image": null,
+      "input_contracts": [
+        {
+          "key": "alignment",
+          "type": "BAM|INDEXED_BAM",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "output_contracts": [
+        {
+          "key": "alignment",
+          "type": "INDEXED_BAM",
+          "required": true,
+          "many": false
+        }
+      ],
+      "resources": {
+        "threads": 2,
+        "memory_mb": 4096,
+        "timeout_seconds": 120
+      },
+      "license": "FOSS",
+      "documentation": "https://github.com/bwa-mem2/bwa-mem2",
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": "private-reviewed-runtime@sha256:54ec87c6225bbb3cf26e7dd7a2755272ba6542fa0fd1442c0e5c7b7ebfe2f07a",
+      "runtime_status": "Published digest; small-data execution recorded",
+      "sample_execution": {
+        "run_id": "run_2680c67d051e48beaa975bdf8cda7c23",
+        "scope": "Small synthetic/public integration data; no full-scale or assay accuracy claim"
+      }
+    },
+    {
+      "id": "bcftools.annotate",
+      "name": "Normalize & annotate matching alleles",
+      "category": "Annotation",
+      "status": "awaiting-validation",
+      "reason": "Executable implementation exists; representative dataset and runtime validation are pending",
+      "implementation": "native-command",
+      "declared_image": "quay.io/biocontainers/bcftools:1.21--h8b25389_0",
+      "input_contracts": [
+        {
+          "key": "variants",
+          "type": "VCF|BGZIP_VCF|INDEXED_VCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "database",
+          "type": "INDEXED_VCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "output_contracts": [
+        {
+          "key": "variants",
+          "type": "INDEXED_VCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "resources": {
+        "threads": 2,
+        "memory_mb": 4096,
+        "timeout_seconds": 120
+      },
+      "license": "FOSS",
+      "documentation": "https://samtools.github.io/bcftools/bcftools.html",
+      "validation_scope": "Research operator behavior; no clinical certification",
+      "hosted_runtime_image": "private-reviewed-runtime@sha256:54ec87c6225bbb3cf26e7dd7a2755272ba6542fa0fd1442c0e5c7b7ebfe2f07a",
+      "runtime_status": "Published digest; small-data execution recorded",
+      "sample_execution": {
+        "run_id": "run_b16dc51e09ec4a13b8e5a49c53a69e54",
+        "scope": "Small synthetic/public integration data; no full-scale or assay accuracy claim"
+      }
     }
   ],
   "counts": {
+    "awaiting-validation": 92,
     "implemented-verified": 14,
-    "awaiting-validation": 81,
     "requires-entitlement": 17,
     "unsupported": 4
   },

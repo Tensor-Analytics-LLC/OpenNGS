@@ -1,0 +1,21 @@
+[Unit]
+Description=OpenNGS funded research capacity and durable dispatcher
+After=network-online.target openngs.service
+[Service]
+User=openngs
+Group=openngs
+WorkingDirectory=/opt/openngs
+EnvironmentFile=/var/lib/openngs/runtime.env
+ExecStart=/opt/openngs/runtime/bin/python -m backend.research_jobs
+Restart=always
+RestartSec=10
+MemoryMax=768M
+CPUQuota=40%
+TasksMax=64
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/openngs /var/cache/openngs
+[Install]
+WantedBy=multi-user.target

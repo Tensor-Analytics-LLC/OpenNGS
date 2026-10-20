@@ -8,7 +8,10 @@ def main():
         paths.extend(p for p in Path(d).rglob('*') if p.is_file() and '__pycache__' not in p.parts and p.suffix!='.pyc')
     paths.extend(Path(x) for x in ['README.md','IMPLEMENTATION_STATUS.md','LICENSE','SECURITY.md','Dockerfile','compose.yaml','.dockerignore','.gitignore','requirements.lock','requirements.txt','start.sh','infra/cache-stack.json','infra/cloud_worker.py','infra/worker.Dockerfile','infra/demo.Dockerfile','infra/demo_compute.py','infra/demo_worker.py','infra/lean_stack.py','infra/bootstrap.sh','infra/rds-ca.pem','infra/openngs-demo.service','infra/openngs-verifier.service','scripts/prepare_demo_data.py','scripts/import_cloud_state.py','scripts/build_demo_image.py','scripts/publish_release.py','scripts/package_source.py'])
     records=[];destination=Path('.state/public-source');destination.mkdir(parents=True,exist_ok=True)
+    paths.extend(Path(x) for x in ['infra/budget_stack.py','infra/openngs-billing.service','infra/research_stack.py','infra/research.Dockerfile','infra/openngs-research.service','scripts/acquire_references.py','scripts/build_research_image.py','scripts/publish_research_capacity.py','scripts/build_vm_image.py','scripts/finalize_vm_image.py','scripts/publish_vm_capacity.py','infra/network_guard.py','scripts/publish_network_guard.py','infra/audit_stack.py','infra/openngs-audit.service','scripts/publish_audit.py','scripts/configure_services.py','scripts/verify_cloud_samples.py','scripts/verify_research_cloud.py','scripts/verify_vm_cloud.py','scripts/load_cloud.py'])
+    paths.extend(Path(x) for x in ['infra/worker_reaper.py','scripts/publish_worker_reaper.py'])
     for p in sorted(set(paths)):
+        if p.is_symlink() or not p.resolve().is_relative_to(Path.cwd().resolve()):raise ValueError('Public source must be a regular workspace file')
         raw=p.read_bytes()
         if re.search(rb'-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY',raw):raise ValueError('Disallowed identifier or key in '+str(p))
         if p.suffix!='.pem' and re.search(rb'\bAKIA[0-9A-Z]{16}\b',raw):raise ValueError('Possible access key in '+str(p))

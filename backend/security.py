@@ -34,7 +34,13 @@ def issue_session(c,uid):
 
 def public_user(user):
     from .entitlements import limits
-    return {**{k:user[k] for k in ['id','email','role','tier','frozen','quota_seconds','used_seconds','reserved_seconds']},'entitlements':limits(user['id'])}
+    allowance=limits(user['id']);result={**{k:user[k] for k in ['id','email','role','tier','frozen','quota_seconds','used_seconds','reserved_seconds']},'entitlements':allowance}
+    from .config import CLOUD
+    if CLOUD:
+        from .budget import period
+        rows=db.query("SELECT state,SUM(CASE WHEN state='reserved' THEN reserved ELSE used END) AS seconds FROM usage_holds WHERE user_id=? AND (month=? OR state='reserved') GROUP BY state",(user['id'],period()))
+        result.update(lifetime_used_seconds=user['used_seconds'],quota_seconds=allowance['monthly_cpu_seconds'],used_seconds=sum(int(x['seconds']) for x in rows if x['state']!='reserved'),reserved_seconds=sum(int(x['seconds']) for x in rows if x['state']=='reserved'),quota_period=period())
+    return result
 
 def local_master():
     path=STATE/'vault.master'
@@ -104,4 +110,5 @@ def verify_audit():
         expected=hashlib.sha256(b'NGS-LOCAL-AUDIT-v1\0'+bytes.fromhex(previous)+r['body'].encode()).hexdigest()
         if r['previous_hash']!=previous or not hmac.compare_digest(r['hash'],expected):return {'valid':False,'records':count,'failed_seq':r['seq']}
         previous=r['hash'];count+=1
-    return {'valid':True,'records':count,'head':previous,'scope':'Local hash chain; independent WORM checkpointing requires the production audit deployment.'}
+    checkpoint=db.query("SELECT value FROM controls WHERE key='audit:last-anchor'",one=True)
+    return {'valid':True,'records':count,'head':previous,'scope':'Database hash chain; immutable archive verification is available separately to administrators.','checkpoint':json.loads(checkpoint['value']) if checkpoint else None}

@@ -39,16 +39,18 @@ def snapshot(c=None):
         with db.tx() as connection:return snapshot(connection)
     p=policy();month=period()
     # Include unresolved commitments from previous months.
-    outstanding=c.execute("SELECT COALESCE(SUM(reserved_micro),0) FROM cost_reservations WHERE state='reserved' AND id NOT IN (SELECT reservation_id FROM cost_allocations WHERE account='research-pro')").fetchone()[0]
-    charged=c.execute("SELECT COALESCE(SUM(charged_micro),0) FROM cost_reservations WHERE period=? AND state='reconciled' AND id NOT IN (SELECT reservation_id FROM cost_allocations WHERE account='research-pro')",(month,)).fetchone()[0]
+    outstanding=int(c.execute("SELECT COALESCE(SUM(reserved_micro),0) FROM cost_reservations WHERE state='reserved' AND id NOT IN (SELECT reservation_id FROM cost_allocations WHERE account='research-pro')").fetchone()[0])
+    charged=int(c.execute("SELECT COALESCE(SUM(charged_micro),0) FROM cost_reservations WHERE period=? AND state='reconciled' AND id NOT IN (SELECT reservation_id FROM cost_allocations WHERE account='research-pro')",(month,)).fetchone()[0])
     posted=c.execute('SELECT gross_micro,checked FROM billing_checks WHERE period=?',(month,)).fetchone()
     total_forecast=math.ceil((p['fixed_pretax_usd']*MICRO+outstanding+charged)*(1+p['tax_fraction']))
     # Posted gross already includes tax. Do not add it a second time.
     total_forecast=max(total_forecast,posted['gross_micro'] if posted else 0)
     remaining=math.floor((p['limit_usd']-p['safety_usd'])*MICRO)-total_forecast
+    alert=c.execute('SELECT value FROM controls WHERE key=?',('baseline-admission-hold:'+month,)).fetchone()
+    held=bool(alert and alert['value']=='true')
     return {**p,'period':month,'reserved_usd':outstanding/MICRO,'reconciled_variable_usd':charged/MICRO,
         'forecast_including_tax_usd':total_forecast/MICRO,'available_after_safety_usd':max(0,remaining)/MICRO,
-        'admission_open':remaining>0,'billing_checked':posted['checked'] if posted else None,
+        'admission_open':remaining>0 and not held,'alert_admission_hold':held,'billing_checked':posted['checked'] if posted else None,
         'note':'Conservative estimates; delayed billing, abuse and unexpected AWS charges can still overshoot. No automatic paid scaling.'}
 
 def reserve(c,uid,operation,kind,pretax_usd,details):
@@ -59,13 +61,20 @@ def reserve(c,uid,operation,kind,pretax_usd,details):
     from . import entitlements
     grant=entitlements.research(uid)
     account='research-pro' if grant else 'explore'
+    validation=c.execute('SELECT value FROM controls WHERE key=?',('validation-tenant:'+uid,)).fetchone()
+    if grant and validation and validation['value']=='true':account='validation'
+    hold=c.execute('SELECT value FROM controls WHERE key=?',('baseline-admission-hold:'+period(),)).fetchone()
+    if not grant and hold and hold['value']=='true':raise BudgetFull('Baseline cost alert is active; accepted work is preserved and new paid work waits for administrative reconciliation')
     if grant:
+        alert=c.execute('SELECT value FROM controls WHERE key=?',('pro-admission-hold:'+uid+':'+period(),)).fetchone()
+        if alert and alert['value']=='true':raise BudgetFull('The Research Pro tenant budget alert is active; new spending waits for administrative reconciliation')
         p=json.loads(grant['body']) if isinstance(grant['body'],str) else grant['body']
-        held=c.execute("SELECT COALESCE(SUM(CASE WHEN r.state='reserved' THEN r.reserved_micro ELSE r.charged_micro END),0) FROM cost_reservations r JOIN cost_allocations a ON a.reservation_id=r.id WHERE a.tenant=? AND a.account='research-pro' AND (r.period=? OR r.state='reserved')",(uid,period())).fetchone()[0]
-        remaining=p['monthly_budget_usd']*MICRO-held*(1+state['tax_fraction'])
+        held=int(c.execute("SELECT COALESCE(SUM(CASE WHEN r.state='reserved' THEN r.reserved_micro ELSE r.charged_micro END),0) FROM cost_reservations r JOIN cost_allocations a ON a.reservation_id=r.id WHERE a.tenant=? AND a.account IN ('research-pro','validation') AND (r.period=? OR r.state='reserved')",(uid,period())).fetchone()[0])
+        posted=c.execute('SELECT value FROM controls WHERE key=?',('pro-posted:'+uid+':'+period(),)).fetchone()
+        remaining=p['monthly_budget_usd']*MICRO-max(held*(1+state['tax_fraction']),int(posted['value']) if posted else 0)
         if micro*(1+state['tax_fraction'])>remaining:raise BudgetFull('Research Pro additional monetary allowance cannot cover this reservation')
     elif kind=='scientific' and pretax_usd>state['max_job_usd']:raise BudgetFull('Run exceeds the per-job spending limit; reduce resources or split the workflow')
-    if not grant and micro*(1+state['tax_fraction'])>state['available_after_safety_usd']*MICRO:
+    if (not grant or account=='validation') and micro*(1+state['tax_fraction'])>state['available_after_safety_usd']*MICRO:
         raise BudgetFull('Monthly budget capacity is full. Your work is saved; no additional paid work was started.')
     rid=db.ident('cost_')
     c.execute("INSERT INTO cost_reservations(id,user_id,operation,period,kind,reserved_micro,state,details,created) VALUES(?,?,?,?,?,?,'reserved',?,?)",(rid,uid,operation,period(),kind,micro,db.encode(details),time.time()))
@@ -81,7 +90,7 @@ def reconcile(operation,uid,kind,actual_pretax_usd=None):
         amount=row['reserved_micro'] if actual_pretax_usd is None else math.ceil(actual_pretax_usd*MICRO)
         if amount<0:raise ValueError('Invalid actual cost')
         c.execute("UPDATE cost_reservations SET state='reconciled',charged_micro=?,finished=? WHERE id=?",(amount,time.time(),row['id']))
-        db.audit(c,uid,'budget.reconciled',row['id'],{'pretax_usd':amount/MICRO,'source':'measured' if actual_pretax_usd is not None else 'conservative-reservation'})
+        db.audit(c,uid,'budget.reconciled',row['id'],{'pretax_usd':amount/MICRO,'source':'observed-allocation-at-conservative-tariff' if actual_pretax_usd is not None else 'conservative-reservation'})
 
 def graph_estimate(g,definitions,uid=None):
     from .config import DEMO
@@ -90,10 +99,15 @@ def graph_estimate(g,definitions,uid=None):
         total=0;resources=[]
         for n in g['nodes']:
             spec=definitions[n['tool']]
+            if spec.get('asset_family') or n['tool'] in ['asset.file','reference.asset','database.asset','utility.export','utility.gather','utility.condition']:continue
             if spec.get('api') or spec.get('license')=='Paid API BYOK':raise BudgetFull('External API execution requires a reviewed bounded tariff')
             if spec.get('resource')=='gpu':raise BudgetFull('GPU execution requires a published profile and bounded GPU tariff')
             r={**spec['resources'],**n.get('resources',{})};hours=(r['timeout_seconds']+600)/3600
-            price=hours*(r['threads']*.06+r['memory_mb']/1024*.008+r.get('scratch_mb',2048)/1024*.0002)
+            if r.get('scratch_mb',2048)>184320 or n.get('execution_profile')=='exclusive-vm':
+                from .vm import select
+                profile=select(r);hours=(r['timeout_seconds']+900)/3600
+                price=hours*(profile['hourly_usd']+(20+profile['scratch_gib'])*.08/730)
+            else:price=hours*(r['threads']*.06+r['memory_mb']/1024*.008+.02)
             total+=price;resources.append({'node':n['id'],'maximum_hours_with_staging':hours,'upper_pretax_usd':price})
         return {'pretax_usd':round(total+.10,6),'nodes':resources,'backend':'Research Pro reviewed cloud queue','validation':'Estimate only; capacity and dependencies must pass preflight'}
     if DEMO:
@@ -116,5 +130,12 @@ def graph_estimate(g,definitions,uid=None):
         estimate=(hours+10/60)*.0416+(16*.08*(hours+10/60)/730)+.01+.25*.023
         total+=estimate;nodes.append({'node':n['id'],'maximum_hours':hours,'estimate_usd':estimate})
     return {'pretax_usd':round(total,6),'nodes':nodes,'output_gib_ceiling_per_node':.25,'includes':'maximum configured runtime, boot/reaper allowance, disk, requests and one month of bounded output storage'}
+
+def reserve_storage_capacity(uid,allowance):
+    """Fund retained capacity once per month; upload/job charges exclude it."""
+    rows=db.query("SELECT r.details FROM cost_reservations r JOIN cost_allocations a ON a.reservation_id=r.id WHERE a.tenant=? AND a.account IN ('research-pro','validation') AND r.kind='retained-capacity' AND r.period=?",(uid,period()))
+    covered=sum(json.loads(x['details']).get('additional_bytes',0) for x in rows);additional=max(0,allowance['max_storage_bytes']-covered)
+    if not additional:return
+    with db.tx() as c:reserve(c,uid,'retained-capacity:'+period()+':'+str(allowance['max_storage_bytes']),'retained-capacity',additional/1024**3*.023,{'additional_bytes':additional,'scope':'Retained S3 capacity, separate from per-request/compute reservations'})
 
 initialize()

@@ -12,7 +12,7 @@ def compile_tool(spec,node,inputs,work):
         for i,item in enumerate(items):
             source=item['path'];target=f"/inputs/{key}/{i}/{source.rsplit('/',1)[-1]}"
             bindings.append((source,target));record={'path':target,**item.get('metadata',{})}
-            for field in ['mate','index']:
+            for field in ['mate','index','dictionary']:
                 if record.get(field):
                     src=record[field];dst=f"/inputs/{key}/{i}/{src.rsplit('/',1)[-1]}";bindings.append((src,dst));record[field]=dst
             for idx in item.get('metadata',{}).get('index_paths',[]):
@@ -30,7 +30,23 @@ def compile_tool(spec,node,inputs,work):
     def step(argv,stdout=None):steps.append({'argv':[str(x) for x in argv],'stdout':stdout})
     def output(port,file,fmt,**metadata):outs.setdefault(port,[]).append({'file':file,'format':fmt,'metadata':metadata})
     tid=spec['id']
-    if tid=='fastqc':
+    if tid in ['gatk.mt.call','gatk.mt.filter','mito.liftover']:
+        base=['gatk','--java-options',f"-Xmx{max(128,node.get('resources',{}).get('memory_mb',4096)-512)}m"]
+        if tid=='gatk.mt.call':
+            step([*base,'Mutect2','-R',path('reference'),'-I',path('alignment'),'--mitochondria-mode','--annotation','StrandBiasBySample','--read-filter','MateOnSameContigOrNoMappedMateReadFilter','--read-filter','MateUnmappedAndUnmappedReadFilter','--min-base-quality-score',p['minimum_base_quality'],'--max-reads-per-alignment-start',p['maximum_reads_per_start'],'--max-mnp-distance','0','-O','/work/mitochondrial.vcf',*advanced]);output('variants','mitochondrial.vcf','VCF',mitochondrial=True,unfiltered=True);output('statistics','mitochondrial.vcf.stats','REPORT')
+        elif tid=='gatk.mt.filter':
+            step([*base,'FilterMutectCalls','-R',path('reference'),'-V',path('variants'),'--stats',path('statistics'),'--mitochondria-mode','-O','/work/mitochondrial-filtered.vcf',*advanced]);output('variants','mitochondrial-filtered.vcf','VCF',mitochondrial=True)
+        else:
+            step([*base,'LiftoverVcf','-I',path('variants'),'-O','/work/shifted-back.vcf','--CHAIN',path('chain'),'--REJECT','/work/liftover-rejected.vcf','-R',path('reference'),*advanced]);output('variants','shifted-back.vcf','VCF',assembly=item('reference').get('assembly'),reference_digest=item('reference').get('reference_digest'));output('rejected','liftover-rejected.vcf','VCF')
+    elif tid=='mito.extract':
+        step(['samtools','view','--fetch-pairs','-L',path('regions'),'-b','-o','/work/selected.bam',path('alignment'),*advanced]);step(['samtools','view','-f','12','-b','-o','/work/unmapped-pairs.bam',path('alignment')]);step(['samtools','view','-f','4','-F','1','-b','-o','/work/unmapped-unpaired.bam',path('alignment')]);step(['samtools','cat','-o','/work/mitochondrial-candidates.bam','/work/selected.bam','/work/unmapped-pairs.bam','/work/unmapped-unpaired.bam']);output('alignment','mitochondrial-candidates.bam','BAM',numt_candidates_included=True,fully_unmapped_reads_retained=True)
+    elif tid=='mito.realign':
+        step(['cp',path('reference'),'/work/reference.fa']);step(['samtools','faidx','/work/reference.fa']);step(['bwa-mem2','index','/work/reference.fa']);step(['samtools','collate','-u','-O',path('alignment')],'collated.bam');step(['samtools','fastq','-n','/work/collated.bam'],'candidate-reads.fastq');step(['bwa-mem2','mem','-p','-t',threads,'-R','@RG\\tID:'+p['sample_id']+'\\tSM:'+p['sample_id']+'\\tPL:ILLUMINA',*advanced,'/work/reference.fa','/work/candidate-reads.fastq'],'realigned.sam');step(['samtools','sort','-@',threads,'-o','/work/realigned.bam','/work/realigned.sam']);step(['samtools','index','/work/realigned.bam']);output('alignment','realigned.bam','INDEXED_BAM',index=str(work/'realigned.bam.bai'),assembly=item('reference').get('assembly'),reference_digest=item('reference').get('reference_digest'))
+    elif tid=='bcftools.annotate':
+        import re
+        if not re.fullmatch(r'INFO/[A-Za-z0-9_.]+(?:,INFO/[A-Za-z0-9_.]+)*',p['columns']):raise ValueError('Annotation columns must be explicit INFO field names')
+        step(['bcftools','norm','-f',path('reference'),'-m','-any','-Oz','-o','/work/query-normalized.vcf.gz',path('variants')]);step(['bcftools','index','-t','/work/query-normalized.vcf.gz']);step(['bcftools','annotate','-a',path('database'),'-c',p['columns'],'-Oz','-o','/work/annotated.vcf.gz',*advanced,'/work/query-normalized.vcf.gz']);step(['bcftools','index','-t','/work/annotated.vcf.gz']);output('variants','annotated.vcf.gz','INDEXED_VCF',index=str(work/'annotated.vcf.gz.tbi'),annotation_fields=p['columns'])
+    elif tid=='fastqc':
         reads=[r['path'] for r in mapped['reads']]+[r['mate'] for r in mapped['reads'] if r.get('mate')]
         step(['fastqc','--threads',threads,'--outdir','/work',*(['--nogroup'] if p.get('nogroup') else []),*advanced,*reads]);output('report','*_fastqc.html','REPORT')
     elif tid=='multiqc':
@@ -62,7 +78,8 @@ def compile_tool(spec,node,inputs,work):
         reference=path('reference');base=['gatk','--java-options',f"-Xmx{max(128,node.get('resources',{}).get('memory_mb',4096)-512)}m"]
         if tid=='gatk-bqsr':step([*base,'BaseRecalibrator','-R',reference,'-I',path('alignment'),'--known-sites',path('known_sites'),'-O','/work/recal.table',*advanced]);output('report','recal.table','RECAL')
         elif tid=='haplotypecaller':
-            step([*base,'HaplotypeCaller','-R',reference,'-I',path('alignment'),'-O','/work/calls.vcf','--sample-ploidy',p['ploidy'],*(['-L',p['interval']] if p.get('interval') else []),*(['-ERC','GVCF'] if p['gvcf'] else []),*advanced]);output('variants','calls.vcf','VCF')
+            intervals=path('intervals') if mapped.get('intervals') else p.get('interval')
+            step([*base,'HaplotypeCaller','-R',reference,'-I',path('alignment'),'-O','/work/calls.vcf','--sample-ploidy',p['ploidy'],*(['-L',intervals] if intervals else []),*(['-ERC','GVCF'] if p['gvcf'] else []),*advanced]);output('variants','calls.vcf','VCF')
         else:
             step([*base,'Mutect2','-R',reference,'-I',path('tumor'),'-I',path('normal'),'-normal',p['normal_sample'],'-O','/work/unfiltered.vcf',*(['-L',p['interval']] if p.get('interval') else []),*advanced]);output('statistics','unfiltered.vcf.stats','REPORT');output('variants','unfiltered.vcf','VCF',unfiltered=True,warning='Run FilterMutectCalls and the appropriate contamination/orientation workflow before interpretation.')
     elif tid=='deepvariant':

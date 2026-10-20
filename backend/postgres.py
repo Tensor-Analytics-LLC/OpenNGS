@@ -26,14 +26,15 @@ def pool():
         with _lock:
             if _pool is None:
                 from psycopg_pool import ConnectionPool
-                _pool = ConnectionPool(DATABASE_URL, min_size=1, max_size=8, timeout=1,
-                    max_waiting=16, kwargs={'autocommit': True, 'row_factory': rows,
+                _pool = ConnectionPool(DATABASE_URL, min_size=2, max_size=8, timeout=2,
+                    max_waiting=12, kwargs={'autocommit': True, 'row_factory': rows,
                     'connect_timeout': 8, 'options': '-c statement_timeout=5000 -c lock_timeout=1000'})
     return _pool
 
 def sql(statement):
     if statement.lstrip().upper().startswith('CREATE TABLE'):
         statement=re.sub(r'\bINTEGER\b','BIGINT',statement)
+        statement=re.sub(r'\bREAL\b','DOUBLE PRECISION',statement)
     statement = statement.replace('%', '%%').replace('?', '%s')
     statement = statement.replace("json_extract(metadata,'$.uploaded')=1", "(metadata::jsonb->>'uploaded')='true'")
     statement = statement.replace('MAX(0,', 'GREATEST(0,')

@@ -26,12 +26,21 @@ def owned(uid,aid):
     return row
 
 def source(uid,row,field=None):
+    from .config import CLOUD
+    if CLOUD:
+        trusted=False
+        if row.get('run_id'):
+            run=db.query("SELECT r.graph FROM runs r JOIN demo_tasks d ON d.run_id=r.id WHERE r.id=? AND r.user_id=? AND d.state='published'",(row['run_id'],uid),one=True)
+            trusted=bool(run and json.loads(run['graph']).get('_execution',{}).get('access')=='explore')
+        if not trusted:raise ValueError('Native parsing of personal research files requires the isolated workbench profile, which is not yet published. Cloud pipeline execution and raw authorized exports remain available; this view will not parse untrusted files on the application host.')
     path=row['metadata'].get(field) if field else row['path']
     if not path:raise ValueError('Required secondary file is not bound: '+str(field))
     if path.startswith('s3://'):
         bucket,key=path[5:].split('/',1);settings=data.settings(uid)
         if bucket!=settings['s3_bucket'] or not key.startswith('tenants/'+uid+'/'):raise ValueError('Track is outside the private tenant cache')
-        return aws_session().client('s3',config=__import__('botocore.config',fromlist=['Config']).Config(signature_version='s3v4')).generate_presigned_url('get_object',Params={'Bucket':bucket,'Key':key},ExpiresIn=300)
+        args={'Bucket':bucket,'Key':key}
+        if not field and row['metadata'].get('version_id'):args['VersionId']=row['metadata']['version_id']
+        return aws_session().client('s3',config=__import__('botocore.config',fromlist=['Config']).Config(signature_version='s3v4')).generate_presigned_url('get_object',Params=args,ExpiresIn=300)
     return str(data.permitted_path(uid,path))
 
 def inspect_header(uid,aid):
@@ -256,10 +265,19 @@ def pileup(uid,alignment_id,reference_id,chrom,start,end):
     am=alignment['metadata'].get('assembly') or alignment.get('assembly');rm=reference['metadata'].get('assembly') or reference.get('assembly')
     if am and rm and am!=rm:raise ValueError('Alignment and reference assembly differ')
     refpath=source(uid,reference);refindex=source(uid,reference,'index') if reference['metadata'].get('index') else refpath+'.fai'
-    seq=pysam.FastaFile(refpath,filepath_index=refindex);index=source(uid,alignment,'index')
+    if reference['path'].startswith('s3://'):
+        from .range_fasta import S3Fasta
+        source(uid,reference,'index')  # Verify the bound companion has the same authorized tenant scope.
+        bucket,key=reference['path'][5:].split('/',1);index_bucket,index_key=reference['metadata']['index'][5:].split('/',1)
+        if bucket!=index_bucket:raise ValueError('Reference and FAI must be in the same authorized cache')
+        seq=S3Fasta(aws_session().client('s3'),bucket,key,index_key,reference['metadata'].get('version_id'))
+    else:seq=pysam.FastaFile(refpath,filepath_index=refindex)
+    index=source(uid,alignment,'index')
     with seq,pysam.AlignmentFile(source(uid,alignment),'rc' if alignment['format']=='INDEXED_CRAM' else 'rb',index_filename=index,reference_filename=refpath) as bam:
         if chrom not in bam.references or chrom not in seq.references:raise ValueError('Contig not present in both track and reference; explicit renaming may be required')
-        end=min(end,seq.get_reference_length(chrom));reference_bases=seq.fetch(chrom,start,end);reads=[];coverage=[0]*(end-start);forward=[0]*(end-start);reverse=[0]*(end-start)
+        end=min(end,seq.get_reference_length(chrom))
+        if start>=end:raise ValueError('Pileup starts beyond the selected contig')
+        reference_bases=seq.fetch(chrom,start,end);reads=[];coverage=[0]*(end-start);forward=[0]*(end-start);reverse=[0]*(end-start)
         truncated=False
         for rec in bam.fetch(chrom,start,end):
             if rec.is_unmapped:continue

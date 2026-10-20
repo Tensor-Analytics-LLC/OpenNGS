@@ -1,5 +1,5 @@
 """Published worker contract v1. Runs inside the approved scientific image."""
-import base64,glob,hashlib,json,os,signal,subprocess,sys,time
+import base64,glob,hashlib,json,os,resource,signal,subprocess,sys,time
 from pathlib import Path
 import boto3
 
@@ -10,6 +10,7 @@ def digest(path):
     return h.hexdigest()
 
 def main():
+    resource.setrlimit(resource.RLIMIT_CORE,(0,0))
     bucket,key=sys.argv[1:];s3=boto3.client('s3',region_name='us-east-1')
     response=s3.get_object(Bucket=bucket,Key=key)
     if response['ContentLength']>2*1024*1024:raise ValueError('Manifest too large')
@@ -39,16 +40,22 @@ def main():
             argv=[arg.replace('/run/ngs-secrets/license','/proc/self/fd/'+str(secret_fd)) for arg in step['argv']] if secret_fd is not None else step['argv']
             subprocess.run(argv,cwd='/work',stdout=out if target or secret_fd is not None else None,stderr=subprocess.DEVNULL if secret_fd is not None else None,pass_fds=(secret_fd,) if secret_fd is not None else (),check=True,timeout=remaining)
     if secret_fd is not None:os.close(secret_fd)
-    results={};output_contract=job['plan']['outputs']
+    results={};output_contract=job['plan']['outputs'];uploaded={};total_output=0
     if job['plan'].get('portable_job'):
         result_file=Path('/work/result.json')
         if result_file.stat().st_size>8*1024*1024:raise ValueError('Output manifest too large')
         output_contract={port:[{'file':str(Path(i['path']).relative_to('/work')),'format':i['format'],'metadata':i.get('metadata',{})} for i in items] for port,items in json.loads(result_file.read_text()).items()}
     def upload(path):
+        nonlocal total_output
+        path=path.resolve()
+        if str(path) in uploaded:return uploaded[str(path)]
         if path.is_symlink() or not path.resolve().is_relative_to('/work') or not path.is_file():raise ValueError('Unsafe output')
+        total_output+=path.stat().st_size
+        if total_output>job.get('max_output_bytes',64*1024**2):raise ValueError('Accepted output storage allowance exceeded; no truncated artifact is committed')
         h=digest(path);output_key=expected+'outputs/'+h+'/'+path.name
         s3.upload_file(str(path),bucket,output_key,ExtraArgs={'ServerSideEncryption':'aws:kms','SSEKMSKeyId':job['kms_key_arn'],'Metadata':{'sha256':h}})
-        return 's3://'+bucket+'/'+output_key,h
+        uploaded[str(path)]=('s3://'+bucket+'/'+output_key,h)
+        return uploaded[str(path)]
     for port,descs in output_contract.items():
         results[port]=[]
         for desc in descs:
@@ -56,11 +63,14 @@ def main():
             if not files:raise ValueError('Missing expected output '+desc['file'])
             for path in files:
                 uri,h=upload(path);metadata=dict(desc.get('metadata',{}))
-                for field in ['mate','index']:
+                for field in ['mate','index','dictionary','reference']:
                     if metadata.get(field):
                         original=metadata[field];secondary=Path('/work')/Path(original).name if not str(original).startswith('/work/') else Path(original)
                         secondary_uri,secondary_digest=upload(secondary);metadata[field]=secondary_uri;metadata[field+'_sha256']=secondary_digest
+                if metadata.get('index_paths'):metadata['index_paths']=[upload(Path(p))[0] for p in metadata['index_paths']]
                 results[port].append({'path':uri,'name':path.name,'format':desc['format'],'bytes':path.stat().st_size,'digest':'sha256:'+h,'metadata':metadata})
-    s3.put_object(Bucket=bucket,Key=expected+'result.json',Body=json.dumps(results).encode(),ServerSideEncryption='aws:kms',SSEKMSKeyId=job['kms_key_arn'])
+    # Atomic manifest publication is the commit point; consumers ignore loose
+    # staged outputs from an interrupted or failed task.
+    s3.put_object(Bucket=bucket,Key=expected+'result.json',Body=json.dumps(results,allow_nan=False).encode(),ServerSideEncryption='aws:kms',SSEKMSKeyId=job['kms_key_arn'])
 
 if __name__=='__main__':main()

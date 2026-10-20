@@ -39,10 +39,12 @@ def initiate(user,payload):
         return status(uid,tid)
     dataset=db.ident('ds_');key=f'tenants/{uid}/datasets/{dataset}/{name}'
     with db.tx() as c:
-        total=c.execute("SELECT COALESCE(SUM(bytes),0) FROM datasets WHERE state!='cancelled' AND user_id=?",(uid,)).fetchone()[0]
+        total=entitlements.storage_exposure(c,uid)
+        total+=int(c.execute("SELECT COALESCE(SUM(bytes),0) FROM output_holds WHERE user_id=? AND state='reserved'",(uid,)).fetchone()[0])
         ceiling=entitlements.limits(uid)['max_storage_bytes'] if CLOUD else budget.policy()['max_storage_gib']*1024**3
         if total+size>ceiling:raise budget.BudgetFull('Assigned dataset storage ceiling reached')
-        budget.reserve(c,uid,tid,'storage',size/1024**3*.023+.02,{'bytes':size,'key':key,'retention':'One month reserved; retained capacity included in subsequent fixed-cost forecast'})
+        amount=.02 if entitlements.research(uid) else size/1024**3*.023+.02
+        budget.reserve(c,uid,tid,'storage',amount,{'bytes':size,'key':key,'retention':'Research retained capacity is reserved separately per month; this transfer reserves requests and verification overhead'})
         c.execute('INSERT INTO datasets VALUES(?,?,?,?,?,?,?,?,?,?,?,?)',(dataset,uid,payload.get('asset_id'),name,size,sha,'Transferring',key,None,db.encode({'format':data.file_type(Path(name)),'source_identity':payload.get('source_identity',{}),'parts':[]}),time.time(),time.time()))
         part_size=max(PART,math.ceil(size/9999/(1024**2))*1024**2)
         c.execute('INSERT INTO multipart_transfers VALUES(?,?,?,?,?,?,?,?,?,?)',(tid,dataset,uid,None,'creating',part_size,db.encode(payload.get('source_identity',{})),time.time(),time.time(),None))
@@ -125,6 +127,50 @@ def verify_one():
     transfer=db.query('SELECT id FROM multipart_transfers WHERE dataset_id=?',(row['id'],),one=True)
     if transfer:budget.reconcile(transfer['id'],uid,'storage')
     return True
+
+def bind(uid,dataset_id,payload):
+    """Bind verified multi-file data; every companion remains tenant-owned."""
+    allowed={'assembly','mate_id','index_id','dictionary_id','index_ids','sample_id'}
+    if set(payload)-allowed:raise ValueError('Unknown dataset companion or reference field')
+    def get(ident):
+        row=db.query("SELECT * FROM datasets WHERE id=? AND user_id=? AND state='Ready'",(ident,uid),one=True)
+        if not row:raise ValueError('Every primary and companion dataset must be verified, Ready and owned by this workspace')
+        meta=json.loads(row['manifest']);return row,meta,'s3://'+data.settings(uid)['s3_bucket']+'/'+row['s3_key']
+    row,manifest,uri=get(dataset_id);asset=db.query('SELECT * FROM assets WHERE id=? AND user_id=?',(dataset_id,uid),one=True)
+    if not asset:raise ValueError('Verified primary asset is not registered')
+    meta=json.loads(asset['metadata']);fmt=asset['format']
+    for field in ['mate','index','dictionary']:
+        if field+'_id' in payload and payload[field+'_id'] in [None,'']:
+            meta.pop(field,None);meta.pop(field+'_sha256',None)
+            if field=='mate' and fmt=='FASTQ_PAIR':fmt='FASTQ'
+            if field=='index':fmt={'INDEXED_BAM':'BAM','INDEXED_CRAM':'CRAM','INDEXED_VCF':'VCF'}.get(fmt,fmt)
+        if payload.get(field+'_id'):
+            companion,cm,path=get(payload[field+'_id'])
+            if field=='mate' and (fmt not in ['FASTQ','FASTQ_PAIR'] or cm.get('format')!='FASTQ' or companion['id']==dataset_id):raise ValueError('A paired FASTQ requires a distinct verified FASTQ mate')
+            if field in ['index','dictionary'] and cm.get('format')!='INDEX':raise ValueError('Bind a verified index/dictionary file')
+            meta[field]=path;meta[field+'_sha256']=companion['sha256']
+            if field=='mate':fmt='FASTQ_PAIR'
+            if field=='index':fmt={'BAM':'INDEXED_BAM','CRAM':'INDEXED_CRAM','VCF':'INDEXED_VCF','BGZIP_VCF':'INDEXED_VCF'}.get(fmt,fmt)
+    ids=payload.get('index_ids',[])
+    if not isinstance(ids,list) or len(ids)>32:raise ValueError('At most 32 explicit companion indices are supported')
+    if ids:
+        meta['index_paths']=[];meta['index_paths_sha256']={}
+        for ident in ids:
+            companion,cm,path=get(ident)
+            if cm.get('format')!='INDEX':raise ValueError('Every index bundle member must be a verified index')
+            meta['index_paths'].append(path);meta['index_paths_sha256'][path]=companion['sha256']
+    elif 'index_ids' in payload:
+        meta.pop('index_paths',None);meta.pop('index_paths_sha256',None)
+    if payload.get('assembly'):
+        if payload['assembly'] not in ['GRCh37','GRCh38','T2T-CHM13','rCRS','engineering','custom']:raise ValueError('Choose an explicit supported assembly label')
+        meta['assembly']=payload['assembly'];meta['assembly_verification']='Declared by researcher; worker/reference identity validation is still required'
+    if payload.get('sample_id'):
+        if not re.fullmatch('[A-Za-z0-9_.-]{1,100}',payload['sample_id']):raise ValueError('Invalid scientific sample identifier')
+        meta['sample_id']=payload['sample_id']
+    with db.tx() as c:
+        c.execute('UPDATE assets SET format=?,assembly=?,metadata=? WHERE id=? AND user_id=?',(fmt,meta.get('assembly'),db.encode(meta),dataset_id,uid))
+        db.audit(c,uid,'dataset.companions.bound',dataset_id,{'companion_ids':{k:v for k,v in payload.items() if k.endswith('_id') or k=='index_ids'},'assembly':meta.get('assembly')})
+    return {'id':dataset_id,'format':fmt,'metadata':meta}
 
 initialize()
 

@@ -10,9 +10,9 @@ def check(graph,uid,specs,order):
     for nid in order:
         n=nodes[nid];p=n.get('params',{});spec=specs.get(n['tool'])
         if not spec:continue
-        incoming=[(e,descriptors.get(e['source'],{})) for e in graph['edges'] if e['target']==nid]
+        incoming=[(e,descriptors.get(e['source'],{}).get('ports',{}).get(e['sourcePort'],descriptors.get(e['source'],{}))) for e in graph['edges'] if e['target']==nid]
         known=[(e,d) for e,d in incoming if d.get('assembly')]
-        is_transform=n['tool'] in ['liftover.vcf','crossmap.bed']
+        is_transform=n['tool'] in ['liftover.vcf','crossmap.bed','mito.realign','mito.liftover']
         builds={assembly(d['assembly']) for _,d in known}
         if len(builds)>1 and not is_transform:
             issues.append({'code':'ASSEMBLY_MISMATCH','node_id':nid,'message':f'{spec["name"]} joins incompatible reference assemblies: '+', '.join(sorted(builds))+'. Bind the correct reference or an explicit chain/target liftover.','fix':None})
@@ -30,12 +30,17 @@ def check(graph,uid,specs,order):
         if n['tool']=='sample.giab':descriptor={'assembly':'GRCh38','contig_style':'chr'}
         if n['tool'] in ['sample.fastq','sample.somatic','reference.tiny']:descriptor={'assembly':'engineering','contig_style':'custom'}
         if n['tool'].startswith('contig.rename'):descriptor['contig_style']=p.get('style','chr')
-        if is_transform:
+        if n['tool'] in ['liftover.vcf','crossmap.bed']:
             source=assembly(p.get('source_assembly'));target=assembly(p.get('target_assembly'))
             for e,d in known:
                 expected=target if e['targetPort']=='reference' else source
                 if assembly(d['assembly'])!=expected:issues.append({'code':'LIFTOVER_DIRECTION','node_id':nid,'message':f'{e["targetPort"]} build disagrees with the explicit source→target liftover direction.','fix':None})
             descriptor={'assembly':target,'contig_style':None,'reference_digest':None}
+        if n['tool'] in ['mito.realign','mito.liftover']:
+            descriptor=next((dict(d) for e,d in incoming if e['targetPort']=='reference'),{})
+        if n['tool']=='mito.shift-reference':
+            original={**descriptor,'reference_digest':None}
+            descriptor={'ports':{'original':original,'shifted':{**original,'assembly':'mitochondrial-shifted'},'chain':{},'report':{}}}
         if n['tool'].startswith('reference.') and p.get('assembly'):descriptor['assembly']=assembly(p['assembly'])
         if p.get('assembly') and descriptor.get('assembly') and assembly(p['assembly'])!=descriptor['assembly']:
             issues.append({'code':'ANNOTATION_BUILD','node_id':nid,'message':'Node assembly parameter disagrees with its upstream data/reference build.','fix':None})
@@ -49,6 +54,6 @@ def runtime(spec,inputs):
                 raise ValueError('Runtime input '+port['key']+' is '+item['format']+'; contract requires '+port['type'])
     # Recheck context after conditional/collection routing, whose static ANY ports cannot prove semantics.
     values=[item for rows in inputs.values() for item in rows]
-    if spec['id'] not in ['liftover.vcf','crossmap.bed']:
+    if spec['id'] not in ['liftover.vcf','crossmap.bed','mito.realign','mito.liftover']:
         builds={assembly(i.get('metadata',{}).get('assembly')) for i in values}-{None}
         if len(builds)>1:raise ValueError('Runtime artifacts have incompatible genome assemblies')

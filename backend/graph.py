@@ -6,9 +6,11 @@ import re
 import shlex
 from collections import deque
 from . import db,registry,data,security,compiler
+from .config import CLOUD
 
 def graph_digest(graph):
     scientific={'nodes':[{k:v for k,v in n.items() if k not in ['x','y','selected']} for n in graph['nodes']],'edges':graph['edges']}
+    if 'maximum_output_bytes' in graph:scientific['maximum_output_bytes']=graph['maximum_output_bytes']
     return 'sha256:'+hashlib.sha256(db.encode(scientific).encode()).hexdigest()
 
 def adapter_path(source,target):
@@ -31,6 +33,7 @@ def validate_shape(graph):
     if not isinstance(graph,dict) or not isinstance(graph.get('nodes'),list) or not isinstance(graph.get('edges'),list):raise ValueError('Graph must have node and edge arrays')
     if len(graph['nodes'])>2000 or len(graph['edges'])>12000:raise ValueError('Graph exceeds the supported editing envelope')
     if len(db.encode(graph))>1800000:raise ValueError('Graph payload is too large')
+    if 'maximum_output_bytes' in graph and (type(graph['maximum_output_bytes'])!=int or not 0<graph['maximum_output_bytes']<=2**53):raise ValueError('Output reservation must be a positive exact byte count within the supported graph envelope')
     ids=set()
     for n in graph['nodes']:
         if not isinstance(n,dict) or not re.fullmatch(r'[A-Za-z0-9_-]{1,100}',str(n.get('id',''))):raise ValueError('Invalid node ID')
@@ -91,6 +94,7 @@ def preflight(graph,user,capabilities=None):
     for n in graph['nodes']:
         spec=specs.get(n['tool'])
         if not spec:issue('UNKNOWN_TOOL','This node is not present in the published registry.',n['id']);continue
+        if n.get('execution_profile') not in [None,'default','exclusive-vm']:issue('EXECUTION_PROFILE','Choose a published default or exclusive-VM execution profile.',n['id'])
         if spec.get('quarantined'):issue('QUARANTINED',spec['quarantined'],n['id'])
         licenses[spec['license']]=licenses.get(spec['license'],0)+1
         for p in spec['inputs']:
@@ -108,6 +112,7 @@ def preflight(graph,user,capabilities=None):
         if spec['id']=='oncokb' and not params.get('allow_external_processing'):issue('EXTERNAL_PROCESSING','Explicitly allow external OncoKB processing after checking the intended data and provider agreement.',n['id'])
         for p in spec['parameters']:
             value=params.get(p['key'])
+            if p.get('required') and not str(value or '').strip():issue('PARAMETER_REQUIRED',f"{p['label']} is required before execution.",n['id'])
             if p['kind']=='number' and (type(value) not in [int,float] or not math.isfinite(value) or ('min'in p and value<p['min']) or ('max'in p and value>p['max'])):issue('PARAMETER_RANGE',f"{p['label']} is outside its supported range.",n['id'])
             if p['kind']=='boolean' and type(value)!=bool:issue('PARAMETER_TYPE',f"{p['label']} must be a toggle.",n['id'])
             if p['kind']=='select' and value not in p['options']:issue('PARAMETER_CHOICE',f"Choose a supported {p['label']}.",n['id'])
@@ -120,12 +125,15 @@ def preflight(graph,user,capabilities=None):
         for k,low,high in [('threads',1,2 if user['tier']=='trial' else 64),('memory_mb',128,8192 if user['tier']=='trial' else 524288),('timeout_seconds',1,settings['max_node_seconds'])]:
             if type(resources[k])!=int or not low<=resources[k]<=high:issue('RESOURCE_LIMIT',f'{k} must be between {low} and {high} for this workspace.',n['id'])
         scratch=resources.get('scratch_mb',2048)
-        if type(scratch)!=int or not 128<=scratch<=settings['max_upload_gib']*1024:issue('RESOURCE_LIMIT','Scratch must be an integer from 128 MiB up to the workspace storage ceiling.',n['id'])
+        from .entitlements import limits
+        scratch_ceiling=limits(user['id'])['max_scratch_mb'] if CLOUD else settings['max_upload_gib']*1024
+        if type(scratch)!=int or not 128<=scratch<=scratch_ceiling:issue('RESOURCE_LIMIT','Scratch must fit the assigned execution scratch allowance.',n['id'])
         if all(type(resources[k])==int for k in ['threads','timeout_seconds']):reservation+=max(0,resources['threads'])*max(0,resources['timeout_seconds'])
         if n['tool'] in ['asset.file','reference.asset','database.asset'] or spec.get('asset_family'):
             aid=params.get('asset_id');asset=db.query('SELECT * FROM assets WHERE id=? AND user_id=?',(aid,user['id']),one=True) or db.query('SELECT * FROM artifacts WHERE id=? AND user_id=?',(aid,user['id']),one=True)
             if not asset:issue('ASSET_REQUIRED','Select an indexed SSD asset or an existing run artifact.',n['id'])
             elif n['tool']=='reference.asset' and asset.get('assembly') and params.get('assembly')!=asset['assembly']:issue('ASSEMBLY_MISMATCH','Selected assembly differs from the indexed reference asset.',n['id'])
+            elif CLOUD and asset and not asset['path'].startswith('s3://'):issue('DATA_NOT_STAGED','The exact asset is still local. Complete verified AWS ingestion before execution; no SSD access is available in cloud workers.',n['id'])
         if n['tool']=='reference.asset':reference_builds.add(params.get('assembly'))
         if spec['license'] in ['Academic','Review required','Commercial BYOL'] and spec['id'] not in settings['rights_approved']:
             issue('RIGHTS_REQUIRED',f"{spec['name']} needs an explicit rights approval; a platform trial is not a third-party licence.",n['id'])
@@ -137,8 +145,22 @@ def preflight(graph,user,capabilities=None):
                 if settings['backend']=='docker' and not capabilities.get('docker'):issue('DOCKER_UNAVAILABLE','Docker is not available. Start a runtime or select a configured AWS backend.',n['id'])
                 if settings['backend']!='hosted-demo' and not settings['image_approvals'].get(spec['id']) and not spec.get('approved') and not (specs.get(params.get('published_tool')) or {}).get('approved'):issue('IMAGE_APPROVAL',f"Resolve and approve an immutable image digest for {spec['name']}.",n['id'])
             if settings['backend']=='aws-batch' and (not settings['batch_queue'] or not settings['batch_job_definition'] or not settings['s3_bucket'] or not settings['kms_key_arn']):issue('AWS_PROFILE','Configure the us-east-1 Batch queue, published worker revision, private cache and KMS key.',n['id'])
-            cloud_task=settings['backend']=='aws-batch' and not spec.get('asset_family') and not (n['tool'].startswith(('sample.','reference.','asset.','database.')) or n['tool'] in ['utility.gather','utility.export','utility.condition','oncokb','franklin'])
+            cloud_task=settings['backend']=='aws-batch' and not spec.get('asset_family') and n['tool'] not in ['asset.file','reference.asset','database.asset','oncokb','franklin']
             if cloud_task and spec.get('resource')!='gpu':
+                capacity=settings.get('research_profile',{})
+                if capacity and capacity.get('state')!='Ready':issue('CAPACITY_PROVISIONING',capacity.get('reason','Funded execution capacity is provisioning'),n['id'])
+                if capacity and not spec['builtin'] and spec['id'] not in capacity.get('tools',[]):issue('RUNTIME_NOT_PUBLISHED','The pinned research runtime has no reviewed executable profile for this tool.',n['id'])
+                use_vm=scratch>capacity.get('max_scratch_mb',184320) or n.get('execution_profile')=='exclusive-vm'
+                if use_vm:
+                    from . import vm,entitlements
+                    published=vm.configuration()
+                    if not all(published.values()) or not capacity.get('instance_profile'):issue('VM_PROFILE_UNPUBLISHED','A published private VM image and tenant instance profile are required for this scratch request; no scientific input will be reduced.',n['id'])
+                    try:
+                        machine=vm.select(resources);allowance=entitlements.limits(user['id'])
+                        if machine['vcpus']>allowance['max_vcpus'] or machine['memory_mb']>allowance['max_memory_mb'] or machine['scratch_gib']*1024>allowance['max_scratch_mb']:issue('VM_ALLOCATION','The exclusive machine CPU, RAM or minimum scratch allocation exceeds this funded allowance.',n['id'])
+                        reservation+=machine['vcpus']*(resources['timeout_seconds']+900)-resources['threads']*resources['timeout_seconds']
+                    except ValueError as e:issue('VM_PROFILE',str(e),n['id'])
+                    continue
                 cpu=resources['threads'];memory=resources['memory_mb'];profiles={1:(2048,8192,1024),2:(4096,16384,1024),4:(8192,30720,1024),8:(16384,61440,4096),16:(32768,122880,8192)}
                 if cpu not in profiles:issue('FARGATE_RESOURCES','This CPU lane accepts 1, 2, 4, 8 or 16 vCPU profiles.',n['id'])
                 else:
@@ -153,7 +175,6 @@ def preflight(graph,user,capabilities=None):
             if n['tool']=='mutect2':
                 inputs={e['targetPort']:e['source'] for e in incoming[n['id']]}
                 if inputs.get('tumor')==inputs.get('normal') and inputs.get('tumor'):issue('SAMPLE_ROLES','Tumor and normal must be different, explicitly identified samples.',n['id'])
-    from .config import CLOUD
     if not CLOUD and reservation>user['quota_seconds']-user['used_seconds']-user['reserved_seconds']:issue('QUOTA_EXCEEDED','Worst-case CPU-time reservation exceeds the remaining quota. Reduce limits or request an audited quota increase.')
     if CLOUD:
         from .entitlements import limits

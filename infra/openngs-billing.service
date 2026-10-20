@@ -1,0 +1,21 @@
+[Unit]
+Description=OpenNGS scoped billing and budget alerts
+After=network-online.target openngs.service
+[Service]
+User=openngs
+Group=openngs
+WorkingDirectory=/opt/openngs
+EnvironmentFile=/var/lib/openngs/runtime.env
+ExecStart=/opt/openngs/runtime/bin/python -m backend.billing
+Restart=always
+RestartSec=10
+MemoryMax=256M
+CPUQuota=10%
+TasksMax=32
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/openngs /var/cache/openngs
+[Install]
+WantedBy=multi-user.target

@@ -50,19 +50,28 @@ def admit(user,g,operation_id):
         admitted_state='queued'
         if CLOUD:
             pending=c.execute("SELECT COUNT(*) FROM runs WHERE state IN ('queued','running','cancelling')").fetchone()[0]
+            if pending>=100:raise budget.BudgetFull('The shared admitted-work queue is full. Your saved workflow is preserved; retry after capacity becomes available.')
             if not DEMO and pending>=8:raise budget.BudgetFull('Scientific queue is full. Your graph is saved; retry after an existing run finishes.')
             estimate=budget.graph_estimate(g,registry.definitions(user['id']),user['id'])
-            try:budget.reserve(c,user['id'],operation_id,'scientific',estimate['pretax_usd'],estimate)
-            except budget.BudgetFull:
-                if not entitlements.restricted(user['id']):raise
-                admitted_state='waiting-budget'
+            budget.reserve(c,user['id'],operation_id,'scientific',estimate['pretax_usd'],estimate)
         rid=db.ident('run_')
-        from . import entitlements
         entitlements.hold(c,user,rid,checked['reservation_cpu_seconds'])
         frozen_graph=json.loads(db.encode(g));s=data.settings(user['id'])
         all_specs=registry.definitions(user['id']);needed={n['tool'] for n in g['nodes']}|{n.get('params',{}).get('published_tool') for n in g['nodes']}
         snapshot={'images':s['image_approvals'],'backend':s['backend'],'batch_queue':s['batch_queue'],'batch_job_definition':s['batch_job_definition'],'catalog':{k:v for k,v in all_specs.items() if k in needed}}
         snapshot['access']=entitlements.limits(user['id'])['access']
+        snapshot['assets']={}
+        if CLOUD:
+            for node in g['nodes']:
+                spec=all_specs[node['tool']]
+                if node['tool'] in ['asset.file','reference.asset','database.asset'] or spec.get('asset_family'):
+                    asset_id=node.get('params',{}).get('asset_id')
+                    snapshot['assets'][asset_id]=input_asset(user['id'],asset_id)
+        snapshot['allowance']=entitlements.limits(user['id'])
+        if CLOUD:snapshot['allowance']['max_output_bytes']=entitlements.reserve_output(c,user,rid,g.get('maximum_output_bytes'))
+        snapshot['cloud_settings']={k:s[k] for k in ['s3_bucket','kms_key_arn','batch_queue','batch_job_definition','max_upload_gib']}
+        from . import vm
+        snapshot['vm_configuration']=vm.configuration();snapshot['capacity']=s.get('research_profile',{})
         if entitlements.restricted(user['id']):snapshot.update(demo_image=os.getenv('NGS_DEMO_IMAGE',''),sample_manifest=os.getenv('NGS_SAMPLE_MANIFEST_SHA',''))
         frozen_graph['_execution']=snapshot
         frozen_graph['_execution_digest']='sha256:'+__import__('hashlib').sha256((checked['graph_digest']+db.encode(snapshot)).encode()).hexdigest()
@@ -236,12 +245,22 @@ def native_docker(spec,node,inputs,work,rid,aid):
 def run(rid,order):
     row=db.query('SELECT * FROM runs WHERE id=?',(rid,),one=True);uid=row['user_id'];g=json.loads(row['graph']);nodes={n['id']:n for n in g['nodes']};snapshot=g.get('_execution',{});specs=snapshot.get('catalog') or registry.definitions(uid)
     completed={};used=0;state='succeeded';error=None;began=time.time()
-    with db.tx() as c:c.execute("UPDATE runs SET state='running',started=? WHERE id=?",(began,rid))
+    with db.tx() as c:c.execute("UPDATE runs SET state='running',started=COALESCE(started,?) WHERE id=?",(began,rid))
     db.event(rid,'run.state',state='running')
     try:
         for nid in order:
             if cancelled(rid):raise InterruptedError('Run cancelled')
+            allowance=snapshot.get('allowance',{})
+            if allowance.get('max_job_seconds') and time.time()-(row.get('started') or began)>allowance['max_job_seconds']:raise TimeoutError('Accepted job wall-time allowance exhausted; completed outputs are retained')
             n=nodes[nid];spec=specs[n['tool']];aid=db.ident('attempt_');started=time.monotonic();work=DATA/'runs'/uid/rid/nid;work.mkdir(parents=True,exist_ok=True)
+            prior=db.query('SELECT * FROM attempts WHERE run_id=? AND node_id=? ORDER BY started DESC LIMIT 1',(rid,nid),one=True) if CLOUD else None
+            if prior and prior['state']=='succeeded':
+                outputs=json.loads(prior['outputs'])
+                for items in outputs.values():
+                    for item in items:
+                        if cache.file_identity(uid,item['path'],snapshot.get('cloud_settings'))['digest']!=item.get('digest','').removeprefix('sha256:'):raise ValueError('Committed upstream output identity changed; resume refused')
+                completed[nid]=outputs;used+=int(json.loads(prior['metrics']).get('allocated_cpu_seconds',0));continue
+            if prior and (prior.get('provider_id') or json.loads(prior['metrics']).get('submission_intent')) and prior['state'] in ['running','interrupted','failed']:aid=prior['id']
             inputs={}
             for e in g['edges']:
                 if e['target']==nid:inputs.setdefault(e['targetPort'],[]).extend(completed.get(e['source'],{}).get(e['sourcePort'],[]))
@@ -252,8 +271,20 @@ def run(rid,order):
             if params.get('published_tool') in specs and specs[params['published_tool']].get('approved'):spec=specs[params['published_tool']]
             n['_approved_image']=snapshot.get('images',{}).get(spec['id']) or (spec.get('image') if spec.get('approved') else None)
             n['_batch_queue']=snapshot.get('batch_queue');n['_batch_job_definition']=snapshot.get('batch_job_definition')
+            n['_cloud_settings']=snapshot.get('cloud_settings')
+            n['_capacity']=snapshot.get('capacity',{});n['_vm_configuration']=snapshot.get('vm_configuration',{})
+            n['_max_output_bytes']=allowance.get('max_output_bytes',64*1024**2)
+            if CLOUD:
+                committed={}
+                for ports in completed.values():
+                    for items in ports.values():
+                        for item in items:
+                            for obj in [{'uri':item['path'],'bytes':item['bytes']}]+item.get('metadata',{}).get('secondary_objects',[]):
+                                if obj['uri'].startswith('s3://') and '/runs/'+rid+'/' in obj['uri']:committed[obj['uri']]=obj['bytes']
+                already=sum(committed.values())
+                n['_max_output_bytes']=max(0,n['_max_output_bytes']-already)
             n['_credential_node_id']=n['tool']
-            with db.tx() as c:c.execute('INSERT INTO attempts(id,run_id,node_id,state,started) VALUES(?,?,?,?,?)',(aid,rid,nid,'running',time.time()))
+            with db.tx() as c:c.execute("INSERT INTO attempts(id,run_id,node_id,state,started) VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET state='running',error=NULL",(aid,rid,nid,'running',time.time()))
             db.event(rid,'task.state',nid,state='running',name=spec['name'])
             reused=False
             try:
@@ -263,20 +294,26 @@ def run(rid,order):
                 if original['license'] in ['Academic','Commercial BYOL','Review required'] and original['id'] not in live_settings['rights_approved']:raise ValueError('Node rights approval was revoked')
                 from .semantics import runtime as check_runtime
                 check_runtime(spec,inputs)
-                cache_key=cache.key(uid,spec,n,inputs,snapshot.get('backend'))
-                cached=cache.load(uid,cache_key) if not g.get('disable_cache') else None
+                cache_key=cache.key(uid,spec,n,inputs,snapshot.get('backend'),cloud_settings=snapshot.get('cloud_settings'))
+                cached=cache.load(uid,cache_key,snapshot.get('cloud_settings')) if not g.get('disable_cache') else None
                 if cached is not None:
                     outputs=cached;reused=True
                     db.event(rid,'log',nid,text='Resume: verified content-addressed upstream outputs reused; no scientific tool launched.')
+                elif n['tool'] in ['utility.export','utility.gather','utility.condition']:
+                    # These operations route authenticated artifact records.
+                    # They parse no genomic bytes and need no scientific worker.
+                    from .portable import execute as route_metadata
+                    outputs=route_metadata({'tool':n['tool'],'params':params,'inputs':inputs,'workdir':str(work)})
+                    db.event(rid,'log',nid,text='Verified artifact references published without copying or recomputing scientific data.')
                 elif spec.get('api'):
                     from .onboarding import execute_api
                     outputs=execute_api(uid,spec,n,inputs,work,rid)
                 elif n['tool'] in ['asset.file','reference.asset','database.asset'] or spec.get('asset_family'):
-                    item=input_asset(uid,params['asset_id']);key=spec['outputs'][0]['key']
+                    item=json.loads(db.encode(snapshot['assets'][params['asset_id']])) if params.get('asset_id') in snapshot.get('assets',{}) else input_asset(uid,params['asset_id']);key=spec['outputs'][0]['key']
                     if params.get('assembly') and not item.get('metadata',{}).get('assembly'):item.setdefault('metadata',{})['assembly']=params['assembly']
                     if spec['outputs'][0]['type']=='DATABASE':item={**item,'format':'DATABASE','metadata':{**item.get('metadata',{}),'underlying_format':item['format']}}
                     outputs={key:[item]}
-                elif snapshot.get('backend')=='aws-batch' and spec['builtin'] and not (n['tool'].startswith(('sample.','reference.','asset.','database.')) or n['tool'] in ['utility.gather','utility.export','utility.condition']):
+                elif snapshot.get('backend')=='aws-batch' and spec['builtin']:
                     from .cloud import execute_batch
                     outputs=execute_batch(uid,rid,aid,spec,n,inputs,work,cancelled)
                 elif spec['builtin']:
@@ -298,17 +335,26 @@ def run(rid,order):
                         for field in ['assembly','contig_style','reference_digest']:
                             values={i.get('metadata',{}).get(field) for rows in inputs.values() for i in rows}-{None}
                             if len(values)==1:item.setdefault('metadata',{}).setdefault(field,next(iter(values)))
-                if not reused:cache.store(uid,cache_key,outputs)
+                if not reused:cache.store(uid,cache_key,outputs,snapshot.get('cloud_settings'))
                 completed[nid]=register_artifacts(uid,rid,nid,outputs,work)
                 with db.tx() as c:c.execute("UPDATE attempts SET state='succeeded',finished=?,outputs=? WHERE id=?",(time.time(),db.encode(completed[nid]),aid))
                 db.event(rid,'task.state',nid,state='succeeded',artifacts=sum(len(x) for x in completed[nid].values()),cached=reused,cache_key=cache_key)
                 if reused:
                     with db.tx() as c:c.execute('UPDATE attempts SET metrics=? WHERE id=?',(db.encode({'cached':True,'cache_key':cache_key,'elapsed_seconds':round(time.monotonic()-started,3)}),aid))
             except BaseException as e:
-                status='cancelled' if isinstance(e,InterruptedError) else 'failed'
+                status='cancelled' if isinstance(e,InterruptedError) else 'interrupted' if type(e).__name__=='UncertainCloudState' else 'failed'
                 with db.tx() as c:c.execute('UPDATE attempts SET state=?,finished=?,error=? WHERE id=?',(status,time.time(),str(e)[:1000],aid))
                 db.event(rid,'task.state',nid,state=status,error=str(e)[:1000]);raise
-            finally:used+=0 if reused else min(resources['threads']*resources['timeout_seconds'],math.ceil((time.monotonic()-started)*resources['threads']))
+            finally:
+                allocation=0 if reused else min(resources['threads']*resources['timeout_seconds'],math.ceil((time.monotonic()-started)*resources['threads']))
+                if CLOUD and (n.get('execution_profile')=='exclusive-vm' or resources.get('scratch_mb',2048)>184320):
+                    from .vm import select
+                    machine=select(resources);allocation=min(machine['vcpus']*(resources['timeout_seconds']+900),math.ceil((time.monotonic()-started)*machine['vcpus'])) if not reused else 0
+                used+=allocation
+                with db.tx() as c:
+                    previous=c.execute('SELECT metrics FROM attempts WHERE id=?',(aid,)).fetchone()
+                    if previous:
+                        metrics=json.loads(previous['metrics']);metrics['allocated_cpu_seconds']=allocation;c.execute('UPDATE attempts SET metrics=? WHERE id=?',(db.encode(metrics),aid))
     except InterruptedError as e:state='cancelled';error=str(e)
     except BaseException as e:state='interrupted' if type(e).__name__=='UncertainCloudState' else 'failed';error=str(e)[:1000]
     finally:
@@ -326,4 +372,6 @@ def run(rid,order):
             if state!='interrupted':entitlements.settle(c,rid,used)
             db.audit(c,uid,'run.'+state,rid,{'allocated_cpu_seconds':used,'elapsed_seconds':round(time.time()-began,3)})
         db.event(rid,'run.state',state=state,error=error,used_cpu_seconds=used)
-        if CLOUD and state!='interrupted':budget.reconcile(row['operation_id'],uid,'scientific')
+        if CLOUD and state!='interrupted':
+            from . import metering
+            budget.reconcile(row['operation_id'],uid,'scientific',metering.scientific_cost(rid))

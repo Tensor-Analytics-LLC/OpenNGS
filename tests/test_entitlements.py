@@ -52,3 +52,25 @@ def test_non_admin_cannot_fund_their_own_account(client,owner):
     with db.tx() as c:c.execute("UPDATE users SET role='user' WHERE id=?",(owner['id'],))
     r=client.post('/api/admin/entitlements/'+owner['id'],json={'reason':'Unapproved quota escalation','funding_confirmed':True,'allowance':allowance()})
     assert r.status_code==403
+
+def test_explore_default_scratch_is_independent_of_closed_uploads(client,owner,monkeypatch):
+    from backend import config,graph
+    monkeypatch.setattr(config,'DEMO',True);monkeypatch.setattr(graph,'CLOUD',True);monkeypatch.setattr(entitlements,'DEMO',True)
+    checked=graph.preflight(registry.templates()[0]['graph'],owner,{'portable':True,'docker':False})
+    assert checked['ok'],checked['issues']
+
+def test_funding_confirmation_cannot_be_a_truthy_string(client,owner):
+    r=client.post('/api/admin/entitlements/'+owner['id'],json={'reason':'Explicit grant validation test','funding_confirmed':'false','allowance':allowance()})
+    assert r.status_code==422 and entitlements.limits(owner['id'])['access']=='explore'
+
+def test_critical_aws_budget_alert_only_defers_new_paid_work(client,owner,monkeypatch):
+    from backend import billing
+    monkeypatch.setenv('NGS_BUDGET_WARNING_TOPIC','arn:test:warning');monkeypatch.setenv('NGS_BUDGET_CRITICAL_TOPIC','arn:test:critical')
+    with db.tx() as c:budget.reserve(c,owner['id'],'accepted-before-alert','scientific',.10,{})
+    billing.record_alert('warning-1','arn:test:warning','Known warning')
+    with db.tx() as c:budget.reserve(c,owner['id'],'accepted-after-warning','scientific',.10,{})
+    billing.record_alert('critical-1','arn:test:critical','Known critical threshold')
+    with pytest.raises(budget.BudgetFull):
+        with db.tx() as c:budget.reserve(c,owner['id'],'not-started-after-critical','scientific',.10,{})
+    assert len(db.query("SELECT * FROM cost_reservations WHERE state='reserved'"))==2
+    with pytest.raises(ValueError):billing.record_alert('forged','arn:untrusted:topic','Spoofed message')
