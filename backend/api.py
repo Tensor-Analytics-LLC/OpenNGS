@@ -250,6 +250,14 @@ def submit(payload:dict=Body(...),request:Request=None,current=Depends(user)):
 @app.get('/api/runs')
 def runs(current=Depends(user)):return [safe_run(r) for r in db.query('SELECT * FROM runs WHERE user_id=? ORDER BY created DESC LIMIT 100',(current['id'],))]
 
+@app.get('/api/run-submissions/{operation}')
+def run_submission(operation:str,current=Depends(user)):
+    # Resolve an uncertain admission without submitting or reserving again.
+    if not re.fullmatch(r'[A-Za-z0-9_-]{8,100}',operation):raise HTTPException(404,'Submission not found')
+    row=db.query('SELECT * FROM runs WHERE user_id=? AND operation_id=?',(current['id'],operation),one=True)
+    if not row:raise HTTPException(404,'Submission not found')
+    return {'run':safe_run(row),'created':False}
+
 @app.get('/api/runs/{rid}')
 def get_run(rid:str,current=Depends(user)):
     row=owned_run(rid,current);attempts=db.query('SELECT * FROM attempts WHERE run_id=? ORDER BY started',(rid,))
