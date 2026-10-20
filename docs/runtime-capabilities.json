@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "public_catalogue_count": 138,
-  "native_small_control_verified": 43,
+  "native_small_control_verified": 45,
   "portable_refreshed_contracts": [
     "bam.index",
     "bam.sort",
@@ -142,7 +142,7 @@
     },
     {
       "id": "asset.file",
-      "name": "Local / cloud asset",
+      "name": "Cloud dataset",
       "status": "implemented-explicit-data-binding",
       "reason": "Binds an exact authorized asset; neither provisioning nor data availability is implied",
       "license_category": "FOSS",
@@ -1476,8 +1476,8 @@
     {
       "id": "deepvariant",
       "name": "DeepVariant",
-      "status": "awaiting-representative-runtime-validation",
-      "reason": "The version-pinned DeepVariant model/runtime has not been wrapped into the private worker contract or executed on a representative input.",
+      "status": "implemented-small-control-verified",
+      "reason": "Actual NA12878 10kb WGS inference and exact-allele truth overlap; not normalized precision/recall or clinical validation",
       "license_category": "FOSS",
       "inputs": [
         {
@@ -1502,7 +1502,40 @@
         }
       ],
       "registry_reference_image": "google/deepvariant:1.8.0",
-      "runtime_evidence": null,
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:7aeb817ad7c208c742843dd0e630b59ea4f94a0c4e34a548001ae8326fba68bb",
+        "source_sha256": "fa6ef5aa882d440130a9e8f85e8d5ca2adb542e5fefaf1faa5245f3e8e698c7f",
+        "runtime_family": "deepvariant-cpu-v1",
+        "packages": {
+          "deepvariant": "1.8.0"
+        },
+        "scope": "Actual NA12878 10kb WGS inference and exact-allele truth overlap; not normalized precision/recall or clinical validation",
+        "assertions": {
+          "variant_records": 78,
+          "indexed_records": 78,
+          "truth_allele_matches": 62,
+          "truth_variants_in_region": 62,
+          "single_sample": "NA12878",
+          "requested_region_only": true,
+          "input_staging_symlinks": 5,
+          "reference_bgzf": true,
+          "explicit_reference_gzi": true,
+          "reference_lossless": true,
+          "scope": "Actual NA12878 10kb WGS inference and exact-allele truth overlap; not normalized precision/recall or clinical validation"
+        },
+        "runtime_seconds": 34.277,
+        "output_count": 3,
+        "passed_controls": [
+          "wgs-truth-control",
+          "missing-index",
+          "missing-gzi",
+          "reference-mismatch",
+          "multi-sample",
+          "unsupported-model"
+        ],
+        "required_dependencies": "Exact selected inputs and complete reference/cache bundles must independently pass live preflight"
+      },
       "required_reference_or_database_ports": [
         {
           "key": "reference",
@@ -5414,8 +5447,8 @@
     {
       "id": "vep",
       "name": "Ensembl VEP",
-      "status": "awaiting-representative-runtime-validation",
-      "reason": "A matching Ensembl executable, cache release, FASTA and complete directory-bundle contract have not been provisioned and qualified.",
+      "status": "implemented-small-control-verified",
+      "reason": "Engineering software integration only; bounded original cache and synthetic spliced control, not clinical validation or full-cache readiness",
       "license_category": "FOSS",
       "inputs": [
         {
@@ -5426,7 +5459,13 @@
         },
         {
           "key": "database",
-          "type": "DATABASE",
+          "type": "ARCHIVE|DATABASE",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
           "required": true,
           "many": false
         }
@@ -5434,17 +5473,64 @@
       "outputs": [
         {
           "key": "variants",
-          "type": "VCF",
+          "type": "INDEXED_VCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "report",
+          "type": "REPORT",
           "required": true,
           "many": false
         }
       ],
       "registry_reference_image": null,
-      "runtime_evidence": null,
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:25348b0e94f4be0f6d97ffcb2c43afe5c302af7fff61fb1da19f220105674188",
+        "source_sha256": "a74216c471db318fb4512e319252f1b9985cc12fa96d661be4e0eae66f34849e",
+        "runtime_family": "ensembl-vep-offline-v1",
+        "packages": {
+          "vep": "115.2"
+        },
+        "scope": "Engineering software integration only; bounded original cache and synthetic spliced control, not clinical validation or full-cache readiness",
+        "assertions": {
+          "annotated_records": 10,
+          "gene_symbols": [
+            "MRPL39"
+          ],
+          "consequences": [
+            "intron_variant",
+            "missense_variant",
+            "splice_polypyrimidine_tract_variant",
+            "synonymous_variant",
+            "upstream_gene_variant"
+          ],
+          "indexed_records": 10,
+          "cache_info_sha256": "aad41cfa88980f51487b1bf55f08060a1bb9086aa7e62252e8b3741c0999474f",
+          "cache_scope": "Unchanged original 115 cache chr21:25000001-26000000 only"
+        },
+        "runtime_seconds": null,
+        "output_count": 2,
+        "passed_controls": [
+          "release-115-cache",
+          "spliced-gff-control",
+          "wrong-cache-version",
+          "wrong-assembly",
+          "missing-cache"
+        ],
+        "required_dependencies": "Exact selected inputs and complete reference/cache bundles must independently pass live preflight"
+      },
       "required_reference_or_database_ports": [
         {
           "key": "database",
-          "type": "DATABASE",
+          "type": "ARCHIVE|DATABASE",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
           "required": true,
           "many": false
         }

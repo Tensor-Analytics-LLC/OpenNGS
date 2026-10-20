@@ -21,6 +21,20 @@ def main():
     add(extension,extension.get('adjunct_qualification',{}),extension.get('adjunct_tools',[]),lambda t:{ADJUNCT_TOOLS[t]['name']:ADJUNCT_TOOLS[t]['version']},'extended-core-contracts-v1')
     add(extension,extension.get('portable_qualification',{}),extension.get('portable_tools',[]),lambda t:{'pysam':'0.24.1','python':'3.12'},'portable-refresh-v1')
     if secondary:add(secondary,secondary['qualification'],secondary['tools'],lambda t:ENVIRONMENTS[TOOLS[t]]['packages'],'secondary-cpu-v1')
+    for filename, tool, family, positive_id in [
+            ('deepvariant-release.json','deepvariant','deepvariant-cpu-v1','wgs-truth-control'),
+            ('vep-release.json','vep','ensembl-vep-offline-v1','release-115-cache')]:
+        path=Path('evidence/deployment')/filename
+        if not path.exists():continue
+        from backend import deepvariant_runtime,vep_runtime
+        release=(deepvariant_runtime if tool=='deepvariant' else vep_runtime).validate_release(json.loads(path.read_text()))
+        proof=release['qualification'];positive=next(c for c in proof['cases'] if c['id']==positive_id)
+        verified[tool]={'status':'executed-small-control','image':release['image'],'source_sha256':release['source_sha256'],
+            'runtime_family':family,'packages':{tool:release['version']},
+            'scope':positive['assertions'].get('scope',proof.get('scope','Bounded original-cache annotation and known synthetic controls; not full-cache or clinical validation')),
+            'assertions':positive['assertions'],'runtime_seconds':positive.get('seconds'),'output_count':len(positive['outputs']),
+            'passed_controls':[c['id'] for c in proof['cases']],
+            'required_dependencies':'Exact selected inputs and complete reference/cache bundles must independently pass live preflight'}
     rows=[]
     for node in sorted(BASE.values(),key=lambda n:n['id']):
         if node.get('hidden'):continue

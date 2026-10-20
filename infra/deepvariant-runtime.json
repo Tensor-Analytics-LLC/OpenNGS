@@ -1,0 +1,64 @@
+{
+  "family": "deepvariant-cpu-v1",
+  "version": "1.8.0",
+  "upstream_image": "google/deepvariant@sha256:eb223b3c487be43d34cc7b08c906b9c558d195716e10672db1bd6e910dc3a00a",
+  "upstream_compressed_bytes": 4232690618,
+  "architecture": "linux/amd64",
+  "models": [
+    "WGS"
+  ],
+  "source_documentation": "https://github.com/google/deepvariant/blob/r1.8/docs/deepvariant-quick-start.md",
+  "model_documentation": "https://github.com/google/deepvariant/blob/r1.8/Dockerfile",
+  "fixtures": [
+    {
+      "name": "NA12878_S1.chr20.10_10p1mb.bam",
+      "url": "https://storage.googleapis.com/deepvariant/quickstart-testdata/NA12878_S1.chr20.10_10p1mb.bam",
+      "generation": "1511805231938070",
+      "bytes": 3925783,
+      "sha256": "0b82858821bd8817df03b35f90cdfcb2bae53af5ab46e61b8bcff1ad9ba49643"
+    },
+    {
+      "name": "NA12878_S1.chr20.10_10p1mb.bam.bai",
+      "url": "https://storage.googleapis.com/deepvariant/quickstart-testdata/NA12878_S1.chr20.10_10p1mb.bam.bai",
+      "generation": "1511805232166461",
+      "bytes": 5472,
+      "sha256": "5ce54eede47a7ae2440a877f812fc6c7f101e67d4e84d8d279778aa6165b4d67"
+    },
+    {
+      "name": "test_nist.b37_chr20_100kbp_at_10mb.bed",
+      "url": "https://storage.googleapis.com/deepvariant/quickstart-testdata/test_nist.b37_chr20_100kbp_at_10mb.bed",
+      "generation": "1511805232613574",
+      "bytes": 264,
+      "sha256": "7105c5d3a7b0efb726562f9ec22b1a3ca31e0ef1c568e1d6f1f703e0407a9553"
+    },
+    {
+      "name": "test_nist.b37_chr20_100kbp_at_10mb.vcf.gz",
+      "url": "https://storage.googleapis.com/deepvariant/quickstart-testdata/test_nist.b37_chr20_100kbp_at_10mb.vcf.gz",
+      "generation": "1791311847973037",
+      "bytes": 5898,
+      "sha256": "f0953ff1401dfbc4fe6fa8df1d79411dec2defe24afa5ba79c9e3856ba9b0f0d"
+    },
+    {
+      "name": "test_nist.b37_chr20_100kbp_at_10mb.vcf.gz.tbi",
+      "url": "https://storage.googleapis.com/deepvariant/quickstart-testdata/test_nist.b37_chr20_100kbp_at_10mb.vcf.gz.tbi",
+      "generation": "1791311852881290",
+      "bytes": 211,
+      "sha256": "ef2836dbfce1a659940206ec72df01b58015d17a0faba56a5c2a789c7dc2a6a9"
+    },
+    {
+      "name": "ucsc.hg19.chr20.unittest.fasta",
+      "url": "https://storage.googleapis.com/deepvariant/quickstart-testdata/ucsc.hg19.chr20.unittest.fasta",
+      "generation": "1511805233708084",
+      "bytes": 64286038,
+      "sha256": "b532f011328adfbc7cf92e37923d6035f251b78ff52e1d570dfa10697cca7fe5"
+    },
+    {
+      "name": "ucsc.hg19.chr20.unittest.fasta.fai",
+      "url": "https://storage.googleapis.com/deepvariant/quickstart-testdata/ucsc.hg19.chr20.unittest.fasta.fai",
+      "generation": "1511805233939073",
+      "bytes": 23,
+      "sha256": "3cc62926bafa8f397679927070c40e970a414bb21fdb92c46dfb497a7a955032"
+    }
+  ],
+  "scope": "Official NA12878 chr20 10kb positive control; engineering qualification, not clinical validation"
+}

@@ -1,4 +1,5 @@
 {
+  "observed_at_utc": "2026-10-20T16:41:56Z",
   "dependencies": [
     {
       "id": "curated-samples-v1",
@@ -163,7 +164,7 @@
       "assembly": "GRCh38",
       "requirements": "Ensembl VEP executable/cache/FASTA release bundle",
       "state": "Unavailable",
-      "reason": "match VEP and cache versions; permitted terms",
+      "reason": "Complete original release-115 cache archive with immutable cloud version, all original members, and matching verified GRCh38 FASTA/FAI required. Bounded runtime controls do not establish production bundle readiness.",
       "manifest": null
     },
     {

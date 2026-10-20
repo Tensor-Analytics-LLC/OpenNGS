@@ -7,7 +7,7 @@ profiles and remain unavailable until published and validated.
 import copy
 import json
 
-def template(subnet,worker_sg,execution_role,image,repository_arn,shared_bucket,kms,boundary,origin,alert_topic,extension=None,secondary=None):
+def template(subnet,worker_sg,execution_role,image,repository_arn,shared_bucket,kms,boundary,origin,alert_topic,extension=None,secondary=None,deepvariant=None,vep=None):
     if '@sha256:' not in image:raise ValueError('Pin the reviewed runtime digest')
     ref=lambda x:{'Ref':x};sub=lambda x:{'Fn::Sub':x};att=lambda x,k:{'Fn::GetAtt':[x,k]}
     tags=[{'Key':'Project','Value':'OpenNGS-Pro'},{'Key':'TenantId','Value':ref('TenantId')}]
@@ -55,4 +55,29 @@ def template(subnet,worker_sg,execution_role,image,repository_arn,shared_bucket,
             add('SecondaryDefinition','AWS::Batch::JobDefinition',properties)
             outputs.update(SecondaryImage={'Value':release['image']},SecondaryDefinition={'Value':ref('SecondaryDefinition')},
                            SecondaryTools={'Value':json.dumps(release['tools'])},SecondarySource={'Value':release['source_sha256']})
+    if deepvariant:
+        from backend.deepvariant_runtime import validate_release as validate_deepvariant
+        release=validate_deepvariant(deepvariant)
+        properties=copy.deepcopy(R['Definition']['Properties'])
+        properties['JobDefinitionName']=sub('openngs-pro-${TenantId}-deepvariant')
+        properties['ContainerProperties']['Image']=release['image']
+        properties['ContainerProperties']['Command']=['/usr/bin/python3','/opt/studio/cloud_worker.py']
+        properties['Tags']['NGSRuntimeFamily']='deepvariant-cpu-v1'
+        add('DeepVariantDefinition','AWS::Batch::JobDefinition',properties)
+        outputs.update(DeepVariantImage={'Value':release['image']},DeepVariantDefinition={'Value':ref('DeepVariantDefinition')},
+                       DeepVariantTools={'Value':json.dumps(release['tools'])},DeepVariantModels={'Value':json.dumps(release['models'])},
+                       DeepVariantSource={'Value':release['source_sha256']})
+    if vep:
+        from backend.vep_runtime import validate_release as validate_vep
+        release=validate_vep(vep)
+        properties=copy.deepcopy(R['Definition']['Properties'])
+        properties['JobDefinitionName']=sub('openngs-pro-${TenantId}-vep')
+        properties['ContainerProperties']['Image']=release['image']
+        properties['ContainerProperties']['Command']=['/usr/bin/python3','/opt/studio/cloud_worker.py']
+        properties['Tags']['NGSRuntimeFamily']='ensembl-vep-offline-v1'
+        add('VEPDefinition','AWS::Batch::JobDefinition',properties)
+        outputs.update(VEPImage={'Value':release['image']},VEPDefinition={'Value':ref('VEPDefinition')},
+                       VEPTools={'Value':json.dumps(release['tools'])},VEPSource={'Value':release['source_sha256']},
+                       VEPCacheVersion={'Value':str(release['cache_version'])},VEPAssembly={'Value':release['assembly']},
+                       VEPCacheManifest={'Value':release['cache_manifest_sha256']})
     return {'AWSTemplateFormatVersion':'2010-09-09','Description':'OpenNGS funded tenant: isolated data and scale-to-zero Spot queue; no On-Demand fallback','Parameters':{'TenantId':{'Type':'String','AllowedPattern':'u_[a-f0-9]{32}'},'StorageId':{'Type':'String','AllowedPattern':'[a-f0-9]{32}'},'FleetVCPU':{'Type':'Number','AllowedValues':[2,4,8,16,32,64]},'MonthlyBudget':{'Type':'Number','MinValue':1,'MaxValue':500}},'Resources':R,'Outputs':outputs}

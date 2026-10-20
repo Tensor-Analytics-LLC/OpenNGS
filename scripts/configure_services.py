@@ -3,11 +3,16 @@
 Infrastructure-operator command. Does not import/replace application data or
 alter any independent project's resources. Existing secret settings are retained.
 """
-import json
+import argparse,json
 from pathlib import Path
 from backend.config import aws_session
 
 def main():
+    services=['openngs']+['openngs-'+n for n in ['demo','verifier','research','billing','audit','retention','migration']]
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--restart-services',nargs='+',choices=services,default=services,
+                        help='Restart only services affected by this reviewed release; other active work keeps its leases')
+    args=parser.parse_args()
     s=aws_session();cf=s.client('cloudformation');stack=cf.describe_stacks(StackName='openngs-lean')['Stacks'][0]
     outputs={x['OutputKey']:x['OutputValue'] for x in stack['Outputs']};host=outputs['HostId'];ec=s.client('ec2')
     instance=ec.describe_instances(InstanceIds=[host])['Reservations'][0]['Instances'][0]
@@ -28,8 +33,12 @@ def main():
         script+="release=validate_release("+repr(research['extension'])+")\nwith db.tx() as c:\n c.execute('INSERT INTO controls VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',('runtime-release:extended-cpu-v1',db.encode(release)))\n"
     if research.get('secondary'):
         script+="from backend.secondary_runtime import validate_release as validate_secondary\nsecondary=validate_secondary("+repr(research['secondary'])+")\nwith db.tx() as c:\n c.execute('INSERT INTO controls VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',('runtime-release:secondary-cpu-v1',db.encode(secondary)))\n"
+    if research.get('deepvariant'):
+        script+="from backend.deepvariant_runtime import validate_release as validate_deepvariant\ndeepvariant=validate_deepvariant("+repr(research['deepvariant'])+")\nwith db.tx() as c:\n c.execute('INSERT INTO controls VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',('runtime-release:deepvariant-cpu-v1',db.encode(deepvariant)))\n"
+    if research.get('vep'):
+        script+="from backend.vep_runtime import validate_release as validate_vep\nvep=validate_vep("+repr(research['vep'])+")\nwith db.tx() as c:\n c.execute('INSERT INTO controls VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',('runtime-release:ensembl-vep-offline-v1',db.encode(vep)))\n"
     script+="with db.tx() as c:\n c.execute('INSERT INTO controls VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',('research-runtime-release',db.encode("+repr({'image':research['runtime_image'],'build':research['runtime_build'],'status':'Version checks; scientific qualification is separate'})+")))\n db.audit(c,'deployment-operator','deployment.services.configured','OpenNGS',{'secrets_preserved':True,'data_reset':False})\nclose()\nREMOTE\n"
-    script+="cp /opt/openngs/infra/openngs-{demo,verifier,research,billing,audit,retention,migration}.service /etc/systemd/system/\nsystemctl daemon-reload\nsystemctl enable openngs-{demo,verifier,research,billing,audit,retention,migration}\nsystemctl restart openngs openngs-{demo,verifier,research,billing,audit,retention,migration}\nsystemctl is-active openngs openngs-{demo,verifier,research,billing,audit,retention,migration}\n"
+    script+="cp /opt/openngs/infra/openngs-{demo,verifier,research,billing,audit,retention,migration}.service /etc/systemd/system/\nsystemctl daemon-reload\nsystemctl enable openngs-{demo,verifier,research,billing,audit,retention,migration}\nsystemctl restart "+' '.join(dict.fromkeys(args.restart_services))+"\nsystemctl is-active openngs openngs-{demo,verifier,research,billing,audit,retention,migration}\n"
     response=s.client('ssm').send_command(InstanceIds=[host],DocumentName='AWS-RunShellScript',Parameters={'commands':[script],'executionTimeout':['300']},Comment='OpenNGS reconcile reviewed service settings; preserve accounts and Vault')
     result={'command_id':response['Command']['CommandId'],'host':host};Path('evidence/deployment/services-reconciled.json').write_text(json.dumps(result,indent=2));print(json.dumps(result))
 

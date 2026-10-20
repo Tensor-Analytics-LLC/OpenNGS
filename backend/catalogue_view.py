@@ -157,6 +157,12 @@ def _availability(node, evidence, settings, limited, credentials, shared):
             if state == 'Ready':
                 state = 'Requires entitlement'
             block('licence', 'PROVIDER_TERMS', 'Provider agreement, endpoint verification and data-processing consent are required.')
+    if node['id']=='vep':
+        dependency=next((d for d in shared['dependencies'] if d['id']=='vep-cache'),{})
+        bundle_owner=(dependency.get('manifest') or {}).get('owner_id')
+        if dependency.get('state')!='Ready' or bundle_owner!=settings.get('_workspace_id'):
+            if state=='Ready':state='Unavailable'
+            block('dependency','VEP_COMPLETE_BUNDLE','The complete original VEP 115 GRCh38 cache and matching FASTA/FAI have not been verified for this workspace. Small runtime controls do not make the production cache ready.')
     if limited and node['id'] not in demo.TOOLS:
         if state == 'Ready':
             state = 'Requires entitlement'

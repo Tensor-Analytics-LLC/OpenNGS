@@ -71,7 +71,7 @@ for id,name,exe,spdx in callers:
     if id=='cnvkit':ins.append(P('targets','BED'))
     params=[param('interval','Interval / region','','text','Leave empty for the complete bound input.')]
     if id=='haplotypecaller':params+=[param('ploidy','Sample ploidy',2,'number',min=1,max=20),param('gvcf','Emit GVCF',False,'boolean')]
-    if id=='deepvariant':params+=[param('model_type','Model type','WGS','select',options=['WGS','WES','PACBIO','ONT_R104'])]
+    if id=='deepvariant':params+=[param('model_type','Model type','WGS','select','Only the WGS model has the reviewed CPU execution contract; other models require separate qualification.',options=['WGS'])]
     if id=='mutect2':params+=[param('normal_sample','Normal sample ID','NORMAL')]
     if id in ['strelka2','manta']:params+=[param('exome','Exome/capture mode',False,'boolean','Use only for capture/enriched data; reduces depth modelling outside the captured targets.')]
     if id=='sniffles2':params+=[param('min_support','Minimum support',3,'number',min=1,max=100)]
@@ -104,6 +104,15 @@ add('results.prepare','Prepare private results','Utilities',
      param('chrom','Chromosome',''),param('start','Start',0,'number',min=0),param('end','End',0,'number',min=0),
      param('x','Horizontal field',''),param('y','Vertical field','')],builtin=True,hidden=True)
 BASE={n['id']:n for n in NODES}
+BASE['vep'].update(version='115.2',
+    inputs=[P('variants','VCF|BGZIP_VCF|INDEXED_VCF'),P('database','ARCHIVE|DATABASE'),P('reference','FASTA')],
+    outputs=[P('variants','INDEXED_VCF'),P('report','REPORT')],
+    parameters=[param('assembly','Assembly','GRCh38','select',options=['GRCh38']),
+                param('species','Species','homo_sapiens','select',options=['homo_sapiens']),
+                param('cache_version','Cache release',115,'select',options=[115])],
+    resources={'threads':2,'memory_mb':4096,'scratch_mb':81920,'timeout_seconds':7200},
+    description='Offline transcript consequences using the exact complete original Ensembl release-115 GRCh38 cache archive and matching FASTA/FAI. Small engineering controls do not establish full-scale or clinical assay accuracy.',
+    rights_note='Apache-2.0 tool code. Cache and third-party data terms remain separate; arbitrary plugins, existing-variant and score options are not enabled.')
 BASE['haplotypecaller']['inputs'].append(P('intervals','BED|INTERVALLIST',False))
 BASE['oncokb']['parameters'] += [param('origin','Variant origin','somatic','select',options=['somatic','germline']),param('tumor_type','OncoTree tumor type',''),param('max_variants','Maximum provider calls',25,'number',min=1,max=100),param('allow_external_processing','Allow sending variants to OncoKB',False,'boolean')]
 BASE['enformer']['inputs']=[P('sequence','FASTA'),P('model','DATABASE')]

@@ -55,12 +55,24 @@ def matrix(uid=None):
     from .secondary_runtime import published as published_secondary,TOOLS as SECONDARY_TOOLS,ENVIRONMENTS
     secondary=published_secondary()
     secondary_cases={c['tool']:c for c in secondary['qualification']['cases']} if secondary else {}
+    from .deepvariant_runtime import published as published_deepvariant
+    deepvariant=published_deepvariant()
+    from .vep_runtime import published as published_vep
+    vep=published_vep()
     extension=published()
     cases={x['tool']:x for x in extension['qualification']['cases']} if extension else {}
     core_cases={x['tool']:x for x in extension.get('core_qualification',{}).get('cases',[])} if extension else {}
     adjunct_cases={x['tool']:x for x in extension.get('adjunct_qualification',{}).get('cases',[])} if extension else {}
     portable_cases={c['tool']:c for c in extension.get('portable_qualification',{}).get('cases',[])} if extension else {}
     for row in rows:
+        if row['id']=='deepvariant' and deepvariant:
+            case=next(c for c in deepvariant['qualification']['cases'] if c['id']=='wgs-truth-control')
+            row.update(hosted_runtime_image=deepvariant['image'],runtime_family=deepvariant['family'],
+                runtime_package={'name':'DeepVariant','version':deepvariant['version'],'models':deepvariant['models'],
+                    'upstream_image':deepvariant['upstream_image'],'model_files':deepvariant['qualification']['models']['WGS']},
+                runtime_status='Published digest; WGS inference and incompatible-input rejection controls passed',runtime_blocker=None,
+                sample_execution={'build_id':deepvariant['build_id'],'scope':deepvariant['validation_scope'],
+                    'assertions':case['assertions'],'outputs':case['outputs'],'seconds':case['seconds']})
         if row['id'] in SECONDARY_TOOLS:
             case=secondary_cases.get(row['id'])
             if secondary and row['id'] in secondary['tools']:
@@ -115,8 +127,20 @@ def matrix(uid=None):
             row['runtime_status']='Version-pinned recipe; build and execution qualification pending'
     refreshed=set(extension.get('tools',[])+extension.get('refreshed_core_tools',[])+extension.get('adjunct_tools',[])+extension.get('portable_tools',[])) if extension else set()
     if secondary:refreshed.update(secondary['tools'])
+    if deepvariant:refreshed.update(deepvariant['tools'])
+    if vep:refreshed.update(vep['tools'])
     metadata_only={'asset.file','database.asset','reference.asset','utility.export','utility.gather','utility.condition'}
     for row in rows:
+        if row['id']=='vep' and vep:
+            case=next(c for c in vep['qualification']['cases'] if c['id']=='release-115-cache')
+            row.update(hosted_runtime_image=vep['image'],runtime_family=vep['family'],
+                runtime_package={'name':'Ensembl VEP','version':vep['version'],'cache_version':vep['cache_version'],
+                    'assembly':vep['assembly'],'upstream_image':vep['upstream_image']},
+                runtime_status='Published digest; 10 human control variants, spliced coding controls and three incompatible-cache rejection cases passed',
+                runtime_blocker=None,
+                sample_execution={'build_id':vep.get('build_id'),'source_sha256':vep['source_sha256'],
+                    'scope':'Bounded engineering validation: 10 original release-115 human variants and independently known spliced consequences. Complete production cache availability, full-scale accuracy and clinical validation remain separate.',
+                    'assertions':case['assertions'],'outputs':case['outputs'],'seconds':case.get('seconds')})
         if row['id'] in VERIFIED_ARTIFACT_ROUTING:
             row.update(
                 execution_kind='artifact-routing', implementation='authenticated-orchestration',
@@ -149,6 +173,16 @@ def dependencies():
         record=db.query('SELECT value FROM controls WHERE key=?',('reference-bundle:'+ident,),one=True)
         observed=json.loads(record['value']) if record else {}
         state=observed.get('state','Requires entitlement' if ident=='licensed-annotations' else 'Unavailable')
+        if ident=='vep-cache':
+            from .provisioning import validate_vep_bundle
+            try:verified=validate_vep_bundle(observed)
+            except (ValueError,TypeError,KeyError):verified=None
+            state='Ready' if verified else 'Unavailable'
+            reason='Complete original release-115 cache archive with immutable cloud version, all original members, and matching verified GRCh38 FASTA/FAI required. Bounded runtime controls do not establish production bundle readiness.'
+            observed=({'owner_id':verified['owner_id'],'cache_version':verified['cache_version'],'assembly':verified['assembly'],
+                'member_manifest_sha256':verified['complete_cache']['member_manifest_sha256'],
+                'complete_members':verified['complete_cache']['members'],'image':verified['image'],
+                'scope':'Private owner-only complete cloud bundle; no full-assay accuracy claim'} if verified else {})
         rows.append({'id':ident,'assembly':assembly,'requirements':files,'state':state,'reason':reason if not observed else observed.get('reason',reason),'manifest':observed or None})
     manifest=ROOT/'demo-data/manifest.json'
     proof=db.query("SELECT value FROM controls WHERE key='reference-bundle:curated-samples-v1'",one=True)

@@ -1,0 +1,40 @@
+{
+  "family": "ensembl-vep-offline-v1",
+  "version": "115.2",
+  "cache_version": 115,
+  "assembly": "GRCh38",
+  "upstream_commit": "2beada0d57ca6234f467b14a6c60280f4a082717",
+  "upstream_image": "ensemblorg/ensembl-vep@sha256:ed6b660e278458109afc00d5e730aee240a3bf77e817796386033e1a18963152",
+  "upstream_compressed_bytes": 258126094,
+  "worker_python_version": "3.10.12",
+  "worker_apt_lock_sha256": "9d2f7364c719caf9dfbf8d32a1946682ef323a9963a7d0e9b15135ef53b44585",
+  "license": "Apache-2.0",
+  "cache_info_sha256": "aad41cfa88980f51487b1bf55f08060a1bb9086aa7e62252e8b3741c0999474f",
+  "cache_archive": {
+    "name": "homo_sapiens_vep_115_GRCh38.tar.gz",
+    "bytes": 25272957721,
+    "sha256": "5871a5e34527cce76f7ac75399c33e306bf3be8083c63fe7d3459c56338f98de",
+    "dataset_id": "ds_migration_b8ac16c0fa8043ee256faa697245703f6573083b",
+    "relative_root": "homo_sapiens/115_GRCh38",
+    "maximum_extracted_bytes": 32212254720,
+    "maximum_members": 20000
+  },
+  "qualification_cache_members": [
+    {"path": "homo_sapiens/115_GRCh38/info.txt", "bytes": 3231, "sha256": "aad41cfa88980f51487b1bf55f08060a1bb9086aa7e62252e8b3741c0999474f"},
+    {"path": "homo_sapiens/115_GRCh38/21/25000001-26000000.gz", "bytes": 563872, "sha256": "4b721af73a015012c4b0331e05d0204a8500b76c83f10466f99d7567ef2e2fde"}
+  ],
+  "qualification_scope": "Real VEP 115.2 offline annotation on an unchanged bounded region of the original 115 cache and a synthetic spliced transcript. Engineering integration evidence, not clinical validation or full-cache production readiness.",
+  "cache_rights": {
+    "provider": "https://www.ensembl.org/info/about/legal/disclaimer.html",
+    "code": "https://raw.githubusercontent.com/Ensembl/ensembl-vep/release/115.2/LICENSE",
+    "cache_documentation": "https://www.ensembl.org/info/docs/tools/vep/script/vep_cache.html",
+    "third_party_note": "Original info.txt retains COSMIC101, HGMD-PUBLIC20204, SIFT6.2.1, PolyPhen2.2.3 and other provenance. Ensembl-generated data are unrestricted; incorporated third-party conditions remain applicable. Default execution requests transcript consequences and symbols only, with no plugins or existing-variant/prediction score flags."
+  },
+  "budget": {
+    "codebuild_compute_type": "BUILD_GENERAL1_MEDIUM",
+    "maximum_build_minutes": 10,
+    "maximum_build_usd": 0.10,
+    "maximum_image_compressed_bytes": 1073741824,
+    "maximum_image_monthly_usd": 0.10
+  }
+}

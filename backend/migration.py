@@ -210,8 +210,9 @@ def resolve_asset(uid, row):
     """Return verified canonical AWS content while preserving the user's asset ID."""
     row = dict(row);metadata = json.loads(row['metadata']) if isinstance(row['metadata'], str) else dict(row['metadata'])
     dataset_id = metadata.get('cloud_dataset_id')
+    from .public_resource_metadata import enrich as enrich_resource
     if not dataset_id:
-        return row
+        return enrich_resource(row)
     mapping = db.query('SELECT * FROM migration_assets WHERE asset_id=? AND user_id=? AND dataset_id=?', (row['id'], uid, dataset_id), one=True)
     dataset = db.query("SELECT * FROM datasets WHERE id=? AND user_id=? AND state='Ready'", (dataset_id, uid), one=True)
     canonical = db.query('SELECT * FROM assets WHERE id=? AND user_id=?', (mapping['canonical_asset_id'], uid), one=True) if mapping else None
@@ -244,7 +245,7 @@ def resolve_asset(uid, row):
     if metadata.get('index_paths'):
         metadata['index_paths'] = [value for path in metadata['index_paths'] if (value := companion(path))]
     metadata['migration_companions_pending'] = len(missing)
-    return {**row, 'path': canonical['path'], 'metadata': db.encode(metadata)}
+    return enrich_resource({**row, 'path': canonical['path'], 'metadata': db.encode(metadata)})
 
 
 def authorize_source(uid, uri, version_id=None, sha256=None):
@@ -285,9 +286,19 @@ def source_manifest(uid, item):
     return result
 
 
-def verify_one():
+def verify_one(plan_id=None, sha256=None):
+    # Operator priority is an exact registered object, never a new URI or a
+    # reset of somebody else's lease/retry counter. The normal daemon uses the
+    # oldest eligible record; both paths share the same transactional claim.
+    if (plan_id is None) != (sha256 is None):
+        raise ValueError('Priority verification requires both plan and SHA-256')
+    if plan_id is not None and (not re.fullmatch(r'migration_[a-f0-9]{24}', plan_id)
+                               or not re.fullmatch(r'[a-f0-9]{64}', sha256)):
+        raise ValueError('Priority verification requires an exact migration identity')
     with db.tx() as c:
-        row = c.execute("SELECT * FROM migration_objects WHERE state='Verifying' AND lease_until<? ORDER BY updated LIMIT 1", (time.time(),)).fetchone()
+        where = ' AND plan_id=? AND sha256=?' if plan_id is not None else ''
+        args = (time.time(), plan_id, sha256) if plan_id is not None else (time.time(),)
+        row = c.execute("SELECT * FROM migration_objects WHERE state='Verifying' AND lease_until<?" + where + " ORDER BY updated LIMIT 1", args).fetchone()
         if not row:
             return None
         row = dict(row)

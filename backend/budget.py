@@ -102,6 +102,40 @@ def reserve(c,uid,operation,kind,pretax_usd,details):
     db.audit(c,uid,'budget.reserved',rid,{'kind':kind,'account':account,'maximum_pretax_usd':micro/MICRO})
     return dict(c.execute('SELECT * FROM cost_reservations WHERE id=?',(rid,)).fetchone())
 
+def reserve_shared(c, actor, operation, kind, pretax_usd, details):
+    """Operator-only shared acquisition/build hold, independent of actor's tier.
+
+    Shared catalogue work belongs to the baseline even when the administrator
+    has a separately funded Pro workspace. There is deliberately no HTTP route.
+    """
+    admin = c.execute('SELECT role,frozen FROM users WHERE id=?', (actor,)).fetchone()
+    if not admin or admin['role'] != 'admin' or admin['frozen']:
+        raise ValueError('An active administrator must authorize shared spending')
+    if not math.isfinite(pretax_usd) or pretax_usd < 0:
+        raise ValueError('Invalid shared cost estimate')
+    old = c.execute('SELECT * FROM cost_reservations WHERE user_id=? AND operation=? AND kind=?',
+                    (actor, operation, kind)).fetchone()
+    if old:
+        allocation = c.execute('SELECT account FROM cost_allocations WHERE reservation_id=?', (old['id'],)).fetchone()
+        if not allocation or allocation['account'] != 'shared-platform':
+            raise ValueError('An existing reservation belongs to another cost pool')
+        return dict(old)
+    state = snapshot(c)
+    frozen = c.execute("SELECT value FROM controls WHERE key='global_freeze'").fetchone()
+    if not state['admission_open'] or (frozen and frozen['value'] == 'true'):
+        raise BudgetFull('New shared spending is paused; existing commitments are preserved')
+    micro = math.ceil(pretax_usd * MICRO)
+    if math.ceil(micro * (1 + state['tax_fraction'])) > round(state['available_after_safety_usd'] * MICRO):
+        raise BudgetFull('The combined baseline allowance cannot cover shared work and its tax reserve')
+    rid = db.ident('cost_')
+    c.execute("INSERT INTO cost_reservations(id,user_id,operation,period,kind,reserved_micro,state,details,created) VALUES(?,?,?,?,?,?,'reserved',?,?)",
+              (rid, actor, operation, period(), kind, micro, db.encode(details), time.time()))
+    c.execute('INSERT INTO cost_allocations VALUES(?,?,?)', (rid, 'shared-platform', actor))
+    db.audit(c, actor, 'budget.shared.reserved', rid,
+             {'kind': kind, 'maximum_pretax_usd': micro / MICRO, 'account': 'shared-platform'})
+    return dict(c.execute('SELECT * FROM cost_reservations WHERE id=?', (rid,)).fetchone())
+
+
 def reconcile(operation,uid,kind,actual_pretax_usd=None):
     with db.tx() as c:
         row=c.execute("SELECT * FROM cost_reservations WHERE user_id=? AND operation=? AND kind=? AND state='reserved'",(uid,operation,kind)).fetchone()

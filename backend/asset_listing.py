@@ -4,6 +4,7 @@ import re
 
 from . import config, db
 from .asset_presentation import describe as describe_asset
+from .public_resource_metadata import enrich as enrich_resource
 
 
 def public_metadata(value):
@@ -82,6 +83,7 @@ def list_assets(uid, query='', limit=None, cloud=None, primary_only=False, filte
         for key in ['sha256','version_id','dataset_id','bundle_verification']:
             if canonical.get(key):
                 row['metadata'][key] = canonical[key]
+        row = enrich_resource(row)
         row['presentation'] = describe_asset(row, row.pop('discovery_source_path') or '')
         row['path'] = row.pop('listed_path')
         p = row['presentation']

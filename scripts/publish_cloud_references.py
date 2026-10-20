@@ -10,7 +10,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--user', required=True, help='Destination funded workspace ID')
     parser.add_argument('--actor', required=True, help='Authorizing administrator ID')
-    parser.add_argument('--acquisition', default='evidence/deployment/reference-acquisition.json')
+    parser.add_argument('--acquisition', default='evidence/deployment/reference-acquisition.json',
+                        help='Completed exact legacy receipt or schema-2 reviewed bundle receipt (never a remote URL)')
     parser.add_argument('--execute', action='store_true')
     args = parser.parse_args()
     actor = db.query('SELECT id,role,frozen FROM users WHERE id=?', (args.actor,), one=True)

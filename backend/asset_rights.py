@@ -6,6 +6,7 @@ import time
 from urllib.parse import urlsplit
 
 from . import db
+from .public_resource_metadata import describe as public_resource, enrich as enrich_resource
 
 POLICY = 1
 PUBLIC = {
@@ -29,16 +30,25 @@ def metadata(row):
 
 
 def describe(row):
+    row = enrich_resource({**row, 'metadata': metadata(row)})
     meta = metadata(row)
+    resource = meta.get('public_resource')
     name = row.get('name', '')
     family = row.get('family') or meta.get('family') or ''
     text = (name+' '+family+' '+str(meta.get('original_name', ''))).lower()
-    digest = (row.get('digest') or meta.get('sha256') or '').removeprefix('sha256:')
+    digest = (row.get('digest') or meta.get('sha256') or row.get('sha256') or '').removeprefix('sha256:')
     version = meta.get('version_id') or ''
     release = str(meta.get('release') or meta.get('version') or name)
     state, terms, note, uses = 'Review required', '', 'Review the exact database release and intended use before execution.', ['reviewed-source-terms', 'provider-authorized']
     required = False
-    if 'dbnsfp' in text:
+    if resource and resource['family'] == 'hpo':
+        family, release = 'hpo', resource['release']
+        state, terms = 'Public resource terms', resource['terms_url']
+        note = resource['conditions']
+    elif resource and resource['family'] == 'clinvar':
+        family, release = 'clinvar', resource['release']
+        state, terms, note = 'Public resource terms', resource['terms_url'], resource['conditions']
+    elif 'dbnsfp' in text:
         required = True
         release_match = re.search(r'dbnsfp[._-]?([0-9]+(?:\.[0-9]+)*[ac]?)', text)
         release = release_match.group(1) if release_match else release
@@ -60,6 +70,13 @@ def describe(row):
     elif family in PUBLIC:
         state, terms = 'Public resource terms', PUBLIC[family]
         note = 'Retain the exact release and source attribution. Public resource terms are separate from the FOSS binding-node licence.'
+    elif family == 'vep':
+        from .vep_runtime import CACHE_ARCHIVE_SHA256
+        required = True
+        terms = ('https://sep2025.archive.ensembl.org/info/about/legal/disclaimer.html'
+                 if digest == CACHE_ARCHIVE_SHA256 else 'https://www.ensembl.org/info/about/legal/disclaimer.html')
+        note = ('VEP code is open source. Its cache includes third-party annotations; review permitted cache use. '
+                'The basic profile does not request SIFT, PolyPhen or known-variant annotations.')
     elif family in REVIEW_FAMILIES or row.get('format') == 'DATABASE' and 'data_rights' not in meta:
         required = True
     else:
@@ -68,7 +85,8 @@ def describe(row):
     identity = hashlib.sha256(db.encode([POLICY, digest, version, family, release, state]).encode()).hexdigest() if immutable else None
     return {'label': state, 'required': required, 'identity': identity, 'sha256': digest if immutable else None,
             'version_id': version or None, 'family': family, 'release': release, 'terms_url': terms,
-            'reason': note, 'permitted_uses': uses if required else [], 'policy_version': POLICY}
+            'reason': note, 'permitted_uses': uses if required else [], 'policy_version': POLICY,
+            **({'public_resource':resource} if resource else {})}
 
 
 def grant_map(uid):
@@ -136,7 +154,10 @@ def disclosure(uid, row, grants=None, sources=None):
     inherited = inherited_rights(uid, row, sources=sources)
     grants = grant_map(uid) if grants is None else grants
     requirements = content_requirements(row,sources)
-    requirements.extend(inherited)
+    # Superseded generic HPO database reviews are not licence attestations.
+    # Other inherited score/database restrictions remain live and unchanged.
+    requirements.extend(r for r in inherited if not (r.get('family') == 'hpo'
+        and (public_resource({'digest':r.get('sha256','')}) or {}).get('family') == 'hpo'))
     unique = {r.get('identity') or r.get('release'): r for r in requirements}
     item['requirements'] = [{**r, 'acknowledged': bool(r.get('identity') and r['identity'] in grants),
                             'acknowledged_use': grants.get(r.get('identity'), {}).get('permitted_use')} for r in unique.values()]

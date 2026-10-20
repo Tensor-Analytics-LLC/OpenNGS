@@ -14,6 +14,18 @@ def require_migration_runtime(profile, migrated):
     if migrated and (type(version) is not int or version != 1):
         raise ValueError('This tool has no qualified worker route for migrated AWS inputs. Its source data is preserved; publish the reviewed migration-compatible runtime before running this node.')
 
+def worker_command(spec,definition,image):
+    if spec['id']=='vep':
+        from .vep_runtime import FAMILY,published
+        release=published()
+        command=['/usr/bin/python3','/opt/studio/cloud_worker.py']
+        if (not release or image!=release['image']
+                or definition.get('tags',{}).get('NGSRuntimeFamily')!=FAMILY
+                or definition.get('containerProperties',{}).get('command')!=command):
+            raise ValueError('VEP launch requires the exact qualified image and reviewed Python 3 worker definition')
+        return command
+    return ['python','/opt/studio/cloud_worker.py']
+
 def execute_batch(uid,rid,aid,spec,node,inputs,work,cancelled):
     require_migration_runtime({'source_grants_version':node.get('_source_grants_version')},bool(node.get('_migration_sources')))
     session=aws_session();s={**data.settings(uid),**(node.get('_cloud_settings') or {})};batch=session.client('batch',config=Config(connect_timeout=5,read_timeout=15,retries={'total_max_attempts':1}));s3=session.client('s3')
@@ -23,6 +35,7 @@ def execute_batch(uid,rid,aid,spec,node,inputs,work,cancelled):
     definition=definition[0];props=definition.get('containerProperties',{})
     if spec['builtin'] and not image:image=props.get('image')
     if definition.get('status')!='ACTIVE' or props.get('image')!=image or not image or '@sha256:' not in image or definition.get('tags',{}).get('NGSWorkerContract')!='1':raise ValueError('Job-definition image/worker contract does not match the approved node release')
+    launch_command=worker_command(spec,definition,image)
     if props.get('privileged') or not props.get('readonlyRootFilesystem'):raise ValueError('Published Batch profile must disable privilege and use a read-only root')
     if spec.get('resource')=='gpu':
         if definition.get('tags',{}).get('NGSIsolationProfile')!='exclusive-vm-reviewed':raise ValueError('GPU publication requires the reviewed exclusive-VM profile')
@@ -95,7 +108,7 @@ def execute_batch(uid,rid,aid,spec,node,inputs,work,cancelled):
         try:
             if not job_id:
                 with db.tx() as c:c.execute('UPDATE attempts SET metrics=? WHERE id=?',(db.encode({'submission_intent':True}),aid))
-                response=batch.submit_job(jobName='ngs-'+aid,jobQueue=node.get('_batch_queue') or s['batch_queue'],jobDefinition=definition['jobDefinitionArn'],containerOverrides={'command':['python','/opt/studio/cloud_worker.py',s['s3_bucket'],key],'resourceRequirements':[{'type':'VCPU','value':str(node['resources']['threads'])},{'type':'MEMORY','value':str(node['resources']['memory_mb'])}]},timeout={'attemptDurationSeconds':max(60,node['resources']['timeout_seconds'])},retryStrategy={'attempts':1},tags={'Project':'OpenNGS-Pro','TenantId':uid,'RunId':rid,'AttemptId':aid});job_id=response['jobId']
+                response=batch.submit_job(jobName='ngs-'+aid,jobQueue=node.get('_batch_queue') or s['batch_queue'],jobDefinition=definition['jobDefinitionArn'],containerOverrides={'command':launch_command+[s['s3_bucket'],key],'resourceRequirements':[{'type':'VCPU','value':str(node['resources']['threads'])},{'type':'MEMORY','value':str(node['resources']['memory_mb'])}]},timeout={'attemptDurationSeconds':max(60,node['resources']['timeout_seconds'])},retryStrategy={'attempts':1},tags={'Project':'OpenNGS-Pro','TenantId':uid,'RunId':rid,'AttemptId':aid});job_id=response['jobId']
         except ClientError as e:
             if e.response.get('ResponseMetadata',{}).get('HTTPStatusCode',500)<500:raise ValueError('AWS rejected the launch: '+e.response['Error'].get('Message','Request denied')) from e
             raise UncertainCloudState('Batch submission outcome is unknown; reservation retained. Reconcile job name ngs-'+aid+' before retrying.') from e

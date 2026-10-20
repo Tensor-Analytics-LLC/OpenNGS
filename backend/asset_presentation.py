@@ -1,12 +1,14 @@
 """Evidence-based display roles; never promote a cache fragment to a database."""
 import json
 import re
+from .public_resource_metadata import enrich as enrich_resource
 
 INDEX_SUFFIX = re.compile(r'\.(?:bai|crai|tbi|csi|fai|gzi|dict|amb|ann|bwt(?:\.2bit\.64)?|pac|sa|bt2l?|ht2l?)$', re.I)
 VEP_RANGE = re.compile(r'^(\d+)-(\d+)(_reg)?\.gz$', re.I)
 
 
 def describe(row, source_path=''):
+    row = enrich_resource(row)
     raw = row.get('metadata') or {}
     meta = json.loads(raw) if isinstance(raw, str) else raw
     name = str(row.get('name') or '').replace('\\', '/').rsplit('/', 1)[-1]
@@ -17,6 +19,11 @@ def describe(row, source_path=''):
               'assembly': row.get('assembly') or meta.get('assembly') or '',
               'release': str(meta.get('release') or identity.get('release') or ''),
               'primary_eligible': True, 'role': '', 'component': False}
+    resource = meta.get('public_resource')
+    if resource:
+        result.update(public_resource=resource, assembly_independent=resource['assembly_independent'])
+        if resource['family']=='hpo':
+            result.update(assembly='', role='Phenotype ontology', assembly_label='Assembly independent')
     if not result['release']:
         pattern = {'gnomad': r'gnomad\.(?:exomes|genomes)\.v(\d+(?:\.\d+)+)\.',
                    'dbnsfp': r'dbnsfp[._-]?(\d+(?:\.\d+)*[ac]?)',

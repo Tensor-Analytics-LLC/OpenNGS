@@ -12,12 +12,18 @@ export function isPrimaryAsset(asset){
 export function assetPresentation(asset){
  const m=meta(asset),p=asset.presentation||{},raw=asset.name||asset.id||'Unnamed dataset',name=raw.replaceAll('\\','/').split('/').at(-1),family=asset.family||m.family||'',format=assetFormat(asset);
  const release=p.release||asset.release||m.release||m.source_identity?.release||m.version||name.match(/(?:dbnsfp[._-]?)(\d+(?:\.\d+)*[ac]?)/i)?.[1]||name.match(/(?:^|[_\-.])v(\d+(?:\.\d+)+)/i)?.[1]||'';
- const assembly=p.assembly||asset.assembly||m.assembly||(/(?:hg38|grch38)/i.test(name)?'GRCh38':/(?:hg19|grch37)/i.test(name)?'GRCh37':/(?:chm13|t2t)/i.test(name)?'T2T-CHM13':'');
+ const assemblyIndependent=p.assembly_independent===true||m.public_resource?.assembly_independent===true;
+ const assembly=assemblyIndependent?'':p.assembly||asset.assembly||m.assembly||(/(?:hg38|grch38)/i.test(name)?'GRCh38':/(?:hg19|grch37)/i.test(name)?'GRCh37':/(?:chm13|t2t)/i.test(name)?'T2T-CHM13':'');
  const scope=p.contig?`Contig ${p.contig}`:m.scope||m.source_identity?.scope||name.match(/(?:^|[._-])(chr(?:[0-9]+|X|Y|M|MT))(?=[._-]|$)/i)?.[1]||'';
  const role=p.role||(isIndexAsset(asset)?'Companion index':/cdna|transcript/i.test(name)?'Transcript sequences':/pep|protein/i.test(name)?'Protein sequences':/cds/i.test(name)?'Coding sequences':format==='FASTA'?'Reference sequences':/VCF|BCF/.test(format)?'Variant records':format==='BED'?'Genomic intervals':format==='FASTQ_PAIR'?'Paired reads':format==='FASTQ'?'Sequence reads':/BAM|CRAM/.test(format)?'Read alignments':/scores|annotation/i.test(name)?'Annotation scores':format==='ARCHIVE'?'Archive':format==='DATABASE'?'Database data':format||'Dataset');
  const title=FAMILIES[family]||name.replace(/(?:\.gz|\.bgz)?$/i,'').replace(/\.(?:vcf|bcf|fa|fasta|fna|fq|fastq|bam|cram|tsv|csv|txt|bed)$/i,'').replace(/[_]+/g,' ');
- const parts=[title,release,assembly,scope,role,FAMILIES[family]?name:''].filter(Boolean);
- return {title:[...new Set(parts)].join(' · '),raw_name:name,format,release,assembly,scope,role,family,primary:isPrimaryAsset(asset),sha256:m.sha256||asset.sha256||'',version_id:m.version_id||asset.version_id||'',id:asset.id};
+ const parts=[title,release,assemblyIndependent?'Assembly independent':assembly,scope,role,FAMILIES[family]?name:''].filter(Boolean);
+ return {title:[...new Set(parts)].join(' · '),raw_name:name,format,release,assembly,assembly_independent:assemblyIndependent,scope,role,family,primary:isPrimaryAsset(asset),sha256:m.sha256||asset.sha256||'',version_id:m.version_id||asset.version_id||'',id:asset.id};
+}
+export function resourceCredits(assets){
+ const values=new Map();
+ for(const asset of assets){const m=meta(asset),r=asset.presentation?.public_resource||m.public_resource;if(!r||!r.sha256||r.sha256!==(m.sha256||asset.sha256)||!r.release)continue;const key=r.family+':'+r.release;if(!values.has(key))values.set(key,{...r,files:[]});const names=values.get(key).files;if(!names.includes(r.canonical_name))names.push(r.canonical_name);}
+ return [...values.values()].sort((a,b)=>a.name.localeCompare(b.name));
 }
 export function assetOptionLabel(asset){const p=assetPresentation(asset);return p.title+(asset.id?' ['+asset.id.slice(-6)+']':'');}
 export function compatibleCompanion(asset,field){

@@ -94,7 +94,10 @@ def compile_tool(spec,node,inputs,work):
         else:
             step([*base,'Mutect2','-R',reference,'-I',path('tumor'),'-I',path('normal'),'-normal',p['normal_sample'],'-O','/work/unfiltered.vcf',*(['-L',p['interval']] if p.get('interval') else []),*advanced]);output('statistics','unfiltered.vcf.stats','REPORT');output('variants','unfiltered.vcf','VCF',unfiltered=True,warning='Run FilterMutectCalls and the appropriate contamination/orientation workflow before interpretation.')
     elif tid=='deepvariant':
-        step(['/opt/deepvariant/bin/run_deepvariant','--model_type',p['model_type'],'--ref',path('reference'),'--reads',path('alignment'),'--output_vcf','/work/calls.vcf.gz','--num_shards',threads,*(['--regions',p['interval']] if p.get('interval') else []),*advanced]);output('variants','calls.vcf.gz','VCF')
+        if p['model_type']!='WGS':raise ValueError('Only the DeepVariant 1.8.0 WGS model has a reviewed execution contract')
+        if advanced:raise ValueError('DeepVariant advanced arguments require a separately reviewed model contract')
+        if not item('alignment').get('index') or not item('reference').get('index'):raise ValueError('DeepVariant requires explicit BAM/BAI and FASTA/FAI companion bindings')
+        step(['/usr/bin/python3','-m','backend.deepvariant_tools','--model-type',p['model_type'],'--reference',path('reference'),'--reference-index',item('reference')['index'],'--reads',path('alignment'),'--index',item('alignment')['index'],'--shards',threads,*(['--region',p['interval']] if p.get('interval') else [])]);output('variants','calls.vcf.gz','INDEXED_VCF',index=str(work/'calls.vcf.gz.tbi'),caller='DeepVariant',caller_version='1.8.0',model_type='WGS')
     elif tid=='freebayes':
         step(['freebayes','-f',path('reference'),*(['-r',p['interval']] if p.get('interval') else []),*advanced,path('alignment')],'calls.vcf');output('variants','calls.vcf','VCF')
     elif tid=='bcftools':
@@ -108,7 +111,27 @@ def compile_tool(spec,node,inputs,work):
     elif tid=='cnvkit':
         step(['cnvkit.py','batch',path('alignment'),'--normal','--targets',path('targets'),'--fasta',path('reference'),'--method',p.get('assay_method','hybrid'),'--segment-method',p.get('segmentation','haar'),'--output-dir','/work/cnv','--processes',threads,*advanced]);output('report','cnv/*.cns','CNV')
     elif tid=='vep':
-        step(['vep','--input_file',path('variants'),'--output_file','/work/annotated.vcf','--vcf','--offline','--cache','--dir_cache',str(Path(path('database')).parent),'--assembly',p['assembly'],'--species',p['species'],'--fork',threads,*advanced]);output('variants','annotated.vcf','VCF')
+        from .provisioning import require_vep_bundle
+        if advanced or set(node.get('params',{}))-{'assembly','species','cache_version'}:
+            raise ValueError('VEP supports only the fixed reviewed offline flags; plugins and arbitrary arguments require separate qualification')
+        if p['assembly']!='GRCh38' or p['species']!='homo_sapiens' or p['cache_version']!=115:
+            raise ValueError('Only the exact VEP 115 homo_sapiens GRCh38 cache is supported')
+        if any(len(inputs.get(key,[]))!=1 for key in ['variants','database','reference']):
+            raise ValueError('VEP requires one VCF, one complete cache archive and one indexed FASTA')
+        cache_input=inputs['database'][0]
+        cache_format=cache_input.get('metadata',{}).get('underlying_format') if cache_input.get('format')=='DATABASE' else cache_input.get('format')
+        if cache_format!='ARCHIVE' or inputs['reference'][0].get('format')!='FASTA' or not item('reference').get('index'):
+            raise ValueError('VEP requires a complete cache ARCHIVE and explicit FASTA/FAI companion binding')
+        if int(node.get('resources',{}).get('scratch_mb',spec['resources']['scratch_mb']))<81920:
+            raise ValueError('VEP complete cache extraction requires at least 80 GiB of bounded scratch')
+        bundle=require_vep_bundle(inputs['database'][0],inputs['reference'][0])
+        step(['/usr/bin/python3','-m','backend.vep_tools','--variants',path('variants'),
+              '--cache-archive',path('database'),'--fasta',path('reference'),'--fai',item('reference')['index'],
+              '--output','/work/annotated.vcf.gz'])
+        output('variants','annotated.vcf.gz','INDEXED_VCF',index=str(work/'annotated.vcf.gz.tbi'),
+               assembly='GRCh38',annotator='Ensembl VEP',annotator_version='115.2',cache_version=115,
+               cache_sha256=bundle['archive']['sha256'],reference_digest='sha256:'+bundle['reference']['sha256'])
+        output('report','annotated.vcf.gz.runtime.json','REPORT')
     elif tid=='snpeff':
         step(['python','-m','backend.secondary_tools','snpeff','--database',path('database'),'--assembly',p['assembly'],'--variants',path('variants'),'--output','/work/annotated.vcf',*advanced]);output('variants','annotated.vcf','VCF')
     elif tid=='macs3':

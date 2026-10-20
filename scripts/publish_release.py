@@ -10,14 +10,15 @@ import time
 from pathlib import Path
 from backend.config import aws_session
 
-def publish(rebootstrap=False):
+def publish(rebootstrap=False, source_root=None):
     root=Path.cwd();record=json.loads((root/'evidence/deployment/release.json').read_text());s=aws_session()
+    source=Path(source_root).resolve() if source_root is not None else root
     outputs={x['OutputKey']:x['OutputValue'] for x in s.client('cloudformation').describe_stacks(StackName='openngs-lean')['Stacks'][0]['Outputs']}
     archive=root/'evidence/deployment/latest-source.tar.gz'
     with tarfile.open(archive,'w:gz') as t:
         for folder in ['backend','frontend','scripts','infra','tests','demo-data']:
-            t.add(folder,arcname=folder,filter=lambda m:None if '__pycache__' in m.name or m.name.endswith('.pyc') else m)
-        for f in ['requirements.lock','README.md','LICENSE']:t.add(f)
+            t.add(source/folder,arcname=folder,filter=lambda m:None if '__pycache__' in m.name or m.name.endswith('.pyc') else m)
+        for f in ['requirements.lock','README.md','LICENSE']:t.add(source/f,arcname=f)
     digest=hashlib.sha256(archive.read_bytes()).hexdigest();key='operations/releases/'+digest+'/source.tar.gz'
     extra={'ServerSideEncryption':'aws:kms','SSEKMSKeyId':record['kms']}
     s.client('s3').upload_file(str(archive),record['bucket'],key,ExtraArgs=extra)

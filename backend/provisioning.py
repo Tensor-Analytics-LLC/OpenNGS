@@ -1,5 +1,5 @@
 """Reconcile funded entitlements into a fixed, published AWS tenant template."""
-import json,math,os,time
+import json,math,os,re,time
 from . import db,entitlements,budget
 from .config import aws_session
 
@@ -10,6 +10,103 @@ def profile(uid):
 
 def save(uid,value):
     with db.tx() as c:c.execute('INSERT INTO controls VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',('research-profile:'+uid,db.encode(value)))
+
+def deepvariant_routes(outputs):
+    if not any(key.startswith('DeepVariant') for key in outputs):return {}
+    from .deepvariant_runtime import FAMILY,published
+    release=published()
+    if (not release or outputs.get('DeepVariantImage')!=release['image']
+            or outputs.get('DeepVariantSource')!=release['source_sha256']
+            or json.loads(outputs.get('DeepVariantTools','null'))!=release['tools']
+            or json.loads(outputs.get('DeepVariantModels','null'))!=release['models']
+            or not outputs.get('DeepVariantDefinition')):
+        raise ValueError('DeepVariant tenant definition must match the exact published image, WGS model and execution proof')
+    return {'deepvariant':{'image':release['image'],'definition':outputs['DeepVariantDefinition'],
+        'family':FAMILY,'source_grants_version':1,'qualified_models':release['models'],
+        'caller_version':release['version'],'upstream_image':release['upstream_image']}}
+
+def vep_routes(outputs):
+    if not any(key.startswith('VEP') for key in outputs):return {}
+    from .vep_runtime import FAMILY,published
+    release=published()
+    if (not release or outputs.get('VEPImage')!=release['image']
+            or outputs.get('VEPSource')!=release['source_sha256']
+            or json.loads(outputs.get('VEPTools','null'))!=release['tools']
+            or outputs.get('VEPCacheVersion')!=str(release['cache_version'])
+            or outputs.get('VEPAssembly')!=release['assembly']
+            or outputs.get('VEPCacheManifest')!=release['cache_manifest_sha256']
+            or not outputs.get('VEPDefinition')):
+        raise ValueError('VEP tenant definition must match the exact published image, cache release and all five execution controls')
+    return {'vep':{'image':release['image'],'definition':outputs['VEPDefinition'],
+        'family':FAMILY,'source_grants_version':1,'cache_version':release['cache_version'],
+        'assembly':release['assembly'],'cache_manifest_sha256':release['cache_manifest_sha256']}}
+
+def _vep_object(value):
+    if (not isinstance(value,dict) or not re.fullmatch(r's3://[^/]+/.+',value.get('uri',''))
+            or value.get('version_id') in [None,'','null']
+            or not isinstance(value.get('version_id'),str)
+            or not re.fullmatch('[a-f0-9]{64}',value.get('sha256',''))
+            or type(value.get('bytes')) is not int or value['bytes']<=0):
+        raise ValueError('VEP bundle requires immutable cloud object versions, sizes and full SHA-256 identities')
+    return {key:value[key] for key in ['uri','version_id','sha256','bytes']}
+
+def validate_vep_bundle(value):
+    """A bounded transcript shard is never evidence that the full cache exists."""
+    from . import vep_runtime as vep
+    release=vep.published()
+    if (not isinstance(value,dict) or value.get('state')!='Ready'
+            or value.get('verification')!='complete-vep-cache-cloud-v1'
+            or value.get('cache_version')!=vep.CACHE_VERSION or value.get('assembly')!=vep.ASSEMBLY
+            or not release or value.get('image')!=release['image']
+            or not re.fullmatch(r'u_[a-f0-9]{32}',value.get('owner_id',''))):
+        raise ValueError('The complete original VEP 115 GRCh38 bundle has not been verified in its published cloud runtime')
+    archive=_vep_object(value.get('archive'));reference=_vep_object(value.get('reference'));index=_vep_object(value.get('index'))
+    owner_prefix='/tenants/'+value['owner_id']+'/datasets/'
+    if owner_prefix not in archive['uri']:
+        raise ValueError('VEP original cache must retain its private migration owner')
+    vep.cache_binding({'name':vep.CACHE_ARCHIVE_NAME,'path':archive['uri'],'bytes':archive['bytes'],
+        'sha256':archive['sha256'],'assembly':vep.ASSEMBLY,'metadata':{'version_id':archive['version_id']},'state':'Ready'})
+    complete=value.get('complete_cache',{})
+    if complete!={'members':vep.CACHE_MEMBER_COUNT,'extracted_bytes':vep.CACHE_EXTRACTED_BYTES,
+                   'member_manifest_sha256':vep.CACHE_MANIFEST_SHA256,'info_sha256':vep.CACHE_INFO_SHA256}:
+        raise ValueError('VEP full-cache verification must hash every exact original archive member')
+    checks=value.get('reference_verification',{})
+    if (checks.get('fasta_sha256')!=reference['sha256'] or checks.get('fai_sha256')!=index['sha256']
+            or checks.get('all_fai_fields_validated') is not True
+            or type(checks.get('contigs')) is not int or checks['contigs']<=0):
+        raise ValueError('VEP bundle requires a complete matching FASTA and FAI verification')
+    proof=value.get('execution',{})
+    if (proof.get('status')!='SUCCEEDED' or not proof.get('job_id')
+            or type(proof.get('scratch_bytes')) is not int or proof['scratch_bytes']<80*1024**3
+            or proof.get('all_members_verified') is not True):
+        raise ValueError('VEP complete-bundle cloud execution proof is required')
+    _vep_object(proof.get('artifact'))
+    return value
+
+def vep_bundle():
+    row=db.query('SELECT value FROM controls WHERE key=?',('reference-bundle:vep-cache',),one=True)
+    try:return validate_vep_bundle(json.loads(row['value'])) if row else None
+    except (ValueError,TypeError,KeyError):return None
+
+def require_vep_bundle(cache,reference):
+    from .vep_runtime import cache_binding
+    cache_binding(cache)
+    bundle=vep_bundle()
+    if not bundle:raise ValueError('The complete original VEP cache and matching FASTA/FAI are still awaiting cloud bundle verification')
+    def identity(asset):
+        meta=asset.get('metadata',{})
+        return {'uri':asset.get('path'),'version_id':asset.get('version_id') or meta.get('version_id'),
+            'sha256':asset.get('sha256') or meta.get('sha256') or asset.get('digest','').removeprefix('sha256:'),'bytes':asset.get('bytes')}
+    meta=reference.get('metadata',{})
+    if (identity(cache)!=_vep_object(bundle['archive']) or identity(reference)!=_vep_object(bundle['reference'])
+            or meta.get('assembly',reference.get('assembly'))!='GRCh38'
+            or meta.get('index')!=bundle['index']['uri'] or meta.get('index_sha256')!=bundle['index']['sha256']):
+        raise ValueError('VEP inputs must match the exact verified cache, GRCh38 FASTA and FAI bundle')
+    secondaries=meta.get('secondary_objects',[])
+    index_version=next((r.get('version_id') for r in secondaries if r.get('uri')==meta.get('index')),None)
+    if index_version!=bundle['index']['version_id']:
+        raise ValueError('VEP FAI must retain its exact verified cloud version')
+    return bundle
 
 def ensure_curated(uid,actor_id):
     from . import curated_cloud
@@ -61,6 +158,8 @@ def once():
                 secondary=json.loads(out.get('SecondaryTools','[]'))
                 if not isinstance(secondary,list) or any(t not in SECONDARY_TOOLS for t in secondary):raise ValueError('Unreviewed secondary runtime route')
                 routes.update({t:{'image':out['SecondaryImage'],'definition':out['SecondaryDefinition'],'family':'secondary-cpu-v1','source_grants_version':1} for t in secondary})
+            routes.update(deepvariant_routes(out))
+            routes.update(vep_routes(out))
             save(uid,{'state':'Ready','grant_version':p['grant_version'],'bucket':out['Bucket'],'queue':out['Queue'],'definition':out['Definition'],'image':out['Image'],'max_scratch_mb':int(out['ScratchMiB']),'region':'us-east-1','tools':sorted(CORE_TOOLS|set(routes)),'runtime_profiles':routes,'spot_only':True,'stack':name,'instance_profile':out.get('InstanceProfile'),'template_url':url})
             with db.tx() as c:db.audit(c,'capacity-service','research.capacity.ready',uid,{'stack':name,'grant_version':p['grant_version'],'scale_to_zero':True})
             ensure_curated(uid,grant['actor'])

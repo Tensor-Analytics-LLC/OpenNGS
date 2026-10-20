@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {assetPresentation,assetOptionLabel,isIndexAsset,compatibleCompanion} from '../frontend/asset-presentation.mjs';
+import {assetPresentation,assetOptionLabel,isIndexAsset,compatibleCompanion,resourceCredits} from '../frontend/asset-presentation.mjs';
 import {acceptsAsset,blockerSummary,nodeAvailability} from '../frontend/catalogue-view.mjs';
 
 test('A verified annotation release has a readable label without losing raw identity',()=>{
@@ -41,4 +41,17 @@ test('Licence, key, allowance and dependency blockers remain independent',()=>{
  assert.equal(nodeAvailability(node).blockers.length,4);
  assert.equal(blockerSummary(node),'Licence review · Vault key · Compute allowance · Data dependency');
  assert.equal(blockerSummary({availability:{state:'Ready',blockers:[]}}),'Ready');
+});
+
+test('Verified ontology metadata clears storage assembly and credits its exact version',()=>{
+ const sha='a'.repeat(64),resource={name:'Human Phenotype Ontology',family:'hpo',release:'2026-06-23',sha256:sha,assembly_independent:true,canonical_name:'hp.obo',acknowledgment:'HPO 2026-06-23'};
+ const a={id:'hpo',name:'hp.obo',family:'hpo',format:'DATABASE',assembly:'GRCh38',metadata:{sha256:sha,release:resource.release,original_storage_assembly:'GRCh38',public_resource:resource}};
+ const view=assetPresentation(a);assert.equal(view.assembly,'');assert.equal(view.assembly_independent,true);assert.match(view.title,/Assembly independent/);assert.doesNotMatch(view.title,/GRCh38/);
+ assert.equal(resourceCredits([a,{...a,id:'alias'}]).length,1);assert.deepEqual(resourceCredits([a])[0].files,['hp.obo']);
+});
+
+test('An unknown HPO basename does not invent a release or verified data credit',()=>{
+ const value={name:'hp.obo',family:'hpo',format:'DATABASE',metadata:{sha256:'b'.repeat(64)}};
+ assert.equal(assetPresentation(value).release,'');assert.deepEqual(resourceCredits([value]),[]);
+ assert.deepEqual(resourceCredits([{...value,metadata:{...value.metadata,public_resource:{sha256:'c'.repeat(64),release:'2026-06-23'}}}]),[]);
 });
