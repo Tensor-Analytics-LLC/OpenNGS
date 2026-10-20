@@ -1,0 +1,2 @@
+import {SHA256} from './sha256.mjs';
+self.onmessage=async({data:{file,id}})=>{try{const hash=new SHA256();let bytes=0,last=0;for await(const chunk of file.stream()){hash.update(chunk);bytes+=chunk.length;if(performance.now()-last>150){self.postMessage({id,bytes,total:file.size});last=performance.now();}}self.postMessage({id,bytes,total:file.size,sha256:hash.hex()});}catch(e){self.postMessage({id,error:e.message});}};

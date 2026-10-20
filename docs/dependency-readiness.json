@@ -1,0 +1,107 @@
+{
+  "dependencies": [
+    {
+      "id": "curated-samples-v1",
+      "assembly": "mixed; explicit per source",
+      "state": "Provisioning",
+      "requirements": "Seven immutable source nodes and companion files inside the pinned cloud image",
+      "manifest_sha256": "df58978f8846f6843593bb4c15a9941c8c19386bbea492dc3f9024bb1b09def3",
+      "image": null,
+      "bytes": 1591623,
+      "reason": "Small engineering/public slices; no full-size WGS/WES/mtDNA readiness claim",
+      "validation": {}
+    },
+    {
+      "id": "grch38-core",
+      "assembly": "GRCh38",
+      "requirements": "FASTA, FAI, sequence dictionary, aligner index",
+      "state": "Unavailable",
+      "reason": "exact assembly/contig convention and digest",
+      "manifest": null
+    },
+    {
+      "id": "grch37-core",
+      "assembly": "GRCh37",
+      "requirements": "FASTA, FAI, sequence dictionary, aligner index",
+      "state": "Unavailable",
+      "reason": "exact release and contig convention",
+      "manifest": null
+    },
+    {
+      "id": "t2t-core",
+      "assembly": "T2T-CHM13",
+      "requirements": "v2.0 FASTA, FAI, dictionary, matching indices",
+      "state": "Unavailable",
+      "reason": "T2T coordinates cannot substitute for GRCh38",
+      "manifest": null
+    },
+    {
+      "id": "gatk-bqsr",
+      "assembly": "GRCh38",
+      "requirements": "known-sites VCFs, tabix, matching reference dictionary",
+      "state": "Unavailable",
+      "reason": "per-release dbSNP/Mills/indel resources",
+      "manifest": null
+    },
+    {
+      "id": "vep-cache",
+      "assembly": "GRCh38",
+      "requirements": "Ensembl VEP executable/cache/FASTA release bundle",
+      "state": "Unavailable",
+      "reason": "match VEP and cache versions; permitted terms",
+      "manifest": null
+    },
+    {
+      "id": "wes-capture",
+      "assembly": "assay-specific",
+      "requirements": "capture-kit manufacturer/version, target BED, padded intervals and coverage definition",
+      "state": "Unavailable",
+      "reason": "must be supplied per kit; not inferred from a WGS template",
+      "manifest": null
+    },
+    {
+      "id": "mitochondrial",
+      "assembly": "GRCh38/rCRS",
+      "requirements": "exact whole-genome nuclear+mitochondrial reference, shifted mt reference, original-to-shifted coordinate map",
+      "state": "Unavailable",
+      "reason": "NUMT-aware alignment and mitochondrial caller/filter profile required",
+      "manifest": null
+    },
+    {
+      "id": "giab-full",
+      "assembly": "GRCh38",
+      "requirements": "query reads, complete HG002 truth VCF, confident BED, stratifications and exact reference",
+      "state": "Unavailable",
+      "reason": "same individual and release throughout",
+      "manifest": null
+    },
+    {
+      "id": "licensed-annotations",
+      "assembly": "release-specific",
+      "requirements": "HGMD/COSMIC and other restricted databases",
+      "state": "Requires entitlement",
+      "reason": "vendor authorization and exact release",
+      "manifest": null
+    }
+  ],
+  "workflows": [
+    {
+      "id": "wgs",
+      "status": "blocked",
+      "reason": "Full reference/index, validated germline caller and annotation bundles have not been provisioned or tested at WGS scale",
+      "clinical_validation": false
+    },
+    {
+      "id": "wes",
+      "status": "blocked",
+      "reason": "Requires exact capture-kit metadata/targets, target coverage and caller/annotation validation",
+      "clinical_validation": false
+    },
+    {
+      "id": "mtdna",
+      "status": "blocked",
+      "reason": "Allele-fraction QC is implemented; complete NUMT-aware, shifted-reference heteroplasmy calling is not validated",
+      "clinical_validation": false
+    }
+  ]
+}

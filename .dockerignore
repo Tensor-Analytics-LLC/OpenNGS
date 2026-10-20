@@ -1,0 +1,13 @@
+.git
+.state
+.venv
+evidence
+validation-data
+__pycache__
+*.pyc
+.env*
+*.sqlite*
+*.db
+*.tar.gz
+*.zip
+*-validation.json

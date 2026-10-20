@@ -1,0 +1,2 @@
+import {analyze,adapterPath} from './graph-core.mjs';
+self.onmessage=({data})=>{try{if(data.kind==='analyze')self.postMessage({id:data.id,version:data.version,result:analyze(data.graph,data.definitions)});if(data.kind==='adapter')self.postMessage({id:data.id,version:data.version,result:adapterPath(data.source,data.target,data.definitions)});}catch(error){self.postMessage({id:data.id,error:String(error)});}};

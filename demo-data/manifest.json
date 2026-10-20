@@ -1,0 +1,251 @@
+{
+  "schema": 1,
+  "outputs": {
+    "sample.fastq": {
+      "reads": [
+        {
+          "path": "/opt/studio/demo-data/sample.fastq/fixture_R1.fastq.gz",
+          "name": "fixture_R1.fastq.gz",
+          "format": "FASTQ_PAIR",
+          "bytes": 25436,
+          "digest": "sha256:8d5bcc888b32c1a9ce927b87dcc1160886bc5814f07cad96aa12e030642d25b0",
+          "metadata": {
+            "mate": "/opt/studio/demo-data/sample.fastq/fixture_R2.fastq.gz",
+            "synthetic": true,
+            "reference": "engineering_contig",
+            "seed": 7341
+          }
+        }
+      ]
+    },
+    "sample.rna": {
+      "reads": [
+        {
+          "path": "/opt/studio/demo-data/sample.rna/sample_R1_1.fq.gz",
+          "name": "sample_R1_1.fq.gz",
+          "format": "FASTQ_PAIR",
+          "bytes": 131840,
+          "digest": "sha256:f7a8c9e00acb34c0d1a341f7e435752859bb7ce296ee848ca97a8be5acf14c8b",
+          "metadata": {
+            "mate": "/opt/studio/demo-data/sample.rna/sample_R1_2.fq.gz",
+            "source": "https://raw.githubusercontent.com/nf-core/test-datasets/cad884e7fbe5617dcd55bdd07d9ddf65b54febe4/testdata/prokaryotic/",
+            "commit": "cad884e7fbe5617dcd55bdd07d9ddf65b54febe4",
+            "public": true,
+            "organism": "prokaryotic test data",
+            "mate_sha256": "02ffa17c392472da88d1d95ab8476c74098c9072f235596d7d5b9232acf3425c"
+          }
+        }
+      ]
+    },
+    "sample.giab": {
+      "variants": [
+        {
+          "path": "/opt/studio/demo-data/sample.giab/HG002_chr22_1000.vcf",
+          "name": "HG002_chr22_1000.vcf",
+          "format": "VCF",
+          "bytes": 705781,
+          "digest": "sha256:378fd5e6652c9cfe02dcf84a4787c357b3cd909f7c3e0fa9eee64179ced174b3",
+          "metadata": {
+            "assembly": "GRCh38",
+            "source": "https://giab.s3.us-east-1.amazonaws.com/release/AshkenazimTrio/HG002_NA24385_son/NISTv4.2.1/GRCh38/HG002_GRCh38_1_22_v4.2.1_benchmark.vcf.gz",
+            "local_source": true,
+            "benchmark": "GIAB NIST v4.2.1",
+            "subset": "first 1000 chr22 records; not a complete benchmarking region",
+            "public": true
+          }
+        }
+      ]
+    },
+    "sample.somatic": {
+      "tumor": [
+        {
+          "path": "/opt/studio/demo-data/sample.somatic/tumor_R1.fastq.gz",
+          "name": "tumor_R1.fastq.gz",
+          "format": "FASTQ_PAIR",
+          "bytes": 24479,
+          "digest": "sha256:d205363d594afa92b428cac06108f187988570fe6580be9134d86058e3245750",
+          "metadata": {
+            "mate": "/opt/studio/demo-data/sample.somatic/tumor_R2.fastq.gz",
+            "synthetic": true,
+            "reference": "engineering_contig",
+            "seed": 7351
+          }
+        }
+      ],
+      "normal": [
+        {
+          "path": "/opt/studio/demo-data/sample.somatic/normal_R1.fastq.gz",
+          "name": "normal_R1.fastq.gz",
+          "format": "FASTQ_PAIR",
+          "bytes": 25443,
+          "digest": "sha256:a99cc95777473c68e0c5f297e939370a434b8bbe527f9a84a8ff916643f1f677",
+          "metadata": {
+            "mate": "/opt/studio/demo-data/sample.somatic/normal_R2.fastq.gz",
+            "synthetic": true,
+            "reference": "engineering_contig",
+            "seed": 7341
+          }
+        }
+      ]
+    },
+    "sample.clinvar": {
+      "variants": [
+        {
+          "path": "/opt/studio/demo-data/sample.clinvar/ClinVar_GRCh38_1000.vcf",
+          "name": "ClinVar_GRCh38_1000.vcf",
+          "format": "VCF",
+          "bytes": 389061,
+          "digest": "sha256:bb2d2a4a012328a0952ca7a85f86ffcdc055bf882ec7dfa0aefb5d4c58d59139",
+          "metadata": {
+            "assembly": "GRCh38",
+            "public": true,
+            "source": "https://ftp.ncbi.nlm.nih.gov/pub/clinvar/vcf_GRCh38/",
+            "subset": "First 1000 source records",
+            "source_snapshot_mtime": 1783799066.2732444
+          }
+        }
+      ]
+    },
+    "sample.alignments": {
+      "alignment": [
+        {
+          "path": "/opt/studio/demo-data/sample.alignments/engineering.bam",
+          "name": "engineering.bam",
+          "format": "INDEXED_BAM",
+          "bytes": 1353,
+          "digest": "sha256:7c0c4aebfad6b0185786d9d2814c50e51a9335fbd1d5b0d2d8b4344d54dd1ae0",
+          "metadata": {
+            "assembly": "engineering",
+            "synthetic": true,
+            "contig_style": "custom",
+            "index": "/opt/studio/demo-data/sample.alignments/engineering.bam.bai"
+          }
+        }
+      ],
+      "reference": [
+        {
+          "path": "/opt/studio/demo-data/sample.alignments/engineering.fa",
+          "name": "engineering.fa",
+          "format": "FASTA",
+          "bytes": 20270,
+          "digest": "sha256:ce74f42f42782fd328c099f06e1dbfab5d344fcdcb567599af66b870aef52403",
+          "metadata": {
+            "assembly": "engineering",
+            "synthetic": true,
+            "contig_style": "custom",
+            "index": "/opt/studio/demo-data/sample.alignments/engineering.fa.fai"
+          }
+        }
+      ]
+    },
+    "reference.tiny": {
+      "reference": [
+        {
+          "path": "/opt/studio/demo-data/reference.tiny/engineering.fa",
+          "name": "engineering.fa",
+          "format": "FASTA",
+          "bytes": 20270,
+          "digest": "sha256:ce74f42f42782fd328c099f06e1dbfab5d344fcdcb567599af66b870aef52403",
+          "metadata": {
+            "assembly": "engineering",
+            "index": "/opt/studio/demo-data/reference.tiny/engineering.fa.fai",
+            "synthetic": true
+          }
+        }
+      ]
+    }
+  },
+  "files": [
+    {
+      "path": "sample.fastq/fixture_R1.fastq.gz",
+      "bytes": 25436,
+      "sha256": "8d5bcc888b32c1a9ce927b87dcc1160886bc5814f07cad96aa12e030642d25b0"
+    },
+    {
+      "path": "sample.fastq/engineering.fa",
+      "bytes": 20270,
+      "sha256": "ce74f42f42782fd328c099f06e1dbfab5d344fcdcb567599af66b870aef52403"
+    },
+    {
+      "path": "sample.fastq/fixture_R2.fastq.gz",
+      "bytes": 25469,
+      "sha256": "6777e03d3e8f854440acdd833ac2042c8865f1a3f19cdbd55450676d63461ed0"
+    },
+    {
+      "path": "sample.rna/sample_R1_1.fq.gz",
+      "bytes": 131840,
+      "sha256": "f7a8c9e00acb34c0d1a341f7e435752859bb7ce296ee848ca97a8be5acf14c8b"
+    },
+    {
+      "path": "sample.rna/sample_R1_2.fq.gz",
+      "bytes": 131497,
+      "sha256": "02ffa17c392472da88d1d95ab8476c74098c9072f235596d7d5b9232acf3425c"
+    },
+    {
+      "path": "sample.giab/HG002_chr22_1000.vcf",
+      "bytes": 705781,
+      "sha256": "378fd5e6652c9cfe02dcf84a4787c357b3cd909f7c3e0fa9eee64179ced174b3"
+    },
+    {
+      "path": "sample.somatic/tumor_R1.fastq.gz",
+      "bytes": 24479,
+      "sha256": "d205363d594afa92b428cac06108f187988570fe6580be9134d86058e3245750"
+    },
+    {
+      "path": "sample.somatic/normal_R2.fastq.gz",
+      "bytes": 25505,
+      "sha256": "702bfe35ec29f9fbf40894d8f920329549c8d81ba700328580076a2a9b4015ce"
+    },
+    {
+      "path": "sample.somatic/engineering.fa",
+      "bytes": 20270,
+      "sha256": "ce74f42f42782fd328c099f06e1dbfab5d344fcdcb567599af66b870aef52403"
+    },
+    {
+      "path": "sample.somatic/tumor_R2.fastq.gz",
+      "bytes": 24515,
+      "sha256": "0d1528397288a007b0813453d0cef725aad30b3fd4a44519c723c997cc6feb42"
+    },
+    {
+      "path": "sample.somatic/normal_R1.fastq.gz",
+      "bytes": 25443,
+      "sha256": "a99cc95777473c68e0c5f297e939370a434b8bbe527f9a84a8ff916643f1f677"
+    },
+    {
+      "path": "reference.tiny/engineering.fa",
+      "bytes": 20270,
+      "sha256": "ce74f42f42782fd328c099f06e1dbfab5d344fcdcb567599af66b870aef52403"
+    },
+    {
+      "path": "reference.tiny/engineering.fa.fai",
+      "bytes": 34,
+      "sha256": "f0a4b6765a6f40ab63b3e3f0a08c5a6e44f48ab9e2a63c8ba4607f0a93222595"
+    },
+    {
+      "path": "sample.clinvar/ClinVar_GRCh38_1000.vcf",
+      "bytes": 389061,
+      "sha256": "bb2d2a4a012328a0952ca7a85f86ffcdc055bf882ec7dfa0aefb5d4c58d59139"
+    },
+    {
+      "path": "sample.alignments/engineering.fa",
+      "bytes": 20270,
+      "sha256": "ce74f42f42782fd328c099f06e1dbfab5d344fcdcb567599af66b870aef52403"
+    },
+    {
+      "path": "sample.alignments/engineering.fa.fai",
+      "bytes": 34,
+      "sha256": "f0a4b6765a6f40ab63b3e3f0a08c5a6e44f48ab9e2a63c8ba4607f0a93222595"
+    },
+    {
+      "path": "sample.alignments/engineering.bam.bai",
+      "bytes": 96,
+      "sha256": "7fac44dd99f529347d0b4aafc3ebe5b3416d717ffabbfab7e0c5bc59829e3d01"
+    },
+    {
+      "path": "sample.alignments/engineering.bam",
+      "bytes": 1353,
+      "sha256": "7c0c4aebfad6b0185786d9d2814c50e51a9335fbd1d5b0d2d8b4344d54dd1ae0"
+    }
+  ],
+  "license_note": "Application MIT licence does not replace tool/data licences. Public source citations are retained; engineering samples are explicitly synthetic."
+}

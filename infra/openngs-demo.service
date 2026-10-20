@@ -1,0 +1,23 @@
+[Unit]
+Description=OpenNGS durable Explore scheduler
+After=network-online.target openngs.service
+Wants=network-online.target
+[Service]
+User=openngs
+Group=openngs
+WorkingDirectory=/opt/openngs
+EnvironmentFile=/var/lib/openngs/runtime.env
+ExecStart=/opt/openngs/runtime/bin/python -m backend.demo_jobs
+Restart=always
+RestartSec=5
+MemoryMax=768M
+CPUQuota=50%
+TasksMax=64
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/openngs /var/cache/openngs
+LimitNOFILE=1024
+[Install]
+WantedBy=multi-user.target
