@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 from . import db
 
 MICRO = 1_000_000
+RESEARCH_MONTHLY_USD = 500
 class BudgetFull(ValueError): pass
 
 def policy():
@@ -43,9 +44,10 @@ def snapshot(c=None):
     outstanding=int(c.execute("SELECT COALESCE(SUM(reserved_micro),0) FROM cost_reservations WHERE state='reserved' AND id NOT IN (SELECT reservation_id FROM cost_allocations WHERE account='research-pro')").fetchone()[0])
     charged=int(c.execute("SELECT COALESCE(SUM(charged_micro),0) FROM cost_reservations WHERE period=? AND state='reconciled' AND id NOT IN (SELECT reservation_id FROM cost_allocations WHERE account='research-pro')",(month,)).fetchone()[0])
     posted=c.execute('SELECT gross_micro,checked FROM billing_checks WHERE period=?',(month,)).fetchone()
-    total_forecast=math.ceil((p['fixed_pretax_usd']*MICRO+outstanding+charged)*(1+p['tax_fraction']))
-    # Posted gross already includes tax. Do not add it a second time.
-    total_forecast=max(total_forecast,posted['gross_micro'] if posted else 0)
+    completed_forecast=math.ceil((p['fixed_pretax_usd']*MICRO+charged)*(1+p['tax_fraction']))
+    # Billing is delayed and cannot prove which active commitments it includes.
+    # Preserve every outstanding hold above the larger completed/posted floor.
+    total_forecast=max(completed_forecast,posted['gross_micro'] if posted else 0)+math.ceil(outstanding*(1+p['tax_fraction']))
     remaining=math.floor((p['limit_usd']-p['safety_usd'])*MICRO)-total_forecast
     alert=c.execute('SELECT value FROM controls WHERE key=?',('baseline-admission-hold:'+month,)).fetchone()
     held=bool(alert and alert['value']=='true')
@@ -54,10 +56,30 @@ def snapshot(c=None):
         'admission_open':remaining>0 and not held,'alert_admission_hold':held,'billing_checked':posted['checked'] if posted else None,
         'note':'Conservative estimates; delayed billing, abuse and unexpected AWS charges can still overshoot. No automatic paid scaling.'}
 
+def research_snapshot(c,uid,monthly_budget_usd):
+    """Independent tenant budget, including tax and unresolved earlier work."""
+    rows=c.execute("SELECT r.state,COALESCE(SUM(r.reserved_micro),0) AS reserved,COALESCE(SUM(r.charged_micro),0) AS charged FROM cost_reservations r JOIN cost_allocations a ON a.reservation_id=r.id WHERE a.tenant=? AND a.account IN ('research-pro','validation') AND (r.period=? OR r.state='reserved') GROUP BY r.state",(uid,period())).fetchall()
+    outstanding=sum(int(r['reserved']) for r in rows if r['state']=='reserved')
+    charged=sum(int(r['charged']) for r in rows if r['state']=='reconciled')
+    posted=c.execute('SELECT value FROM controls WHERE key=?',('pro-posted:'+uid+':'+period(),)).fetchone()
+    tax=1+policy()['tax_fraction']
+    forecast=max(math.ceil(charged*tax),int(posted['value']) if posted else 0)+math.ceil(outstanding*tax)
+    ceiling=min(RESEARCH_MONTHLY_USD,float(monthly_budget_usd))
+    remaining=max(0,math.floor(ceiling*MICRO)-forecast)
+    alert=c.execute('SELECT value FROM controls WHERE key=?',('pro-admission-hold:'+uid+':'+period(),)).fetchone()
+    frozen=c.execute("SELECT value FROM controls WHERE key='global_freeze'").fetchone()
+    held=bool(alert and alert['value']=='true')
+    return {'limit_usd':ceiling,'period':period(),'reserved_usd':outstanding/MICRO,
+            'reconciled_pretax_usd':charged/MICRO,'posted_including_tax_usd':int(posted['value'])/MICRO if posted else 0,
+            'forecast_including_tax_usd':forecast/MICRO,'available_usd':remaining/MICRO,
+            'alert_admission_hold':held,'admission_open':remaining>0 and not held and not (frozen and frozen['value']=='true')}
+
 def reserve(c,uid,operation,kind,pretax_usd,details):
     if not math.isfinite(pretax_usd) or pretax_usd<0:raise ValueError('Invalid cost estimate')
     old=c.execute('SELECT * FROM cost_reservations WHERE user_id=? AND operation=? AND kind=?',(uid,operation,kind)).fetchone()
     if old:return dict(old)
+    frozen=c.execute("SELECT value FROM controls WHERE key='global_freeze'").fetchone()
+    if frozen and frozen['value']=='true':raise BudgetFull('New paid work is paused by the infrastructure safety freeze; accepted reservations are preserved')
     state=snapshot(c);micro=math.ceil(pretax_usd*MICRO)
     from . import entitlements
     grant=entitlements.research(uid)
@@ -65,22 +87,19 @@ def reserve(c,uid,operation,kind,pretax_usd,details):
     validation=c.execute('SELECT value FROM controls WHERE key=?',('validation-tenant:'+uid,)).fetchone()
     if grant and validation and validation['value']=='true':account='validation'
     hold=c.execute('SELECT value FROM controls WHERE key=?',('baseline-admission-hold:'+period(),)).fetchone()
-    if not grant and hold and hold['value']=='true':raise BudgetFull('Baseline cost alert is active; accepted work is preserved and new paid work waits for administrative reconciliation')
+    if (not grant or account=='validation') and hold and hold['value']=='true':raise BudgetFull('Baseline cost alert is active; accepted work is preserved and new paid work waits for administrative reconciliation')
     if grant:
-        alert=c.execute('SELECT value FROM controls WHERE key=?',('pro-admission-hold:'+uid+':'+period(),)).fetchone()
-        if alert and alert['value']=='true':raise BudgetFull('The Research Pro tenant budget alert is active; new spending waits for administrative reconciliation')
         p=json.loads(grant['body']) if isinstance(grant['body'],str) else grant['body']
-        held=int(c.execute("SELECT COALESCE(SUM(CASE WHEN r.state='reserved' THEN r.reserved_micro ELSE r.charged_micro END),0) FROM cost_reservations r JOIN cost_allocations a ON a.reservation_id=r.id WHERE a.tenant=? AND a.account IN ('research-pro','validation') AND (r.period=? OR r.state='reserved')",(uid,period())).fetchone()[0])
-        posted=c.execute('SELECT value FROM controls WHERE key=?',('pro-posted:'+uid+':'+period(),)).fetchone()
-        remaining=p['monthly_budget_usd']*MICRO-max(held*(1+state['tax_fraction']),int(posted['value']) if posted else 0)
-        if micro*(1+state['tax_fraction'])>remaining:raise BudgetFull('Research Pro additional monetary allowance cannot cover this reservation')
+        tenant=research_snapshot(c,uid,p['monthly_budget_usd'])
+        if tenant['alert_admission_hold']:raise BudgetFull('The Research Pro tenant budget alert is active; new spending waits for administrative reconciliation')
+        if math.ceil(micro*(1+state['tax_fraction']))>round(tenant['available_usd']*MICRO):raise BudgetFull('This user’s independent Research Pro monthly allowance, including tax, cannot cover this reservation')
     elif kind=='scientific' and pretax_usd>state['max_job_usd']:raise BudgetFull('Run exceeds the per-job spending limit; reduce resources or split the workflow')
     if (not grant or account=='validation') and micro*(1+state['tax_fraction'])>state['available_after_safety_usd']*MICRO:
         raise BudgetFull('Monthly budget capacity is full. Your work is saved; no additional paid work was started.')
     rid=db.ident('cost_')
     c.execute("INSERT INTO cost_reservations(id,user_id,operation,period,kind,reserved_micro,state,details,created) VALUES(?,?,?,?,?,?,'reserved',?,?)",(rid,uid,operation,period(),kind,micro,db.encode(details),time.time()))
     c.execute('INSERT INTO cost_allocations VALUES(?,?,?)',(rid,account,uid))
-    db.audit(c,uid,'budget.reserved',rid,{'kind':kind,'maximum_pretax_usd':micro/MICRO})
+    db.audit(c,uid,'budget.reserved',rid,{'kind':kind,'account':account,'maximum_pretax_usd':micro/MICRO})
     return dict(c.execute('SELECT * FROM cost_reservations WHERE id=?',(rid,)).fetchone())
 
 def reconcile(operation,uid,kind,actual_pretax_usd=None):

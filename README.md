@@ -19,7 +19,7 @@ pip install -r requirements.lock
 ./start.sh
 ```
 
-Open **http://127.0.0.1:8766**. First signup creates the administrator; subsequent accounts receive an eight vCPU-hour trial allocation. Start with the read quality, GIAB chr22, ClinVar, RNA quality or genome tracks templates. Bundled samples require no AWS account. Keep this desktop service bound to localhost.
+Open **http://127.0.0.1:8766**. First signup creates the administrator. Hosted deployments then use administrator-created Explore accounts; Research Pro activation requires a separate $500 monthly allowance and finite resource limits. Start with the read quality, GIAB chr22, ClinVar, RNA quality or genome tracks templates. Bundled samples require no AWS account. Keep development services bound to localhost.
 
 Alternatively run `docker compose up --build`. Separate volumes preserve state and artifacts. No Docker socket or AWS credentials are mounted. Portable operations run by default. Native tools require an explicitly available Docker runtime or a published AWS Batch worker and approved immutable images.
 
@@ -29,7 +29,6 @@ Alternatively run `docker compose up --build`. Separate volumes preserve state a
 |---|---|
 | `NGS_STATE_DIR` | Private account database, sessions, audit and encrypted Vault state |
 | `NGS_DATA_DIR` | Artifacts and local indexes |
-| `NGS_LOCAL_ROOT` | Filesystem root the administrator may browse/register |
 | `NGS_RUNTIME_PYTHON` | Optional existing Python environment for the launcher |
 | `NGS_PORT` | Local port; default 8766 |
 | `NGS_AWS_PROFILE` / `AWS_PROFILE` | Your own AWS profile |
@@ -37,7 +36,7 @@ Alternatively run `docker compose up --build`. Separate volumes preserve state a
 | `NGS_DEMO` | Set 1 for the restricted sample contract; default 0 |
 | `NGS_DATABASE_URL` | PostgreSQL DSN; omitted uses SQLite |
 
-Settings expose data roots, runtime approvals, cache configuration, tool rights and credential bindings. Commercial tools, models and databases retain their own licences; a platform trial does not grant third-party rights.
+Settings expose cloud datasets, allowances, tool rights and credential bindings. Commercial tools, models and databases retain their own licences; a platform trial does not grant third-party rights.
 
 ## Included capabilities
 

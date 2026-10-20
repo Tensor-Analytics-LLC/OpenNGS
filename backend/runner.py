@@ -207,7 +207,7 @@ def register_artifacts(uid,rid,nid,outputs,work):
                 pass
             else:
                 resolved=Path(item['path']).resolve(strict=True)
-                if not (resolved.is_relative_to(DATA) or any(resolved.is_relative_to(Path(x).resolve()) for x in data.settings(uid)['ssd_roots'])):raise ValueError('Output path escaped the allowed data roots')
+                if not resolved.is_relative_to(DATA):raise ValueError('Output path escaped the application-managed working directory')
                 if not resolved.is_file():raise ValueError('Output must be a regular file')
                 item['path']=str(resolved)
             aid=db.ident('artifact_');meta=item.get('metadata',{})

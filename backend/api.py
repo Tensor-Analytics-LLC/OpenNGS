@@ -15,8 +15,8 @@ from fastapi.responses import FileResponse,StreamingResponse,RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
 from starlette.middleware.trustedhost import TrustedHostMiddleware
-from . import compiler,data,db,graph,registry,runner,security,budget,mfa,demo,entitlements
-from .config import DATA,FRONTEND,ROOT,TERMINAL,TRIAL_SECONDS,aws_session,CLOUD,ALLOWED_HOSTS,SSD
+from . import compiler,data,db,graph,registry,runner,security,budget,mfa,demo,entitlements,accounts
+from .config import DATA,FRONTEND,ROOT,TERMINAL,TRIAL_SECONDS,aws_session,CLOUD,ALLOWED_HOSTS
 
 @asynccontextmanager
 async def lifespan(app):
@@ -39,29 +39,25 @@ async def boundary(request,call_next):
         if not expected or not secrets.compare_digest(request.headers.get('x-ngs-origin',''),expected):return Response('Origin access denied',403)
         request.scope['scheme']='https'
     if demo.DEMO and request.method in ['POST','PATCH','PUT','DELETE']:
-        blocked=request.url.path=='/api/uploads' or request.url.path.startswith(('/api/operations/transfers','/api/assets/scan','/api/public/','/api/onboarding/','/api/tools','/api/cloud/')) or request.url.path.endswith('/sync')
-        if blocked:
+        if request.url.path.startswith(('/api/operations/transfers','/api/public/','/api/onboarding/','/api/tools','/api/cloud/')):
             current=await run_in_threadpool(security.session_for,request.cookies.get('ngs_session'))
             limited=not current or await run_in_threadpool(entitlements.restricted,current['id'])
-            # Filesystem scans and the legacy in-memory upload route remain local-only.
-            local_only=request.url.path=='/api/uploads' or request.url.path.startswith('/api/assets/scan') or request.url.path.endswith('/sync')
-            if limited or local_only:return __import__('fastapi.responses',fromlist=['JSONResponse']).JSONResponse({'detail':'Explore accepts curated samples only. Funded Research Pro uses the durable upload manager and reviewed cloud capabilities.'},status_code=403)
+            if limited:return __import__('fastapi.responses',fromlist=['JSONResponse']).JSONResponse({'detail':'This action needs a research allowance.'},status_code=403)
     if request.method in ['POST','PUT','PATCH','DELETE']:
         origin=request.headers.get('origin')
         expected=str(request.base_url).rstrip('/')
         if origin!=expected:return Response('Origin verification failed',403)
         if request.headers.get('x-ngs-client')!='studio':return Response('Application request header required',403)
-        limit=64*1024*1024 if request.url.path=='/api/uploads' else 2*1024*1024
+        limit=2*1024*1024
         try:length=int(request.headers.get('content-length','0'))
         except ValueError:return Response('Invalid content length',400)
         if length>limit:return Response('Request exceeds its size limit',413)
-        if request.url.path!='/api/uploads':
-            pieces=[];received=0
-            async for piece in request.stream():
-                received+=len(piece)
-                if received>limit:return Response('Request exceeds its size limit',413)
-                pieces.append(piece)
-            request._body=b''.join(pieces)
+        pieces=[];received=0
+        async for piece in request.stream():
+            received+=len(piece)
+            if received>limit:return Response('Request exceeds its size limit',413)
+            pieces.append(piece)
+        request._body=b''.join(pieces)
     response=await call_next(request)
     response.headers['X-Content-Type-Options']='nosniff'
     response.headers['Referrer-Policy']='no-referrer'
@@ -107,11 +103,13 @@ def safe_run(row):
 @app.get('/api/bootstrap')
 def bootstrap(request:Request):
     current=security.session_for(request.cookies.get('ngs_session'))
-    return {'setup_required':not bool(db.query('SELECT id FROM users LIMIT 1')),'user':security.public_user(current) if current else None,'csrf':current['csrf'] if current else None,'deployment':'cloud-research' if CLOUD else 'desktop-research','region':'us-east-1','demo':demo.public_info(current['id'] if current else None)}
+    return {'signup_allowed':not bool(db.query('SELECT id FROM users LIMIT 1')) or not accounts.admin_only(),'setup_required':not bool(db.query('SELECT id FROM users LIMIT 1')),'user':security.public_user(current) if current else None,'csrf':current['csrf'] if current else None,'deployment':'cloud-research','region':'us-east-1','demo':demo.public_info(current['id'] if current else None)}
 
 @app.post('/api/auth/{operation}')
 def auth(operation:str,request:Request,response:Response,payload:dict=Body(...)):
     if operation not in ['signup','login']:raise HTTPException(404)
+    if operation=='signup' and accounts.admin_only() and db.query('SELECT id FROM users LIMIT 1'):
+        raise HTTPException(403,'An administrator must create your account')
     email=str(payload.get('email','')).strip().lower();password=payload.get('password','')
     if not re.fullmatch(r'[^\s@]{1,100}@[^\s@]{1,100}',email) or not isinstance(password,str) or not 12<=len(password)<=256:raise ValueError('Use a valid email and a password of 12–256 characters')
     key=(request.client.host,email);now=time.time();AUTH_ATTEMPTS[key]=[x for x in AUTH_ATTEMPTS.get(key,[]) if now-x<60]
@@ -121,12 +119,13 @@ def auth(operation:str,request:Request,response:Response,payload:dict=Body(...))
     AUTH_ATTEMPTS[key].append(now)
     # Password derivation is intentionally outside the serialized write transaction.
     candidate=db.query('SELECT * FROM users WHERE email=?',(email,),one=True)
-    valid=security.verify_password(password,candidate['password']) if candidate else False
+    valid=security.verify_password(password,candidate['password']) if candidate and candidate['role']!='retired' else False
     if valid and operation=='login' and not mfa.check(candidate['id'],payload.get('otp','')):raise HTTPException(401,'Authenticator or recovery code required')
     hashed=security.password_hash(password) if operation=='signup' else None
     with db.tx() as c:
         row=c.execute('SELECT * FROM users WHERE email=?',(email,)).fetchone()
         if operation=='signup':
+            if accounts.admin_only() and c.execute('SELECT id FROM users LIMIT 1').fetchone():raise HTTPException(403,'An administrator must create your account')
             if row:raise ValueError('An account with this email already exists')
             first=not c.execute('SELECT id FROM users LIMIT 1').fetchone();uid=db.ident('u_')
             c.execute('INSERT INTO users(id,email,password,role,tier,quota_seconds,created) VALUES(?,?,?,?,?,?,?)',(uid,email,hashed,'admin' if first else 'user','explore' if CLOUD else 'trial',TRIAL_SECONDS,now))
@@ -149,10 +148,9 @@ def session(current=Depends(user)):return {'user':security.public_user(current),
 
 @app.get('/api/catalog')
 def catalog(current=Depends(user)):
-    from . import catalogue_view
-    limited=entitlements.restricted(current['id'])
-    templates=[{**t,'availability':{'note':'Explore runnable' if all(n['tool'] in demo.TOOLS for n in t['graph']['nodes']) else 'Research Pro execution required; design and self-hosting remain available'}} for t in registry.templates()]
-    return {**catalogue_view.view(current['id']),'templates':templates,'capabilities':runner.capabilities(),'demo':demo.public_info(current['id'])}
+    from . import catalogue_view,template_catalog
+    catalogue=catalogue_view.view(current['id'])
+    return {**catalogue,'templates':template_catalog.view(current['id'],catalogue),'capabilities':runner.capabilities(),'demo':demo.public_info(current['id'])}
 
 @app.get('/api/settings')
 def settings(current=Depends(user)):return data.settings(current['id'])
@@ -161,11 +159,11 @@ def settings(current=Depends(user)):return data.settings(current['id'])
 def update_settings(patch:dict=Body(...),current=Depends(user)):return data.update_settings(current,patch)
 
 @app.get('/api/assets')
-def assets(q:str='',current=Depends(user)):
-    if entitlements.restricted(current['id']) and current['role']!='admin':return {'assets':[],'scans':[],'public_sources':[],'transfers':[]}
+def assets(q:str='',primary:bool=False,current=Depends(user)):
+    if entitlements.restricted(current['id']) and current['role']!='admin':return {'assets':[],'public_sources':[]}
     from .asset_listing import list_assets
-    rows=list_assets(current['id'],query=q,limit=300,cloud=CLOUD)
-    return {'assets':rows,'scans':db.query('SELECT * FROM scans WHERE user_id=? ORDER BY started DESC LIMIT 20',(current['id'],)),'public_sources':data.PUBLIC,'transfers':db.query('SELECT * FROM transfers WHERE user_id=? ORDER BY started DESC LIMIT 30',(current['id'],))}
+    rows=list_assets(current['id'],query=q,limit=300,cloud=True,primary_only=primary)
+    return {'assets':rows,'public_sources':data.PUBLIC}
 
 @app.get('/api/assets/resolve')
 def resolve(family:str,assembly:str|None=None,source_id:str|None=None,asset_id:str|None=None,current=Depends(user)):return {'candidates':data.resolve(current['id'],family,assembly,data.settings(current['id'])['backend'],source_id,asset_id)}
@@ -189,19 +187,12 @@ def revoke_data_rights(uid:str,identity:str,payload:dict=Body(...),current=Depen
 def get_asset(aid:str,current=Depends(user)):
     row=db.query('SELECT * FROM assets WHERE id=? AND user_id=?',(aid,current['id']),one=True)
     if not row:raise HTTPException(404)
-    row['metadata']=json.loads(row['metadata']);return row
-
-@app.get('/api/directories')
-def directories(path:str='',current=Depends(admin)):
-    if demo.DEMO:raise HTTPException(403,'Local directories are available in the self-hosted edition')
-    root=SSD;p=Path(path or root).expanduser().resolve(strict=True)
-    if not p.is_relative_to(root) or not p.is_dir():raise ValueError('Browse is restricted to the connected external SSD')
-    children=[]
-    for x in sorted(p.iterdir(),key=lambda x:x.name.lower()):
-        try:
-            if not x.name.startswith('.') and x.is_dir() and not x.is_symlink():children.append({'name':x.name,'path':str(x)})
-        except OSError:continue
-    return {'path':str(p),'parent':str(p.parent) if p!=root else None,'directories':children[:300]}
+    from .migration import resolve_asset
+    row=resolve_asset(current['id'],row)
+    if not row['path'].startswith('s3://'):raise HTTPException(409,'This dataset is still being prepared in cloud storage')
+    from .asset_listing import public_metadata
+    row['metadata']=public_metadata(json.loads(row['metadata']) if isinstance(row['metadata'],str) else row['metadata'])
+    return row
 
 @app.post('/api/tier-requests')
 def tier_request(payload:dict=Body(...),current=Depends(user)):
@@ -212,50 +203,8 @@ def tier_request(payload:dict=Body(...),current=Depends(user)):
         db.audit(c,current['id'],'entitlement.review.requested',detail={'tier':payload['tier']})
     return {'state':'pending'}
 
-@app.post('/api/assets/scan')
-def scan(payload:dict=Body(...),current=Depends(user)):return {'id':data.scan(current['id'],payload.get('root',''))}
-
 @app.post('/api/public/{source_id}/probe')
 def probe(source_id:str,current=Depends(user)):return data.probe_public(source_id)
-
-@app.post('/api/assets/{aid}/sync')
-def sync(aid:str,current=Depends(user)):return {'id':data.start_transfer(current,aid)}
-
-@app.post('/api/transfers/{tid}/cancel')
-def cancel_transfer(tid:str,current=Depends(user)):
-    with db.tx() as c:
-        result=c.execute('UPDATE transfers SET cancel_requested=1 WHERE id=? AND user_id=?',(tid,current['id']))
-        if not result.rowcount:raise HTTPException(404)
-        db.audit(c,current['id'],'transfer.cancel.requested',tid)
-    return {'requested':True}
-
-@app.post('/api/uploads')
-async def upload(request:Request,current=Depends(user)):
-    if current['frozen']:raise ValueError('Workspace is frozen')
-    name=Path(request.headers.get('x-file-name','upload.dat')).name
-    if not re.fullmatch(r'[A-Za-z0-9._ -]{1,160}',name):raise ValueError('Choose a simple file name without path characters')
-    folder=DATA/'uploads'/current['id']/db.ident();folder.mkdir(parents=True,exist_ok=True)
-    path=folder/name;total=0;reservation=int(request.headers.get('content-length',64*1024*1024));tid=db.ident('transfer_');aid=db.ident('upload_')
-    with db.tx() as c:
-        if data.storage_exposure(c,current['id'])+reservation>data.settings(current['id'])['max_upload_gib']*1024**3:raise ValueError('Retained data and concurrent upload quota exhausted')
-        c.execute('INSERT INTO transfers(id,user_id,asset_id,state,total,started) VALUES(?,?,?,?,?,?)',(tid,current['id'],aid,'browser-upload',reservation,time.time()))
-    try:
-        with path.open('wb') as f:
-            async for chunk in request.stream():
-                total+=len(chunk)
-                if total>64*1024*1024:raise ValueError('Browser upload exceeds 64 MiB; register its SSD directory or use S3 sync')
-                f.write(chunk)
-        fmt=data.file_type(path)
-        if not fmt:raise ValueError('Unrecognized genomic file extension')
-        with db.tx() as c:
-            c.execute('INSERT INTO assets VALUES(?,?,?,?,?,?,?,?,?,?)',(aid,current['id'],str(path),name,fmt,total,path.stat().st_mtime,'upload',None,db.encode({'root':str(folder),'uploaded':True})))
-            db.audit(c,current['id'],'asset.uploaded',aid,{'bytes':total,'format':fmt})
-            c.execute("UPDATE transfers SET state='browser-complete',bytes=?,total=?,finished=? WHERE id=?",(total,total,time.time(),tid))
-        return {'id':aid,'name':name,'bytes':total,'format':fmt}
-    except BaseException:
-        path.unlink(missing_ok=True)
-        with db.tx() as c:c.execute("UPDATE transfers SET state='failed',finished=? WHERE id=?",(time.time(),tid))
-        raise
 
 @app.get('/api/graphs')
 def graphs(current=Depends(user)):return db.query('SELECT id,name,revision,updated FROM graphs WHERE user_id=? ORDER BY updated DESC',(current['id'],))
@@ -375,11 +324,19 @@ def check_secret(sid:str,current=Depends(user)):
 
 @app.get('/api/admin')
 def admin_status(current=Depends(admin)):
-    users=[security.public_user(u) for u in db.query('SELECT * FROM users ORDER BY created')]
+    users=[security.public_user(u) for u in db.query("SELECT * FROM users WHERE role!='retired' ORDER BY created")]
     runs=db.query('SELECT id,user_id,state,created,started,finished,reserved,used,error FROM runs ORDER BY created DESC LIMIT 100')
     records=db.query('SELECT seq,body,hash,previous_hash FROM audit ORDER BY seq DESC LIMIT 300')
     for row in records:row['event']=json.loads(row.pop('body'))
     return {'users':users,'runs':runs,'audit':records,'audit_verification':security.verify_audit(),'quarantine':db.query('SELECT * FROM quarantine'),'controls':db.query('SELECT * FROM controls'),'capabilities':runner.capabilities(),'storage_bytes':sum(r['bytes'] for r in db.query('SELECT bytes FROM artifacts'))}
+
+@app.post('/api/admin/users')
+def create_user(payload:dict=Body(...),current=Depends(admin)):
+    return accounts.create(current,payload)
+
+@app.post('/api/admin/users/{uid}/remove')
+def remove_user(uid:str,payload:dict=Body(...),current=Depends(admin)):
+    return accounts.remove(current,uid,str(payload.get('reason','')))
 
 @app.post('/api/admin/users/{uid}')
 def admin_user(uid:str,payload:dict=Body(...),current=Depends(admin)):
@@ -392,7 +349,7 @@ def admin_user(uid:str,payload:dict=Body(...),current=Depends(admin)):
     if CLOUD and patch.get('tier') in ['pro','enterprise','research-pro'] and not entitlements.research(uid):raise ValueError('Use the funded Research Pro allowance control; a tier label does not authorize paid execution')
     if 'frozen'in patch and type(patch['frozen'])!=bool:raise ValueError('Invalid freeze state')
     with db.tx() as c:
-        if not c.execute('SELECT id FROM users WHERE id=?',(uid,)).fetchone():raise HTTPException(404)
+        if not c.execute("SELECT id FROM users WHERE id=? AND role!='retired'",(uid,)).fetchone():raise HTTPException(404)
         for key,value in patch.items():c.execute(f'UPDATE users SET {key}=? WHERE id=?',(value,uid))
         db.audit(c,current['id'],'admin.user.override',uid,{'reason':reason,'changes':patch})
         if patch.get('frozen'):c.execute("UPDATE runs SET cancel_requested=1,state='cancelling' WHERE user_id=? AND state IN ('queued','running')",(uid,))

@@ -33,7 +33,7 @@ def test_atomic_money_reservation_and_replay(client,owner,monkeypatch):
 def test_budget_api_and_cloud_inventory(client,owner):
     r=client.get('/api/operations/budget');assert r.status_code==200
     assert r.json()['limit_usd']<=200
-    assert client.get('/api/operations/datasets').json()['local_only_inventory']['files']==0
+    assert client.get('/api/operations/datasets').json()['preparing_inventory']['files']==0
 
 def test_admission_rejects_without_discarding_existing_work():
     async def exercise():

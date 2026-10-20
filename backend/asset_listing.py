@@ -1,10 +1,23 @@
 """Tenant-scoped discovery metadata; executable bindings are resolved separately."""
 import json
+import re
 
 from . import config, db
 
 
-def list_assets(uid, query='', limit=None, cloud=None):
+def public_metadata(value):
+    """Remove historical host paths from discovery responses, not stored records."""
+    if isinstance(value, dict):
+        return {key: public_metadata(item) for key, item in value.items()
+                if key not in {'root', 'local_path', 'source_path', 'original_path', 'ssd_root'}
+                and not (isinstance(item, str) and (item.startswith('/') or re.match(r'^[A-Za-z]:[\\/]', item)))}
+    if isinstance(value, list):
+        return [public_metadata(item) for item in value
+                if not (isinstance(item, str) and (item.startswith('/') or re.match(r'^[A-Za-z]:[\\/]', item)))]
+    return value
+
+
+def list_assets(uid, query='', limit=None, cloud=None, primary_only=False):
     if len(query) > 200:
         raise ValueError('Search is too long')
     if limit is not None and (type(limit) is not int or not 1 <= limit <= 1000):
@@ -36,8 +49,15 @@ def list_assets(uid, query='', limit=None, cloud=None):
         sql = 'SELECT a.*,NULL AS canonical_metadata,a.path AS listed_path FROM assets a WHERE a.user_id=?'
         args = [uid]
     if query:
-        sql += ' AND (LOWER(a.name) LIKE ? OR LOWER(a.family) LIKE ? OR LOWER(a.format) LIKE ?)'
-        args.extend(['%' + query.lower() + '%'] * 3)
+        sql += " AND (LOWER(a.name) LIKE ? OR LOWER(a.family) LIKE ? OR LOWER(a.format) LIKE ? OR LOWER(COALESCE(a.assembly,'')) LIKE ? OR LOWER(a.metadata) LIKE ?)"
+        args.extend(['%' + query.lower() + '%'] * 5)
+    if primary_only:
+        # Filter before LIMIT so companion-heavy inventories do not crowd out
+        # primary datasets. Exact companion attachment is handled separately.
+        sql += " AND a.format<>'INDEX'"
+        for suffix in ['.bai','.crai','.tbi','.csi','.fai','.gzi','.dict','.amb','.ann','.bwt','.bwt.2bit.64','.pac','.sa','.bt2','.bt2l','.ht2','.ht2l']:
+            sql += ' AND LOWER(a.name) NOT LIKE ?'
+            args.append('%'+suffix)
     sql += ' ORDER BY a.family,a.name,a.id'
     if limit is not None:
         sql += ' LIMIT ?'
@@ -54,4 +74,5 @@ def list_assets(uid, query='', limit=None, cloud=None):
             if canonical.get(key):
                 row['metadata'][key] = canonical[key]
         row['data_rights'] = asset_rights.disclosure(uid,row,grants,sources)
+        row['metadata'] = public_metadata(row['metadata'])
     return rows

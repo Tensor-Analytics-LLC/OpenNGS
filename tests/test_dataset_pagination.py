@@ -54,7 +54,7 @@ def test_alias_search_and_local_inventory_exclude_only_verified_migrations(clien
                       (ident,owner['id'],f'ds_page_{i:03}',ident,'/source/'+name,'{}'))
     found=client.get('/api/operations/datasets',params={'q':'100% reference'}).json()
     assert [d['id'] for d in found['datasets']]==['ds_page_000']
-    assert found['local_only_inventory']=={'files':1,'bytes':10}
+    assert found['preparing_inventory']=={'files':1,'bytes':10}
     # SQL wildcard characters in an entered filename are literal.
     assert client.get('/api/operations/datasets',params={'q':'Exact_100%'}).json()['total']==1
     assert client.get('/api/operations/datasets',params={'q':'ExactX100Y'}).json()['total']==0

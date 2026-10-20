@@ -28,8 +28,10 @@ test('Compatible suggestions include all 24 matching contracts, including assets
 });
 
 test('Database inspector exposes every supported database file format',()=>{
- for(const format of ['DATABASE','INDEX','INDEXED_VCF','VCF','BGZIP_VCF','TSV','CSV','ARCHIVE'])
+ for(const format of ['DATABASE','INDEXED_VCF','VCF','BGZIP_VCF','TSV','CSV','ARCHIVE'])
   assert.equal(acceptsAsset({id:'database.asset'},{format}),true,format);
+ assert.equal(acceptsAsset({id:'database.asset'},{format:'INDEX'}),false);
+ assert.equal(acceptsAsset({id:'database.asset'},{format:'VCF',name:'clinvar.vcf.gz.tbi'}),false);
  assert.equal(acceptsAsset({id:'database.asset'},{format:'FASTQ'}),false);
  assert.equal(acceptsAsset({id:'resource.clinvar',asset_family:'clinvar',outputs:[{type:'VCF'}]},{format:'BGZIP_VCF',family:'clinvar'}),true);
  assert.equal(acceptsAsset({id:'resource.clinvar',asset_family:'clinvar',outputs:[{type:'VCF'}]},{format:'VCF',family:'gnomad'}),false);

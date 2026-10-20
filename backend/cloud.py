@@ -54,7 +54,7 @@ def execute_batch(uid,rid,aid,spec,node,inputs,work,cancelled):
             for field in ['mate','index']:
                 meta=item.get('metadata',{})
                 if meta.get(field) and meta.get(field+'_sha256'):expected_digests[meta[field]]=meta[field+'_sha256']
-    # Stage exact files, not entire SSD directories or all tenant databases.
+    # Read only exact admitted cloud objects.
     for source,target in plan.pop('bindings'):
         if source.startswith('s3://'):
             source_bucket,source_key=source[5:].split('/',1)
@@ -71,26 +71,7 @@ def execute_batch(uid,rid,aid,spec,node,inputs,work,cancelled):
             if not digest:raise ValueError('Cloud input lacks an admitted SHA-256 identity')
             if source in expected_digests and digest!=expected_digests[source]:raise ValueError('Cloud artifact identity changed after publication')
             objects.append({'bucket':source_bucket,'key':source_key,'version_id':head.get('VersionId'),'target':target,'sha256':digest,'bytes':head['ContentLength']});continue
-        source=Path(source)
-        if source.stat().st_size>s['max_upload_gib']*1024**3:raise ValueError('Input exceeds this workspace staging ceiling')
-        digest=data.hash_file(source);key=f'tenants/{uid}/cache/sha256/{digest}/blob'
-        try:h=s3.head_object(Bucket=s['s3_bucket'],Key=key);exists=h.get('Metadata',{}).get('sha256')==digest
-        except s3.exceptions.ClientError as e:
-            if e.response['Error']['Code'] not in ['404','NoSuchKey','NotFound']:raise
-            exists=False
-        if not exists:
-            from boto3.s3.transfer import TransferConfig
-            tid=db.ident('transfer_')
-            with db.tx() as c:
-                if data.storage_exposure(c,uid)+source.stat().st_size>s['max_upload_gib']*1024**3:raise ValueError('Cumulative retained-cache quota exhausted')
-                c.execute('INSERT INTO transfers(id,user_id,asset_id,state,total,digest,started) VALUES(?,?,?,?,?,?,?)',(tid,uid,aid,'staging',source.stat().st_size,digest,time.time()))
-            try:
-                s3.upload_file(str(source),s['s3_bucket'],key,ExtraArgs={'ServerSideEncryption':'aws:kms','SSEKMSKeyId':s['kms_key_arn'],'Metadata':{'sha256':digest}},Config=TransferConfig(multipart_threshold=64*1024*1024,multipart_chunksize=64*1024*1024,max_concurrency=4))
-                with db.tx() as c:c.execute("UPDATE transfers SET state='complete',bytes=total,s3_uri=?,finished=? WHERE id=?",('s3://'+s['s3_bucket']+'/'+key,time.time(),tid))
-            except BaseException:
-                with db.tx() as c:c.execute("UPDATE transfers SET state='failed',finished=? WHERE id=?",(time.time(),tid))
-                raise
-        objects.append({'bucket':s['s3_bucket'],'key':key,'target':target,'sha256':digest,'bytes':source.stat().st_size})
+        raise ValueError('Pipeline inputs must be verified cloud objects; upload through the cloud dataset manager first')
     manifest={'schema_version':1,'tenant':uid,'run':rid,'attempt':aid,'bucket':s['s3_bucket'],'prefix':prefix,'kms_key_arn':s['kms_key_arn'],'inputs':objects,'plan':plan,'wall_seconds':node['resources']['timeout_seconds'],'max_output_bytes':node.get('_max_output_bytes',64*1024**2),'max_scratch_bytes':node['resources'].get('scratch_mb',2048)*1024**2}
     manifest['source_grants']=node.get('_migration_sources',[])
     if spec.get('secret_delivery'):

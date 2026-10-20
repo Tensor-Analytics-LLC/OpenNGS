@@ -30,7 +30,7 @@ Derived-viewer cleanup requires a completed, exact-version retention deletion. T
 | DNA engineering | Actual Minimap2, HTSlib/SAMtools and FreeBayes | Succeeded; 12 artifacts | Initial 1,237 s includes archive-publication debugging; not a steady-state runtime |
 | RNA read quality | Pinned public bacterial paired reads | Succeeded; 3 artifacts | 84.52 s |
 
-The hosted tests use image-contained fixtures and private S3; scientific execution does not depend on the SSD or a localhost server. The computer remained connected for observation, so a literal offline/disconnected-desktop test was not performed. AWS execution/staging paths contain no desktop dependency.
+The hosted tests use image-contained fixtures and private S3; scientific execution runs in AWS without a localhost server. The computer remained connected for observation, so a literal offline/disconnected-desktop test was not performed. AWS execution/staging paths contain no desktop dependency.
 
 Results verification included real ClinVar filtering and an authenticated 32-byte S3 range response (HTTP 206). The cloud pileup initially failed because the FASTA interface rejected a remote signed URL. A bounded FAI-directed S3 reference reader fixed that path: the 50-base checked window now returns **100 synthetic alignments with depth 100**, matching the fixture. Pileup coverage is explicitly limited to rendered reads, not whole-file depth.
 

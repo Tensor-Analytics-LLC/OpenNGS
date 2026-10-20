@@ -4,8 +4,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 STATE = Path(os.environ.get('NGS_STATE_DIR', ROOT / '.state')).expanduser().resolve()
 STATE.mkdir(parents=True, exist_ok=True, mode=0o700)
-SSD = Path(os.environ.get('NGS_LOCAL_ROOT','/Volumes/Extreme SSD')).expanduser().resolve()
-DATA = Path(os.environ.get('NGS_DATA_DIR', SSD / 'ngs-studio-data' if SSD.exists() else STATE / 'data')).expanduser().resolve()
+DATA = Path(os.environ.get('NGS_DATA_DIR', STATE / 'data')).expanduser().resolve()
 DATA.mkdir(parents=True, exist_ok=True, mode=0o700)
 REGION = os.environ.get('AWS_REGION', 'us-east-1')
 PROFILE = os.environ.get('NGS_AWS_PROFILE', os.environ.get('AWS_PROFILE',''))

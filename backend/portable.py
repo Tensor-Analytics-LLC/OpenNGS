@@ -76,13 +76,7 @@ def execute(job):
     def vcf(path):return pysam.VariantFile(path)
     from .scientific import TOOLS,execute as scientific_execute
     if tool in TOOLS:return scientific_execute(job)
-    if tool=='sample.clinvar':
-        local=Path('/Volumes/Extreme SSD/decode/reference-data/grch38/clinvar/clinvar.vcf.gz')
-        if not local.exists():raise ValueError('The configured public ClinVar snapshot is not present. Bind a permitted ClinVar SSD asset or sync the published release first.')
-        p=work/'ClinVar_GRCh38_1000.vcf'
-        with vcf(str(local)) as src,pysam.VariantFile(str(p),'w',header=src.header) as dest:
-            for record in itertools.islice(src,1000):dest.write(record)
-        return {'variants':[artifact(p,'VCF',assembly='GRCh38',public=True,source='https://ftp.ncbi.nlm.nih.gov/pub/clinvar/vcf_GRCh38/',subset='First 1000 source records',source_snapshot_mtime=local.stat().st_mtime)]}
+    if tool=='sample.clinvar':raise ValueError('The pinned ClinVar sample is unavailable in this runtime. Publish the verified sample bundle before execution.')
     if tool=='sample.alignments':
         reference,seq=fasta_fixture(work);pysam.faidx(str(reference));p=work/'engineering.bam';rng=random.Random(7341)
         with pysam.AlignmentFile(str(p),'wb',header={'HD':{'VN':'1.6','SO':'coordinate'},'SQ':[{'SN':'engineering_contig','LN':len(seq)}]}) as dest:
@@ -100,15 +94,7 @@ def execute(job):
         for name in ['sample_R1_1.fq.gz','sample_R1_2.fq.gz']:
             p=work/name;download_bounded(base+name,p);paths.append(p)
         return {'reads':[artifact(paths[0],'FASTQ_PAIR',mate=str(paths[1]),source=base,commit=commit,public=True,organism='prokaryotic test data',mate_sha256=sha(paths[1]))]}
-    if tool=='sample.giab':
-        local=Path('/Volumes/Extreme SSD/decode/reference-data/validation/giab/HG002_GRCh38/HG002_GRCh38_1_22_v4.2.1_benchmark.vcf.gz')
-        remote='https://giab.s3.us-east-1.amazonaws.com/release/AshkenazimTrio/HG002_NA24385_son/NISTv4.2.1/GRCh38/HG002_GRCh38_1_22_v4.2.1_benchmark.vcf.gz'
-        source=str(local) if local.exists() else remote
-        p=work/'HG002_chr22_1000.vcf'
-        with vcf(source) as src,pysam.VariantFile(str(p),'w',header=src.header) as out:
-            chrom='chr22' if 'chr22' in src.header.contigs else '22'
-            for rec in itertools.islice(src.fetch(chrom),1000):out.write(rec)
-        return {'variants':[artifact(p,'VCF',assembly='GRCh38',source=remote,local_source=local.exists(),benchmark='GIAB NIST v4.2.1',subset='first 1000 chr22 records; not a complete benchmarking region',public=True)]}
+    if tool=='sample.giab':raise ValueError('The pinned GIAB sample is unavailable in this runtime. Publish the verified sample bundle before execution.')
     if tool=='qc.summary':
         reads=first('reads');paths=[reads['path']]
         if reads.get('metadata',{}).get('mate'):paths.append(reads['metadata']['mate'])

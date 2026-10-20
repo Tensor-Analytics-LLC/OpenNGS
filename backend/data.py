@@ -1,4 +1,3 @@
-import concurrent.futures
 import hashlib
 import json
 import os
@@ -10,10 +9,27 @@ from botocore import UNSIGNED
 from botocore.config import Config
 from botocore.exceptions import ClientError
 from . import db
-from .config import DATA, SSD, REGION, aws_session
+from .config import DATA, REGION, aws_session
 
-DEFAULT_ROOT = str(SSD / 'decode/reference-data') if SSD.exists() else str(DATA)
-DEFAULTS = {'ssd_roots':[DEFAULT_ROOT], 'aws_region':'us-east-1','s3_bucket':os.environ.get('NGS_BUCKET',''),'kms_key_arn':os.environ.get('NGS_KMS_KEY',''),'batch_queue':'','batch_job_definition':'','backend':'portable','max_concurrency':2,'max_upload_gib':20,'max_node_seconds':600,'rights_approved':[],'image_approvals':{},'theme':'dark'}
+WORKER_INPUTS = frozenset()
+
+
+def bind_worker_inputs(paths, work):
+    """Trust only exact staged files inside an isolated scientific worker."""
+    from .config import CLOUD, DATABASE_URL, STATE
+    root = Path(work).resolve(strict=True)
+    if CLOUD or DATABASE_URL or not STATE.is_relative_to(root):
+        raise ValueError('Input bindings require isolated worker state')
+    permitted = set()
+    for value in paths:
+        path = Path(value).resolve(strict=True)
+        if not path.is_file() or not (path.is_relative_to(root) or path.is_relative_to(Path('/inputs'))):
+            raise ValueError('Input is outside the isolated worker staging directory')
+        permitted.add(path)
+    global WORKER_INPUTS
+    WORKER_INPUTS = frozenset(permitted)
+
+DEFAULTS = {'aws_region':'us-east-1','s3_bucket':os.environ.get('NGS_BUCKET',''),'kms_key_arn':os.environ.get('NGS_KMS_KEY',''),'batch_queue':'','batch_job_definition':'','backend':'portable','max_concurrency':2,'max_upload_gib':20,'max_node_seconds':600,'rights_approved':[],'image_approvals':{},'theme':'dark'}
 PUBLIC = [
  {'id':'giab-hg002','name':'GIAB HG002 · GRCh38 v4.2.1','family':'giab','format':'INDEXED_VCF','assembly':'GRCh38','bucket':'giab','key':'release/AshkenazimTrio/HG002_NA24385_son/NISTv4.2.1/GRCh38/HG002_GRCh38_1_22_v4.2.1_benchmark.vcf.gz','region':'us-east-1','docs':'https://registry.opendata.aws/giab/','license':'Public benchmark; cite NIST'},
  {'id':'gnomad-v4-chr22','name':'gnomAD genomes · v4.1 chr22','family':'gnomad','format':'INDEXED_VCF','assembly':'GRCh38','bucket':'gnomad-public-us-east-1','key':'release/4.1/vcf/genomes/gnomad.genomes.v4.1.sites.chr22.vcf.bgz','region':'us-east-1','docs':'https://gnomad.broadinstitute.org/data','license':'Review gnomAD data terms'},
@@ -36,20 +52,20 @@ for _source in PUBLIC:
     _source['source_identity'] = {'assembly':_source.get('assembly'), **PUBLIC_IDENTITIES[_source['id']]}
     _source['identity_note'] = 'Declared release and scope; immutable object version, matching companions and scientific compatibility still require verification.'
     if _source['source_identity']['mutable']:
-        _source['identity_note'] = 'Mutable provider listing: this does not identify the exact release of an existing local dataset.'
-POOL=concurrent.futures.ThreadPoolExecutor(max_workers=3,thread_name_prefix='data')
+        _source['identity_note'] = 'Mutable provider listing: this does not identify the exact release of an existing dataset.'
 
 def settings(uid):
     row=db.query('SELECT body FROM settings WHERE user_id=?',(uid,),one=True)
     result={**DEFAULTS, **(json.loads(row['body']) if row else {})}
+    result.pop('ssd_roots',None)
     from .config import DEMO
     from .entitlements import restricted,limits
-    if restricted(uid):result.update(ssd_roots=[],backend='hosted-demo',max_node_seconds=120,max_upload_gib=1)
+    if restricted(uid):result.update(backend='hosted-demo',max_node_seconds=120,max_upload_gib=1)
     elif DEMO:
         allowance=limits(uid)
         from .provisioning import profile
         capacity=profile(uid)
-        result.update(ssd_roots=[],backend='aws-batch',max_node_seconds=allowance['max_node_seconds'],max_upload_gib=max(1,allowance['max_scratch_mb']//1024),s3_bucket=capacity.get('bucket',''),kms_key_arn=os.getenv('NGS_KMS_KEY',''),batch_queue=capacity.get('queue',''),batch_job_definition=capacity.get('definition',''),max_concurrency=allowance['max_concurrent_jobs'],research_profile=capacity)
+        result.update(backend='aws-batch',max_node_seconds=allowance['max_node_seconds'],max_upload_gib=max(1,allowance['max_scratch_mb']//1024),s3_bucket=capacity.get('bucket',''),kms_key_arn=os.getenv('NGS_KMS_KEY',''),batch_queue=capacity.get('queue',''),batch_job_definition=capacity.get('definition',''),max_concurrency=allowance['max_concurrent_jobs'],research_profile=capacity)
         result['image_approvals']={k:capacity['image'] for k in capacity.get('tools',[]) } if capacity.get('image') else {}
         result['image_approvals'].update({k:v['image'] for k,v in capacity.get('runtime_profiles',{}).items()})
     return result
@@ -57,18 +73,12 @@ def settings(uid):
 def update_settings(user, patch):
     from .config import DEMO
     if DEMO and set(patch)-{'theme'}:raise ValueError('Hosted runtime and data limits are managed through funded administrator allowances')
-    allowed={'ssd_roots','s3_bucket','kms_key_arn','batch_queue','batch_job_definition','backend','max_upload_gib','max_node_seconds','theme'}
+    allowed={'s3_bucket','kms_key_arn','batch_queue','batch_job_definition','backend','max_upload_gib','max_node_seconds','theme'}
     if user['role']=='admin':allowed|={'rights_approved','image_approvals','max_concurrency'}
     if set(patch)-allowed:raise ValueError('Unknown or unauthorized setting')
     new={**settings(user['id']),**patch}
     if new['backend'] not in ['portable','docker','aws-batch','hosted-demo']:raise ValueError('Invalid backend')
     if new['theme'] not in ['dark','light']:raise ValueError('Invalid theme')
-    if not isinstance(new['ssd_roots'],list) or len(new['ssd_roots'])>8:raise ValueError('Choose at most eight data directories')
-    for root in new['ssd_roots']:
-        p=Path(root).expanduser().resolve()
-        if not p.is_dir() or p==Path('/') or p==Path.home():raise ValueError('Choose a specific existing data directory')
-        if user['role']!='admin' and not (p.is_relative_to(Path(DEFAULT_ROOT).resolve()) or p.is_relative_to(DATA/'uploads'/user['id'])):raise ValueError('Only the owner can register additional local filesystem roots')
-        if user['role']=='admin' and not (p.is_relative_to(SSD) or p.is_relative_to(DATA)):raise ValueError('Data directories must be on the connected SSD or in the Studio data store')
     if user['role']!='admin' and any(k in patch for k in ['s3_bucket','kms_key_arn','batch_queue','batch_job_definition','backend']):raise ValueError('Cloud and execution profiles are configured by the workspace owner')
     for key,low,high in [('max_upload_gib',1,2048),('max_node_seconds',10,86400),('max_concurrency',1,8)]:
         if not isinstance(new[key],int) or not low<=new[key]<=high:raise ValueError(f'{key} outside supported bounds')
@@ -85,8 +95,7 @@ def update_settings(user, patch):
 
 def permitted_path(uid,path):
     p=Path(path).expanduser().resolve(strict=True)
-    roots=[Path(x).expanduser().resolve() for x in settings(uid)['ssd_roots']]+[DATA]
-    if not any(p.is_relative_to(root) for root in roots):raise ValueError('File is outside registered data roots')
+    if not p.is_relative_to(DATA) and p not in WORKER_INPUTS:raise ValueError('File is outside the application-managed working directory')
     if not p.is_file():raise ValueError('A regular file is required')
     return p
 
@@ -104,49 +113,7 @@ def family(path):
     t=str(path).lower()
     for key in ['gnomad','clinvar','alphamissense','spliceai','dbnsfp','exomiser','hpo','omim','vep','revel','cadd','giab','ensembl','mane','clingen']:
         if key in t:return key
-    return 'reference' if file_type(path)=='FASTA' else 'local'
-
-def scan(uid,root):
-    root=Path(root).expanduser().resolve(strict=True)
-    if str(root) not in [str(Path(x).expanduser().resolve()) for x in settings(uid)['ssd_roots']]:raise ValueError('Register this directory in Settings before scanning')
-    sid=db.ident('scan_')
-    with db.tx() as c:
-        c.execute('INSERT INTO scans(id,user_id,state,root,started) VALUES(?,?,?,?,?)',(sid,uid,'running',str(root),time.time()))
-        db.audit(c,uid,'assets.scan.started',sid)
-    POOL.submit(scan_worker,sid,uid,root)
-    return sid
-
-def scan_worker(sid,uid,root):
-    count=total=0
-    try:
-        for parent,dirs,files in os.walk(root,followlinks=False):
-            dirs[:]=[d for d in dirs if not d.startswith('.') and not (Path(parent)/d).is_symlink()]
-            if len(Path(parent).relative_to(root).parts)>=10:dirs[:]=[]
-            for name in files:
-                if name.startswith('.') or count>=50000:continue
-                p=Path(parent)/name
-                if p.is_symlink():continue
-                fmt=file_type(p)
-                if not fmt:continue
-                try:st=p.stat()
-                except OSError:continue
-                meta={'root':str(root),'index_paths':[str(i) for i in [Path(str(p)+'.tbi'),Path(str(p)+'.bai'),Path(str(p)+'.csi'),Path(str(p)+'.fai')] if i.exists()]}
-                if fmt=='FASTQ':
-                    candidates={re.sub(r'([._])R1([._])',r'\g<1>R2\2',name,count=1),name.replace('_1.f','_2.f',1)}
-                    candidates={x for x in candidates if x!=name and (p.parent/x).is_file()}
-                    if len(candidates)==1:fmt='FASTQ_PAIR';meta['mate']=str(p.parent/next(iter(candidates)));meta['pairing']='filename-inferred; validate identifiers before scientific interpretation'
-                    elif len(candidates)>1:meta['pairing']='ambiguous';meta['mate_candidates']=sorted(candidates)
-                assembly='GRCh38' if any(s in str(p).lower() for s in ['grch38','hg38']) else 'GRCh37' if any(s in str(p).lower() for s in ['grch37','hg19']) else 'T2T-CHM13' if 'chm13' in str(p).lower() else None
-                aid='ssd_'+hashlib.sha256((uid+str(p)).encode()).hexdigest()[:24]
-                with db.tx() as c:
-                    c.execute('INSERT INTO assets VALUES(?,?,?,?,?,?,?,?,?,?) ON CONFLICT(user_id,path) DO UPDATE SET bytes=excluded.bytes,mtime=excluded.mtime,format=excluded.format,metadata=CASE WHEN assets.bytes=excluded.bytes AND assets.mtime=excluded.mtime THEN json_patch(assets.metadata,excluded.metadata) ELSE excluded.metadata END',(aid,uid,str(p),p.name,fmt,st.st_size,st.st_mtime,family(p),assembly,db.encode(meta)))
-                    count+=1;total+=st.st_size
-                    if count%50==0:c.execute('UPDATE scans SET files=?,bytes=? WHERE id=?',(count,total,sid))
-        with db.tx() as c:
-            c.execute("UPDATE scans SET state='complete',files=?,bytes=?,finished=? WHERE id=?",(count,total,time.time(),sid))
-            db.audit(c,uid,'assets.scan.completed',sid,{'files':count,'bytes':total})
-    except Exception as e:
-        with db.tx() as c:c.execute("UPDATE scans SET state='failed',error=?,finished=? WHERE id=?",(str(e)[:500],time.time(),sid))
+    return 'reference' if file_type(path)=='FASTA' else 'dataset'
 
 def unsigned_s3():
     import boto3
@@ -217,9 +184,10 @@ def resolve(uid, requested_family, assembly=None, backend='aws-batch', source_id
         from .migration import resolve_asset
         a=resolve_asset(uid,a)
         cloud=a['path'].startswith('s3://')
+        if not cloud:continue
         identity=asset_source_identity(a);compatibility,note=compare_source_identity(identity,requested)
         metadata=json.loads(a['metadata']) if isinstance(a['metadata'],str) else a['metadata']
-        candidates.append({'kind':'cloud' if cloud else 'ssd','rank':0 if cloud or backend!='aws-batch' else 2,'id':a['id'],'name':a['name'],'bytes':a['bytes'],'assembly':a['assembly'],'uri':a['path'] if cloud else None,'source_identity':identity,'compatibility':compatibility,'automatic_substitution_allowed':False,'provenance_warnings':metadata.get('provenance_warnings',[]),'reason':note+' '+('Verified private AWS bytes; original source identity retained.' if cloud else ('Use the explicitly selected SSD file for local execution.' if backend!='aws-batch' else 'Transfer only this exact selected source if a verified identical cloud copy is unavailable.'))})
+        candidates.append({'kind':'cloud','rank':0,'id':a['id'],'name':a['name'],'bytes':a['bytes'],'assembly':a['assembly'],'uri':a['path'] if cloud else None,'source_identity':identity,'compatibility':compatibility,'automatic_substitution_allowed':False,'provenance_warnings':metadata.get('provenance_warnings',[]),'reason':note+' Verified cloud data; original source identity retained.'})
     return sorted(candidates,key=lambda x:(x['rank'],x['name']))
 
 def hash_file(path,cancel=None):
@@ -236,65 +204,3 @@ def storage_exposure(c,uid):
     pending=c.execute("SELECT COALESCE(SUM(total),0) FROM transfers WHERE user_id=? AND state IN ('hashing','uploading','staging','browser-upload')",(uid,)).fetchone()[0]
     return local+cached+pending
 
-def start_transfer(user,asset_id):
-    if user['frozen']:raise ValueError('Workspace is frozen')
-    row=db.query('SELECT * FROM assets WHERE id=? AND user_id=?',(asset_id,user['id']),one=True)
-    if not row:raise ValueError('Asset not found')
-    p=permitted_path(user['id'],row['path']);s=settings(user['id'])
-    if not s['s3_bucket'] or not s['kms_key_arn']:raise ValueError('Configure a private us-east-1 cache bucket and KMS key first')
-    if p.stat().st_size>s['max_upload_gib']*1024**3:raise ValueError('Asset exceeds the configured upload ceiling')
-    tid=db.ident('transfer_')
-    with db.tx() as c:
-        if storage_exposure(c,user['id'])+p.stat().st_size>s['max_upload_gib']*1024**3:raise ValueError('Retained cache and concurrent upload quota exhausted')
-        c.execute('INSERT INTO transfers(id,user_id,asset_id,state,total,started) VALUES(?,?,?,?,?,?)',(tid,user['id'],asset_id,'hashing',p.stat().st_size,time.time()))
-        db.audit(c,user['id'],'transfer.admitted',tid,{'bytes':p.stat().st_size})
-    POOL.submit(transfer_worker,tid,user['id'],p,s)
-    return tid
-
-def transfer_worker(tid,uid,path,s):
-    upload_id=None;client=None;key=None
-    def cancelled():return bool(db.query('SELECT cancel_requested FROM transfers WHERE id=?',(tid,),one=True)['cancel_requested'])
-    try:
-        before=path.stat();digest=hash_file(path,cancelled)
-        client=aws_session().client('s3',config=Config(connect_timeout=10,read_timeout=60,retries={'max_attempts':2}))
-        location=client.get_bucket_location(Bucket=s['s3_bucket'])['LocationConstraint'] or 'us-east-1'
-        if location!='us-east-1':raise ValueError('Cache bucket is outside us-east-1')
-        key=f'tenants/{uid}/cache/sha256/{digest}/blob'
-        try:
-            h=client.head_object(Bucket=s['s3_bucket'],Key=key)
-            if h.get('Metadata',{}).get('sha256')==digest and h['ContentLength']==before.st_size:
-                with db.tx() as c:c.execute("UPDATE transfers SET state='complete',bytes=total,digest=?,s3_uri=?,finished=? WHERE id=?",(digest,f"s3://{s['s3_bucket']}/{key}",time.time(),tid))
-                return
-        except ClientError as e:
-            if e.response['Error']['Code'] not in ['404','NoSuchKey','NotFound']:raise
-        create=client.create_multipart_upload(Bucket=s['s3_bucket'],Key=key,ServerSideEncryption='aws:kms',SSEKMSKeyId=s['kms_key_arn'],Metadata={'sha256':digest,'tenant':uid})
-        upload_id=create['UploadId']
-        with db.tx() as c:c.execute("UPDATE transfers SET state='uploading',digest=? WHERE id=?",(digest,tid))
-        chunk_size=max(64*1024*1024,((before.st_size+9998)//9999+1024*1024-1)//(1024*1024)*(1024*1024))
-        parts=[];progress_lock=threading.Lock();progress=0
-        def upload_part(number):
-            nonlocal progress
-            if cancelled():raise RuntimeError('Transfer cancelled')
-            with path.open('rb') as f:f.seek((number-1)*chunk_size);body=f.read(chunk_size)
-            response=client.upload_part(Bucket=s['s3_bucket'],Key=key,UploadId=upload_id,PartNumber=number,Body=body)
-            with progress_lock:
-                progress+=len(body)
-                with db.tx() as c:c.execute('UPDATE transfers SET bytes=? WHERE id=?',(progress,tid))
-            return {'PartNumber':number,'ETag':response['ETag']}
-        count=max(1,(before.st_size+chunk_size-1)//chunk_size)
-        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:parts=list(pool.map(upload_part,range(1,count+1)))
-        after=path.stat()
-        if (before.st_size,before.st_mtime_ns)!=(after.st_size,after.st_mtime_ns):raise RuntimeError('Source changed during transfer; upload aborted')
-        if cancelled():raise RuntimeError('Transfer cancelled')
-        client.complete_multipart_upload(Bucket=s['s3_bucket'],Key=key,UploadId=upload_id,MultipartUpload={'Parts':sorted(parts,key=lambda x:x['PartNumber'])})
-        upload_id=None
-        h=client.head_object(Bucket=s['s3_bucket'],Key=key)
-        if h['ContentLength']!=before.st_size or h.get('Metadata',{}).get('sha256')!=digest:raise RuntimeError('Completed object metadata did not verify')
-        with db.tx() as c:
-            c.execute("UPDATE transfers SET state='complete',digest=?,s3_uri=?,finished=? WHERE id=?",(digest,f"s3://{s['s3_bucket']}/{key}",time.time(),tid))
-            db.audit(c,uid,'transfer.completed',tid,{'sha256':digest,'bytes':before.st_size})
-    except Exception as e:
-        if upload_id and client:
-            try:client.abort_multipart_upload(Bucket=s['s3_bucket'],Key=key,UploadId=upload_id)
-            except Exception:pass
-        with db.tx() as c:c.execute('UPDATE transfers SET state=?,error=?,finished=? WHERE id=?',('cancelled' if cancelled() else 'failed',str(e)[:500],time.time(),tid))

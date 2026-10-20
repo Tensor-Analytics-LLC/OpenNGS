@@ -23,7 +23,7 @@ def test_explore_discovers_full_catalogue_without_execution_authority(client, ow
     assert 'results.prepare' not in visible
     assert visible['resource.grch38']['availability']['state'] == 'Requires entitlement'
     assert visible['resource.grch38']['asset_candidates'] == []
-    with pytest.raises(ValueError, match='hosted sample tool'):
+    with pytest.raises(ValueError, match='Research Pro|hosted sample tool'):
         demo.validate({'nodes': [{'tool': 'deepvariant'}], 'edges': []}, owner['id'])
     assert all('availability' in n and n['availability']['reason'] for n in visible.values())
 
@@ -46,7 +46,7 @@ def test_asset_candidates_only_include_tenant_verified_cloud_versions(client, ow
             c.execute('INSERT INTO datasets VALUES(?,?,?,?,?,?,?,?,?,?,?,?)', (ident, tenant, None, ident+'.fa', 20, 'a'*64, state, ident, version, '{}', now, now))
     nodes = {n['id']: n for n in catalogue_view.view(uid)['nodes']}
     assert [a['id'] for a in nodes['resource.grch38']['asset_candidates']] == ['ready']
-    assert nodes['resource.grch38']['parameters'][0]['default'] == 'ready'
+    assert nodes['resource.grch38']['parameters'][0]['default'] == ''
 
 
 def test_visibility_does_not_mark_unexecuted_runtime_as_ready(client, owner, monkeypatch):
@@ -125,3 +125,39 @@ def test_static_resolution_route_precedes_asset_id_route(client, owner, monkeypa
     response=client.get('/api/assets/resolve?family=reference')
     assert response.status_code==200
     assert response.json()['candidates'][0]['id']=='resolved'
+
+
+def test_discovery_separates_allowance_key_and_runtime_requirements(client, owner, monkeypatch):
+    monkeypatch.setattr(config, 'CLOUD', True)
+    monkeypatch.setattr(entitlements, 'restricted', lambda uid: True)
+    rows = {n['id']: n for n in catalogue_view.view(owner['id'])['nodes']}
+    sentieon = rows['sentieon']['availability']['blockers']
+    assert {'licence', 'credential', 'allowance', 'runtime'} <= {item['kind'] for item in sentieon}
+    reference = rows['resource.grch38']['availability']['blockers']
+    assert {'dependency', 'allowance'} <= {item['kind'] for item in reference}
+    assert 'credential' not in {item['kind'] for item in reference}
+    assert all(item['code'] and item['message'] for item in sentieon + reference)
+
+
+def test_primary_filter_runs_before_limit_and_public_metadata_omits_host_paths(client, owner):
+    from backend.asset_listing import list_assets, public_metadata
+    uid, now = owner['id'], time.time()
+    with db.tx() as c:
+        for ident,name,fmt in [('index','a.vcf.gz.tbi','VCF'),('primary','b.vcf.gz','BGZIP_VCF')]:
+            metadata={'root':'/Volumes/source','sha256':'a'*64,'version_id':'v1',
+                      'index_paths':['/Volumes/source/old.tbi','s3://own/index.tbi'],
+                      'source_identity':{'path':'/private/old','release':'release-2026.10'}}
+            c.execute('INSERT INTO assets VALUES(?,?,?,?,?,?,?,?,?,?)',
+                      (ident,uid,'s3://own/'+name,name,fmt,10,now,'clinvar','GRCh38',db.encode(metadata)))
+            c.execute('INSERT INTO datasets VALUES(?,?,?,?,?,?,?,?,?,?,?,?)',
+                      (ident,uid,None,name,10,'a'*64,'Ready',ident,'v1','{}',now,now))
+    rows=list_assets(uid,cloud=True,primary_only=True,limit=1)
+    assert [row['id'] for row in rows] == ['primary']
+    assert rows[0]['metadata']['sha256']=='a'*64
+    assert rows[0]['metadata']['index_paths']==['s3://own/index.tbi']
+    assert rows[0]['metadata']['source_identity']=={'release':'release-2026.10'}
+    assert 'root' not in rows[0]['metadata']
+    assert public_metadata({'path':r'C:\data\db.vcf','url':'https://provider/data'}) == {'url':'https://provider/data'}
+    assert [row['id'] for row in list_assets(uid,cloud=True,primary_only=True,query='grch38')] == ['primary']
+    assert [row['id'] for row in list_assets(uid,cloud=True,primary_only=True,query='release-2026.10')] == ['primary']
+    assert list_assets('foreign-user',cloud=True,primary_only=True,query='release-2026.10') == []

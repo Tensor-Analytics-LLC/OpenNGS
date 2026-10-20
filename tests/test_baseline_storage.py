@@ -69,7 +69,7 @@ def test_pro_reserves_incremental_financial_capacity_once_but_counts_full_physic
     owner,plan=allocation;uid=owner['id'];budget.allocate_baseline_storage(uid,plan['plan_id'],'Existing reviewed baseline storage')
     import_one(plan,plan['objects'][0])
     body={k:entitlements.EXPLORE[k] for k in entitlements.REQUIRED}
-    body.update(max_upload_bytes=GIB,max_storage_bytes=7*GIB,monthly_budget_usd=2)
+    body.update(max_upload_bytes=GIB,max_storage_bytes=7*GIB,monthly_budget_usd=500)
     allowance=entitlements.grant(owner,uid,{'reason':'Explicit funded unit-test allowance','funding_confirmed':True,'allowance':body})
     first=budget.reserve_storage_capacity(uid,allowance)
     assert json.loads(first['details'])['additional_bytes']==GIB

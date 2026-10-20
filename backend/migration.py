@@ -334,7 +334,7 @@ def status(uid=None):
         plan['verified_objects'] = ready.get('objects',0);plan['verified_bytes'] = ready.get('verified_bytes',0)
         plan['complete'] = plan['verified_objects']==plan['total_objects'] and plan['verified_bytes']==plan['total_bytes']
         plan.pop('owner_id',None)
-    return {'plans':plans, 'objects': rows, 'provenance_warnings': provenance_warnings(uid), 'scope': 'Private, byte-identical source migration. Ready requires immutable-version raw SHA256 verification. Original source files and all alias metadata are preserved; scientific dependency compatibility and use rights remain separate checks.'}
+    return {'plans':plans, 'objects': rows, 'provenance_warnings': provenance_warnings(uid), 'scope': 'Private cloud acquisition with exact source identity. Ready requires immutable AWS object versions and raw SHA256 verification. Provenance and original asset bindings are preserved; scientific dependency compatibility and use rights remain separate checks.'}
 
 
 def refresh_loop(stop):

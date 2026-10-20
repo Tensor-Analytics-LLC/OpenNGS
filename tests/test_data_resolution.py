@@ -6,7 +6,7 @@ from backend import data,db
 def add_asset(uid,name,family='gnomad',assembly='GRCh38'):
     aid=db.ident('asset_')
     with db.tx() as c:
-        c.execute('INSERT INTO assets VALUES(?,?,?,?,?,?,?,?,?,?)',(aid,uid,'/preserved/'+aid,name,'VCF',100,time.time(),family,assembly,'{}'))
+        c.execute('INSERT INTO assets VALUES(?,?,?,?,?,?,?,?,?,?)',(aid,uid,'s3://verified-test-bucket/tenants/'+uid+'/datasets/'+aid,name,'VCF',100,time.time(),family,assembly,'{}'))
     return aid
 
 

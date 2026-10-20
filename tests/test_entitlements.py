@@ -4,7 +4,7 @@ from backend import budget,db,entitlements,demo,registry
 
 def allowance():
     p={k:v for k,v in entitlements.EXPLORE.items() if k in entitlements.REQUIRED}
-    p.update(monthly_budget_usd=50,max_upload_bytes=1024**3,max_storage_bytes=10*1024**3,max_vcpus=8,max_memory_mb=32768,max_scratch_mb=102400,max_node_seconds=3600,max_job_seconds=14400,daily_cpu_seconds=28800,monthly_cpu_seconds=288000,max_concurrent_jobs=2,max_queued_jobs=10)
+    p.update(monthly_budget_usd=500,max_upload_bytes=1024**3,max_storage_bytes=10*1024**3,max_vcpus=8,max_memory_mb=32768,max_scratch_mb=102400,max_node_seconds=3600,max_job_seconds=14400,daily_cpu_seconds=28800,monthly_cpu_seconds=288000,max_concurrent_jobs=2,max_queued_jobs=10)
     return p
 
 def test_research_needs_explicit_funding_and_preserves_existing_data(client,owner):
@@ -23,7 +23,7 @@ def test_research_reservations_do_not_consume_explore_budget(client,owner,monkey
     with db.tx() as c:budget.reserve(c,owner['id'],'funded-test','scientific',10,{})
     assert budget.snapshot()['available_after_safety_usd']==before
     with pytest.raises(budget.BudgetFull):
-        with db.tx() as c:budget.reserve(c,owner['id'],'over-budget-test','scientific',50,{})
+        with db.tx() as c:budget.reserve(c,owner['id'],'over-budget-test','scientific',500,{})
     assert len(db.query('SELECT * FROM cost_reservations'))==1
     assert db.query('SELECT account FROM cost_allocations',one=True)['account']=='research-pro'
     monkeypatch.setenv('NGS_MONTHLY_LIMIT_USD','250')

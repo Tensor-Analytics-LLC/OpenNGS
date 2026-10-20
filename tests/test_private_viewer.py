@@ -2,6 +2,7 @@ import io
 import json
 import os
 import subprocess
+import shutil
 import sys
 import time
 from pathlib import Path
@@ -50,7 +51,8 @@ def test_private_worker_does_not_publish_truncated_index(tmp_path):
 
 def test_ephemeral_worker_pileup_on_known_alignment(tmp_path):
     work=tmp_path/'worker';work.mkdir()
-    source=ROOT/'demo-data/sample.alignments'
+    source=work/'inputs'
+    shutil.copytree(ROOT/'demo-data/sample.alignments',source)
     alignment=artifact(source/'engineering.bam','INDEXED_BAM',assembly='engineering',index=str(source/'engineering.bam.bai'))
     reference=artifact(source/'engineering.fa','FASTA',assembly='engineering',index=str(source/'engineering.fa.fai'))
     job={'tool':'results.prepare','params':{'operation':'pileup','chrom':'engineering_contig','start':900,'end':1100},

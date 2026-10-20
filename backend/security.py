@@ -25,7 +25,7 @@ def verify_password(password,encoded):
 def session_for(token):
     if not token:return None
     hashed=hashlib.sha256(token.encode()).hexdigest()
-    return db.query('SELECT u.*,s.csrf,s.expires FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires>?',(hashed,time.time()),one=True)
+    return db.query("SELECT u.*,s.csrf,s.expires FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires>? AND u.role!='retired'",(hashed,time.time()),one=True)
 
 def issue_session(c,uid):
     token=secrets.token_urlsafe(40);csrf=secrets.token_urlsafe(32)

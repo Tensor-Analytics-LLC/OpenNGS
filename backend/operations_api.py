@@ -46,6 +46,16 @@ def install(app,user,admin):
     @app.get('/api/account/entitlements')
     def allowances(current=Depends(user)):return entitlements.limits(current['id'])
 
+    @app.get('/api/account/usage')
+    def account_usage(current=Depends(user)):
+        from datetime import datetime,timezone
+        now=datetime.now(timezone.utc)
+        reset=datetime(now.year+(now.month==12),1 if now.month==12 else now.month+1,1,tzinfo=timezone.utc)
+        allowance=entitlements.limits(current['id']);remaining=entitlements.remaining(current['id'])
+        return {'allowance':allowance,'remaining':remaining,'shared_budget':budget.snapshot(),
+                'execution_paused':not remaining['admission_open'] or remaining['budget_usd']<=0,
+                'reset_at':reset.isoformat().replace('+00:00','Z'),'scope':'user' if allowance['access']=='research-pro' else 'shared'}
+
     @app.get('/api/account/capacity')
     def capacity(current=Depends(user)):
         from .provisioning import profile
@@ -126,14 +136,21 @@ def install(app,user,admin):
             where+=' AND (d.created<? OR (d.created=? AND d.id<?))';args.extend([cursor['created'],cursor['created'],cursor['id']])
         # Legacy PostgreSQL REAL columns otherwise serialize a shortened float32
         # value that differs from the value used by SQL's cursor comparison.
-        rows=db.query('SELECT d.id,d.source_asset,d.name,d.bytes,d.sha256,d.state,CAST(d.created AS DOUBLE PRECISION) AS created,d.updated FROM datasets d WHERE '+where+' ORDER BY d.created DESC,d.id DESC LIMIT ?',(*args,limit+1))
+        rows=db.query('SELECT d.id,d.source_asset,d.name,d.bytes,d.sha256,d.state,CAST(d.created AS DOUBLE PRECISION) AS created,d.updated,d.manifest,a.family,a.format,a.assembly,a.metadata FROM datasets d LEFT JOIN assets a ON a.user_id=d.user_id AND a.id=COALESCE(d.source_asset,d.id) WHERE '+where+' ORDER BY d.created DESC,d.id DESC LIMIT ?',(*args,limit+1))
         next_cursor=None
         if len(rows)>limit:
             rows=rows[:limit];last=rows[-1]
             next_cursor=base64.urlsafe_b64encode(db.encode({'v':1,'created':last['created'],'id':last['id'],'q':q,'state':state,'owner':current['id']}).encode()).decode().rstrip('=')
+        for row in rows:
+            manifest=json.loads(row.pop('manifest') or '{}');meta=json.loads(row.pop('metadata') or '{}')
+            row['format']=row.get('format') or manifest.get('format') or 'DATABASE'
+            row['family']=row.get('family') or 'dataset'
+            row['assembly']=row.get('assembly') or manifest.get('assembly')
+            from .asset_listing import public_metadata
+            row['metadata']=public_metadata({k:v for k,v in {**manifest,**meta}.items() if k in ['release','version','assembly','sample_id','contig_style','cohort','description','source_identity','sha256','version_id','dataset_id']})
         inventory=db.query("SELECT COUNT(*) AS files,COALESCE(SUM(a.bytes),0) AS bytes FROM assets a WHERE a.user_id=? AND a.path NOT LIKE 's3://%' AND NOT EXISTS (SELECT 1 FROM migration_assets m JOIN datasets d ON d.id=m.dataset_id AND d.user_id=m.user_id WHERE m.asset_id=a.id AND m.user_id=a.user_id AND d.state='Ready')",(current['id'],),one=True)
         inventory={key:int(value) for key,value in inventory.items()}
-        return {'datasets':rows,'total':total,'next_cursor':next_cursor,'limit':limit,'q':q,'state':state,'local_only_inventory':inventory}
+        return {'datasets':rows,'total':total,'next_cursor':next_cursor,'limit':limit,'q':q,'state':state,'preparing_inventory':inventory}
 
     @app.post('/api/operations/datasets/{ident}/companions')
     def companions(ident:str,payload:dict=Body(...),current=Depends(user)):

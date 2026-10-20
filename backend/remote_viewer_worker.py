@@ -41,14 +41,19 @@ def execute(job):
     from .config import CLOUD, DATABASE_URL, STATE
     if CLOUD or DATABASE_URL or not STATE.is_relative_to(work):
         raise ValueError('Viewer parsing requires an isolated local worker state')
-    from . import db, workbench
+    from . import data, db, workbench
+    paths = []
+    for values in job['inputs'].values():
+        for row in values:
+            paths.append(row['path'])
+            meta = row.get('metadata', {})
+            paths.extend(meta[field] for field in ['index', 'mate', 'dictionary'] if meta.get(field))
+            paths.extend(meta.get('index_paths', []))
+    data.bind_worker_inputs(paths, work)
     uid = 'isolated_viewer'
     with db.tx() as c:
         c.execute("INSERT INTO users(id,email,password,role,tier,created) VALUES(?,?,?,'user','pro',?) ON CONFLICT(id) DO NOTHING",
                   (uid, 'isolated@invalid.local', 'no-login', time.time()))
-        roots = sorted({str(Path(row['path']).parent) for values in job['inputs'].values() for row in values})
-        c.execute('INSERT INTO settings VALUES(?,?) ON CONFLICT(user_id) DO UPDATE SET body=excluded.body',
-                  (uid, db.encode({'ssd_roots': roots})))
         for port, values in job['inputs'].items():
             row = values[0]
             c.execute('INSERT INTO assets VALUES(?,?,?,?,?,?,?,?,?,?)',

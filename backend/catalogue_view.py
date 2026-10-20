@@ -42,8 +42,12 @@ def _assets(uid):
     from .asset_listing import list_assets
     # Original workflow IDs survive cloud ingestion and content deduplication.
     # Never expose raw source paths, manifests or signed URLs in discovery.
-    return [{k: row[k] for k in ['id', 'name', 'format', 'assembly', 'bytes', 'family', 'data_rights']}
-            for row in list_assets(uid)]
+    result = []
+    for row in list_assets(uid, primary_only=True):
+        item = {k: row[k] for k in ['id', 'name', 'format', 'assembly', 'bytes', 'family', 'data_rights']}
+        item.update({k: row['metadata'].get(k) for k in ['release','version_id','sha256']})
+        result.append(item)
+    return result
 
 
 def _candidates(node, assets):
@@ -53,7 +57,7 @@ def _candidates(node, assets):
     if node['group'] == 'References':
         rows = [a for a in rows if a['format'] == 'FASTA']
     elif node['id'] == 'database.asset':
-        rows = [a for a in rows if a['format'] in ['DATABASE', 'INDEX', 'INDEXED_VCF', 'VCF', 'BGZIP_VCF', 'TSV', 'CSV', 'ARCHIVE']]
+        rows = [a for a in rows if a['format'] in ['DATABASE', 'INDEXED_VCF', 'VCF', 'BGZIP_VCF', 'TSV', 'CSV', 'ARCHIVE']]
     elif family and node['outputs'][0]['type'] == 'VCF':
         rows = [a for a in rows if a['format'] in ['VCF', 'BGZIP_VCF', 'INDEXED_VCF']]
     elif family:
@@ -62,7 +66,7 @@ def _candidates(node, assets):
 
 
 def _availability(node, evidence, settings, limited, credentials, shared):
-    tier = 'Explore samples' if node['id'] in demo.SOURCES else 'Explore + Research Pro' if node['id'] in demo.TOOLS else 'Research Pro / self-hosted'
+    tier = 'Explore samples' if node['id'] in demo.SOURCES else 'Explore + Research Pro' if node['id'] in demo.TOOLS else 'Research Pro'
     sample = evidence.get('sample_execution')
     validation = sample.get('scope') if sample else 'Awaiting representative execution and scientific validation.'
     if evidence.get('status') == 'implemented-verified':
@@ -72,36 +76,38 @@ def _availability(node, evidence, settings, limited, credentials, shared):
     if case:
         validation = 'Reviewed isolated execution case passed; this is not full-scale or clinical assay validation.'
     blockers = []
+    def block(kind, code, message):
+        blockers.append({'kind': kind, 'code': code, 'message': message})
     state = 'Ready'
     if node.get('quarantined'):
         state = 'Unavailable'
-        blockers.append('Quarantined: ' + str(node['quarantined']))
+        block('security', 'QUARANTINED', str(node['quarantined']))
     needs_rights = node['license'] in ['Academic', 'Review required', 'Commercial BYOL'] and node['id'] not in settings.get('rights_approved', [])
     needs_secret = node.get('credential') and (node['credential'], node['id']) not in credentials
     if needs_rights or needs_secret:
         if state == 'Ready':
             state = 'Requires entitlement'
         if needs_rights:
-            blockers.append('Explicit third-party rights approval is required for this tool, model or database release.')
+            block('licence', 'TOOL_RIGHTS', 'Administrator review of this tool or model licence is required.')
         if needs_secret:
-            blockers.append('A non-revoked ' + node['credential'] + ' credential must be bound to this node in Vault.')
+            block('credential', 'VAULT_BINDING', 'Bind a valid ' + node['credential'] + ' key or licence token in Vault.')
     source = node['id'] in _BINDINGS or node.get('asset_family')
     capacity = settings.get('research_profile', {})
     if source:
         if not node.get('asset_candidates'):
             if state == 'Ready':
                 state = 'Requires entitlement' if limited else 'Unavailable'
-            blockers.append('Bind an authorized, verified AWS dataset and its exact assembly/release companions.' if config.CLOUD else 'Bind an authorized local asset and its exact release companions.')
-        elif all(not a.get('data_rights', {}).get('execution_allowed', True) for a in node['asset_candidates']):
+            block('dependency', 'SOURCE_DATA', 'Choose a verified cloud dataset with the required assembly and companion files.')
+        elif node.get('asset_authorized_count') == 0:
             if state == 'Ready':
                 state = 'Requires entitlement'
-            blockers.append('The available data releases require administrator acknowledgment of existing use rights against their exact digest and version.')
+            block('licence', 'DATA_RIGHTS', 'Review the selected release’s data rights before execution.')
     elif node['id'] in demo.SOURCES:
         ready = any(d['id'] == 'curated-samples-v1' and d['state'] == 'Ready' for d in shared['dependencies'])
         if config.CLOUD and not ready:
             if state == 'Ready':
                 state = 'Provisioning'
-            blockers.append('Curated sample manifest and worker image verification is pending.')
+            block('dependency', 'SAMPLE_PROVISIONING', 'Curated sample verification is in progress.')
     else:
         verified = bool(sample or case or evidence.get('status') == 'implemented-verified')
         if config.CLOUD:
@@ -116,32 +122,31 @@ def _availability(node, evidence, settings, limited, credentials, shared):
             if not runtime_ready:
                 if state == 'Ready':
                     state = 'Unavailable'
-                blockers.append('No reviewed, digest-pinned execution runtime is published for this tool in the current workspace.')
+                block('runtime', 'RUNTIME_UNAVAILABLE', 'A compatible published execution runtime is not available.')
             if not limited and capacity.get('state') != 'Ready' and not node.get('api'):
                 if state == 'Ready':
                     state = 'Provisioning' if capacity.get('state') == 'Provisioning' else 'Unavailable'
-                blockers.append(capacity.get('reason', 'Funded worker capacity is not Ready.'))
+                block('runtime', 'CAPACITY_NOT_READY', capacity.get('reason', 'Funded worker capacity is not ready.'))
         else:
             runtime_ready = bool(node.get('builtin') or node.get('api') or _DIGEST.fullmatch(settings.get('image_approvals', {}).get(node['id'], '') or '') or node.get('approved') and _DIGEST.fullmatch(node.get('image', '') or ''))
             if not runtime_ready:
                 if state == 'Ready':
                     state = 'Unavailable'
-                blockers.append('Approve an immutable compatible runtime image before execution.')
+                block('runtime', 'RUNTIME_APPROVAL', 'Approve an immutable compatible runtime image.')
         if not verified and not node.get('api'):
             if state == 'Ready':
                 state = 'Unavailable'
-            blockers.append('Executable contract is declared; a representative execution case for this published runtime is still pending.')
+            block('validation', 'EXECUTION_UNVERIFIED', 'A representative execution case is still pending.')
         if node.get('api'):
             if state == 'Ready':
                 state = 'Requires entitlement'
-            blockers.append('Provider agreement, endpoint verification and permitted data-processing consent are checked for each execution.')
+            block('licence', 'PROVIDER_TERMS', 'Provider agreement, endpoint verification and data-processing consent are required.')
     if limited and node['id'] not in demo.TOOLS:
         if state == 'Ready':
             state = 'Requires entitlement'
-        blockers.append('Explore shows this node for workflow design. Executing it requires a funded Research Pro allowance or a self-hosted deployment.')
-    if not blockers:
-        blockers.append('Available for compatible inputs within your dataset, resource and spending allowances; graph preflight validates every bound dependency.')
-    return {'state': state, 'reason': ' '.join(blockers), 'tier': tier, 'validation': validation}
+        block('allowance', 'RESEARCH_ALLOWANCE', 'This workload needs an administrator-assigned Research Pro allowance.')
+    reason = ' '.join(item['message'] for item in blockers) or 'Ready for compatible inputs within your allowance.'
+    return {'state': state, 'reason': reason, 'blockers': blockers, 'tier': tier, 'validation': validation}
 
 
 def view(uid):
@@ -167,9 +172,8 @@ def view(uid):
             node['data_license_note'] = 'Data rights vary. The FOSS binding code does not license the selected database, scores or reference content.'
             candidates = _candidates(node, assets)
             node['asset_candidate_count'] = len(candidates)
+            node['asset_authorized_count'] = sum(a.get('data_rights', {}).get('execution_allowed', True) for a in candidates)
             node['asset_candidates'] = candidates[:30]
-            if len(candidates) == 1:
-                next(p for p in node['parameters'] if p['key'] == 'asset_id')['default'] = node['asset_candidates'][0]['id']
         evidence = shared['evidence'].get(node['id'], {})
         for field in ['runtime_provenance','runtime_package']:
             if evidence.get(field):

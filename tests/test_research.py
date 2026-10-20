@@ -11,6 +11,7 @@ def test_provisioned_template_is_private_bounded_and_retains_data():
     assert props['EphemeralStorage']['SizeInGiB']==200
     assert r['Compute']['Properties']['ComputeResources']['Type']=='FARGATE_SPOT'
     assert t['Parameters']['FleetVCPU']['AllowedValues']==[2,4,8,16,32,64]
+    assert t['Parameters']['MonthlyBudget']['MaxValue']==500
     assert r['Data']['DeletionPolicy']=='Retain'
     assert r['TaskRole']['Properties']['PermissionsBoundary']=='arn:boundary'
     assert 's3.us-east-1.amazonaws.com' in json.dumps(r['TaskRole'])
@@ -58,7 +59,7 @@ def test_companions_cannot_bind_another_tenants_dataset(client,owner):
         cloud_data.bind(owner['id'],'primary',{'mate_id':'foreign'})
 
 def test_unfunded_retained_storage_is_rejected(client,owner):
-    p=allowance();p.update(monthly_budget_usd=2,max_storage_bytes=1000*1024**3)
+    p=allowance();p.update(max_storage_bytes=20000*1024**3)
     with pytest.raises(ValueError,match='retained-storage'):
         entitlements.grant(owner,owner['id'],{'reason':'Insufficient funded storage test','funding_confirmed':True,'allowance':p})
 

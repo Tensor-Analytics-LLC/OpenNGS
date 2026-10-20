@@ -4,7 +4,7 @@ import {readFile} from 'node:fs/promises';
 
 globalThis.document={querySelector:()=>({})};
 const source=await readFile(new URL('../frontend/operations.js',import.meta.url),'utf8');
-const {mergeBindingChoices}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+const {mergeBindingChoices}=await import('data:text/javascript;base64,'+Buffer.from(source.replace("'./asset-presentation.mjs'",JSON.stringify(new URL('../frontend/asset-presentation.mjs',import.meta.url).href))).toString('base64'));
 
 test('Primary and companion selections survive disjoint search and pagination results',()=>{
  const primary={id:'primary',name:'reads.fastq',state:'Ready'};

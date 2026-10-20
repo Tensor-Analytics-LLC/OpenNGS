@@ -28,7 +28,11 @@ def research(uid):
 
 def limits(uid):
     r=research(uid)
-    if r:return {**json.loads(r['body']),'access':'research-pro','label':'OpenNGS Research Pro','grant_version':r['version']}
+    if r:
+        from .budget import RESEARCH_MONTHLY_USD
+        body=json.loads(r['body'])
+        return {**body,'monthly_budget_usd':min(RESEARCH_MONTHLY_USD,body['monthly_budget_usd']),
+                'access':'research-pro','label':'OpenNGS Research Pro','grant_version':r['version']}
     return dict(EXPLORE)
 
 def restricted(uid):return DEMO and not bool(research(uid))
@@ -42,24 +46,32 @@ def grant(actor,uid,payload):
             c.execute("UPDATE users SET tier=? WHERE id=?",('explore' if CLOUD else 'trial',uid))
             db.audit(c,actor['id'],'entitlement.research.revoked',uid,{'reason':reason})
         return limits(uid)
-    body=payload.get('allowance',{})
+    if payload.get('funding_source','additional')!='additional':raise ValueError('Research Pro uses a separately funded per-user allowance; the Explore baseline cannot fund Pro access')
+    body=dict(payload.get('allowance',{}))
     if set(body)!=REQUIRED:raise ValueError('Specify every allowance explicitly: '+', '.join(sorted(REQUIRED)))
     for key,value in body.items():
         if isinstance(value,bool) or not isinstance(value,(int,float)) or not math.isfinite(value) or value<0:raise ValueError('Invalid allowance: '+key)
         if key!='monthly_budget_usd' and type(value)!=int:raise ValueError('Allowance must be an integer: '+key)
-    if payload.get('funding_confirmed') is not True or not 0<body['monthly_budget_usd']<=100000:raise ValueError('Research Pro requires an explicitly funded additional monthly budget')
+    from . import budget
+    validation=db.query('SELECT value FROM controls WHERE key=?',('validation-tenant:'+uid,),one=True)
+    internal=bool(validation and validation['value']=='true')
+    if payload.get('funding_confirmed') is not True:raise ValueError('Research Pro requires explicit confirmation of additional per-user funding')
+    if internal:
+        if not 0<body['monthly_budget_usd']<=4:raise ValueError('Internal validation retains its separately reviewed allowance of at most $4')
+    elif body['monthly_budget_usd']!=budget.RESEARCH_MONTHLY_USD:
+        raise ValueError('Research Pro activation requires exactly $500 per user per month, including taxes, in addition to the shared Explore baseline')
     if not 1<=body['max_vcpus']<=192 or not 512<=body['max_memory_mb']<=1572864 or not 1<=body['retention_days']<=3650 or not 1<=body['max_concurrent_jobs']<=50:raise ValueError('Resource allowance exceeds the supported administrative envelope')
     if not 1<=body['max_node_seconds']<=172800 or not body['max_node_seconds']<=body['max_job_seconds']<=604800 or not 1<=body['max_queued_jobs']<=10000:raise ValueError('Set finite job, node and queue limits')
     if not 0<body['max_upload_bytes']<=5*1024**4 or body['max_storage_bytes']<body['max_upload_bytes']:raise ValueError('Set funded dataset and stored-byte limits')
     if not 0<=body['max_gpu']<=8 or body['max_scratch_mb']>4*1024**2:raise ValueError('GPU/scratch allowance exceeds the supported profile envelope')
     if body['monthly_cpu_seconds']<body['daily_cpu_seconds'] or body['daily_cpu_seconds']<=0:raise ValueError('Daily/monthly CPU allowances are inconsistent')
-    from . import budget
     with db.tx() as c:billable_bytes,baseline_bytes=budget.billable_storage_capacity(uid,body['max_storage_bytes'],c)
     recurring_storage=billable_bytes/1024**3*.023*(1+budget.policy()['tax_fraction'])
     if body['monthly_budget_usd']<=recurring_storage+1:raise ValueError('The additional allowance must cover its assigned retained-storage capacity, conservative tax reserve and at least $1 operational headroom')
     body.update(max_nodes=2000,max_output_bytes=body['max_storage_bytes'])
     with db.tx() as c:
-        if not c.execute('SELECT id FROM users WHERE id=?',(uid,)).fetchone():raise ValueError('User does not exist')
+        target=c.execute('SELECT id,role FROM users WHERE id=?',(uid,)).fetchone()
+        if not target or target['role']=='retired':raise ValueError('An active user account is required')
         old=c.execute('SELECT version FROM research_allowances WHERE user_id=?',(uid,)).fetchone();version=(old['version'] if old else 0)+1
         c.execute("INSERT INTO research_allowances VALUES(?,?,'active',?,?,?) ON CONFLICT(user_id) DO UPDATE SET version=excluded.version,state=excluded.state,body=excluded.body,updated=excluded.updated,actor=excluded.actor",(uid,version,db.encode(body),time.time(),actor['id']))
         c.execute("UPDATE users SET tier='research-pro',quota_seconds=? WHERE id=?",(body['monthly_cpu_seconds'],uid))
@@ -130,12 +142,19 @@ def remaining(uid):
         usage['storage_bytes']=max(0,p['max_storage_bytes']-(max(0,physical-baseline) if p['access']=='explore' else physical)-pending)
         usage['physical_stored_bytes']=physical
         usage['baseline_funded_stored_bytes']=baseline
-        charged=int(c.execute("SELECT COALESCE(SUM(CASE WHEN r.state='reserved' THEN r.reserved_micro ELSE r.charged_micro END),0) FROM cost_reservations r JOIN cost_allocations a ON a.reservation_id=r.id WHERE a.tenant=? AND a.account IN ('research-pro','validation') AND (r.period=? OR r.state='reserved')",(uid,now.strftime('%Y-%m'))).fetchone()[0])
-        posted=c.execute('SELECT value FROM controls WHERE key=?',('pro-posted:'+uid+':'+now.strftime('%Y-%m'),)).fetchone()
-        hold=c.execute('SELECT value FROM controls WHERE key=?',('pro-admission-hold:'+uid+':'+now.strftime('%Y-%m'),)).fetchone()
-    from .budget import policy,snapshot,MICRO
-    usage['budget_usd']=max(0,p['monthly_budget_usd']-max(charged*(1+policy()['tax_fraction']),int(posted['value']) if posted else 0)/MICRO) if research(uid) else snapshot()['available_after_safety_usd']
-    usage['admission_open']=not (hold and hold['value']=='true') if research(uid) else snapshot()['admission_open']
+        from .budget import research_snapshot,snapshot
+        baseline=snapshot(c)
+        frozen=c.execute("SELECT value FROM controls WHERE key='global_freeze'").fetchone()
+        if p['access']=='research-pro':
+            tenant=research_snapshot(c,uid,p['monthly_budget_usd'])
+            usage['budget_usd']=tenant['available_usd'];usage['admission_open']=tenant['admission_open']
+            validation=c.execute('SELECT value FROM controls WHERE key=?',('validation-tenant:'+uid,)).fetchone()
+            if validation and validation['value']=='true':
+                usage['budget_usd']=min(usage['budget_usd'],baseline['available_after_safety_usd'])
+                usage['admission_open']=usage['admission_open'] and baseline['admission_open']
+        else:
+            usage['budget_usd']=baseline['available_after_safety_usd']
+            usage['admission_open']=baseline['admission_open'] and not (frozen and frozen['value']=='true')
     return usage
 
 initialize()

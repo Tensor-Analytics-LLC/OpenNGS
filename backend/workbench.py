@@ -341,7 +341,7 @@ def omics(uid,aid,x=None,y=None):
     if remote_viewer.required(uid,owned(uid,aid)):return remote_viewer.start(uid,aid,'omics',{'x':x or '', 'y':y or ''})
     import numpy as np
     row=owned(uid,aid);path=source(uid,row)
-    if path.startswith('https://'):raise ValueError('Stage this expression/embedding table into the private SSD cache before charting; genome tracks support remote indexed ranges')
+    if path.startswith('https://'):raise ValueError('Prepare this expression table in verified cloud storage before charting')
     maximum=20000
     if row['format']=='H5AD':
         import h5py

@@ -1,4 +1,4 @@
-"""Hosted public-data edition. Self-hosted installations retain the full registry."""
+"""Server-side Explore admission for immutable curated cloud datasets."""
 import os
 from .config import DEMO
 
@@ -12,13 +12,13 @@ def enabled(spec,uid=None):
 def validate(g,uid=None):
     from .entitlements import restricted
     if not (restricted(uid) if uid else DEMO):return
-    if len(g['nodes'])>24:raise ValueError('The hosted sample edition supports 24 nodes per pipeline. The self-hosted edition supports larger graphs.')
+    if len(g['nodes'])>24:raise ValueError('Explore supports 24 nodes per pipeline. Larger workflows require a funded Research Pro allowance.')
     for n in g['nodes']:
-        if n['tool'] not in TOOLS:raise ValueError('Choose a hosted sample tool; this node is available in the self-hosted catalogue: '+n['tool'])
+        if n['tool'] not in TOOLS:raise ValueError('Choose an Explore hosted sample tool; this node requires Research Pro and a compatible approved cloud runtime: '+n['tool'])
         r=n.get('resources',{})
         if any(type(r.get(k,default))!=int for k,default in [('threads',2),('memory_mb',4096),('timeout_seconds',120)]):raise ValueError('Hosted resource limits must be integers')
         if r.get('threads',2)>2 or r.get('memory_mb',4096)>4096 or r.get('timeout_seconds',120)>120:raise ValueError('Hosted sample resources are bounded to 2 vCPU, 4 GiB and 120 seconds per node')
-        if n.get('advanced') or n.get('params',{}).get('extra'):raise ValueError('Custom CLI overrides are enabled in the self-hosted edition; hosted nodes expose their reviewed scientific parameters')
+        if n.get('advanced') or n.get('params',{}).get('extra'):raise ValueError('Explore exposes reviewed scientific parameters. Custom CLI overrides require a funded Research Pro allowance and runtime review.')
         from .registry import BASE
         allowed={p['key'] for p in BASE[n['tool']]['parameters']}
         if set(n.get('params',{}))-allowed:raise ValueError('Unrecognized sample parameter; dataset sources and versions are controlled by the platform')

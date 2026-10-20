@@ -1,8 +1,10 @@
 import {adapterPath} from './graph-core.mjs';
+import {isIndexAsset} from './asset-presentation.mjs';
 const STATES=new Set(['Ready','Provisioning','Requires entitlement','Unavailable']);
-const DATABASE_FORMATS=new Set(['DATABASE','INDEX','INDEXED_VCF','VCF','BGZIP_VCF','TSV','CSV','ARCHIVE']);
+const DATABASE_FORMATS=new Set(['DATABASE','INDEXED_VCF','VCF','BGZIP_VCF','TSV','CSV','ARCHIVE']);
 
 export function acceptsAsset(node,asset){
+ if(isIndexAsset(asset))return false;
  if(node.id==='reference.asset'||node.group==='References')return asset.format==='FASTA';
  if(node.id==='database.asset')return DATABASE_FORMATS.has(asset.format);
  if(node.asset_family){
@@ -17,8 +19,12 @@ export function nodeAvailability(node){
  const value=node.availability||{};
  const state=node.quarantined?'Unavailable':STATES.has(value.state)?value.state:'Unavailable';
  return {state,reason:node.quarantined?'Quarantined: '+node.quarantined:value.reason||node.support_note||'Execution readiness has not been verified for this deployment.',
-  tier:value.tier||'Allowance and dataset checks apply',validation:value.validation||'Representative scientific validation has not been established.'};
+  tier:value.tier||'Allowance checks apply',validation:value.validation||'Representative scientific validation has not been established.',
+  blockers:Array.isArray(value.blockers)?value.blockers:state==='Ready'?[]:[{kind:'runtime',code:'READINESS',message:value.reason||'Readiness not verified.'}]};
 }
+
+export const blockerLabels={licence:'Licence review',credential:'Vault key',allowance:'Compute allowance',dependency:'Data dependency',runtime:'Runtime',validation:'Validation',security:'Quarantined'};
+export function blockerSummary(node){const info=nodeAvailability(node);return info.blockers.length?[...new Set(info.blockers.map(b=>blockerLabels[b.kind]||b.kind))].join(' · '):'Ready';}
 
 export function catalogueCategories(nodes){
  return ['All',...[...new Set(nodes.map(n=>n.group))].sort((a,b)=>a.localeCompare(b))];

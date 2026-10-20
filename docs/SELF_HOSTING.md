@@ -2,7 +2,7 @@
 
 Run the README instructions or `docker compose up --build`. First signup creates the administrator. Keep local access bound to localhost. Back up the state directory together with the local Vault master; losing that file makes locally encrypted credentials unreadable. Never publish state, runtime environments, session cookies, database dumps, private inventories or uploaded genomic data.
 
-Set `NGS_LOCAL_ROOT` to a specific directory you control and `NGS_DATA_DIR` to an artifact directory, then register folders beneath that root in Settings. The Docker edition exposes its `/data` volume. Mount a specific research directory if necessary; do not mount the entire filesystem or Docker socket into a public API container.
+Datasets enter through the cloud upload manager and are verified before use. `NGS_DATA_DIR` holds application-managed temporary files and result indexes, not user-selected reference directories.
 
 Portable mode executes the implemented built-in operations. Native tools need an available Docker runtime and approved immutable images, or the explicit AWS Batch worker contract. Real input/output checks, scientific compatibility and third-party rights still apply. Arbitrary Nextflow/WDL/CWL programs are not universally translated.
 

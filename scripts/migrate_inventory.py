@@ -1,4 +1,4 @@
-"""Resumable private SSD-to-AWS migration; originals are read-only throughout.
+"""Resumable private cloud acquisition; original sources remain read-only.
 
 Prepare creates an immutable, versioned plan. Run uploads SHA-addressed objects
 and immutable completion manifests. The AWS migration verifier checks raw SHA256
@@ -122,12 +122,12 @@ def public_sources(plan, client):
         try:
             head = client.head_object(Bucket=bucket, Key=key)
             if head['ContentLength'] != obj['bytes']:
-                results.append({'name': obj['name'], 'state': 'SSD fallback', 'reason': 'Exact release AWS object size differs from local inventory'})
+                results.append({'name': obj['name'], 'state': 'Original-source transfer', 'reason': 'Exact release AWS object size differs from the verified source inventory'})
                 continue
-            obj['cloud_source'] = {'bucket': bucket, 'key': key, 'etag': head['ETag'], 'version_id': head.get('VersionId'), 'bytes': head['ContentLength'], 'provider': 'https://registry.opendata.aws/broad-gnomad/', 'release': '4.1', 'verification': 'Raw SHA256 must equal local source inventory before Ready'}
+            obj['cloud_source'] = {'bucket': bucket, 'key': key, 'etag': head['ETag'], 'version_id': head.get('VersionId'), 'bytes': head['ContentLength'], 'provider': 'https://registry.opendata.aws/broad-gnomad/', 'release': '4.1', 'verification': 'Raw SHA256 must equal the verified source inventory before Ready'}
             results.append({'name': obj['name'], 'state': 'Conditional AWS copy', 'bytes': obj['bytes']})
         except ClientError as error:
-            results.append({'name': obj['name'], 'state': 'SSD fallback', 'reason': error.response['Error']['Code']})
+            results.append({'name': obj['name'], 'state': 'Original-source transfer', 'reason': error.response['Error']['Code']})
     # The public-object proof becomes part of the immutable plan identity.
     plan.pop('plan_id', None)
     plan['plan_id'] = 'migration_' + hashlib.sha256(encode(plan).encode()).hexdigest()[:24]
@@ -352,7 +352,7 @@ def main():
             raise
         published = migrator.call('head_object', Bucket=plan['bucket'], Key=key)
         if published.get('Metadata', {}).get('sha256') != hashlib.sha256(payload).hexdigest():
-            raise ValueError('Cloud plan differs from local immutable checkpoint')
+            raise ValueError('Cloud plan differs from the registered immutable checkpoint')
     registration = {'plan_id': plan['plan_id'], 'owner_id': plan['owner_id'], 'bucket': plan['bucket'], 'key': key, 'version_id': published['VersionId'], 'sha256': hashlib.sha256(payload).hexdigest()}
     (folder / 'registration.json').write_text(encode(registration))
     objects = sorted(plan['objects'], key=lambda x: (not bool(x.get('cloud_source')), x['bytes']))

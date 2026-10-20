@@ -145,9 +145,9 @@ def preflight(graph,user,capabilities=None):
                 try:asset=resolve_asset(user['id'],asset)
                 except ValueError as error:issue('DATA_NOT_STAGED',str(error),n['id'])
                 if json.loads(asset['metadata']).get('migration_companions_pending'):issue('DATA_NOT_STAGED','Exact companion files are still awaiting AWS migration verification.',n['id'])
-            if not asset:issue('ASSET_REQUIRED','Select an indexed SSD asset or an existing run artifact.',n['id'])
+            if not asset:issue('ASSET_REQUIRED','Select a verified cloud dataset or an existing run output.',n['id'])
             elif n['tool']=='reference.asset' and asset.get('assembly') and params.get('assembly')!=asset['assembly']:issue('ASSEMBLY_MISMATCH','Selected assembly differs from the indexed reference asset.',n['id'])
-            elif CLOUD and asset and not asset['path'].startswith('s3://'):issue('DATA_NOT_STAGED','The exact asset is still local. Complete verified AWS ingestion before execution; no SSD access is available in cloud workers.',n['id'])
+            elif CLOUD and asset and not asset['path'].startswith('s3://'):issue('DATA_NOT_STAGED','This dataset is not yet verified in cloud storage. Wait for preparation to complete.',n['id'])
             if asset and json.loads(asset['metadata']).get('migration_companions_pending'):
                 issue('MIGRATION_COMPANIONS','The primary data is verified, but one or more exact companion files are still migrating. Wait for the complete input bundle.',n['id'])
             if asset:
