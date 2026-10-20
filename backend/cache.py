@@ -36,6 +36,8 @@ def file_identity(uid,path,cloud_settings=None):
     return {'digest':digest,'bytes':st.st_size}
 
 def key(uid,spec,node,inputs,backend,extra_spec=None,cloud_settings=None):
+    from .demo import SOURCES
+    if backend=='aws-batch' and spec['id'] in SOURCES:return None
     if spec.get('api') or spec.get('asset_family') or spec.get('credential') or spec['id'] in ['oncokb','franklin','sample.clinvar','asset.file','reference.asset','database.asset','utility.export']:return None
     identities={}
     for port,rows in sorted(inputs.items()):

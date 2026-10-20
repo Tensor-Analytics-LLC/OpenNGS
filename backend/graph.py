@@ -209,6 +209,11 @@ def preflight(graph,user,capabilities=None):
         if len(graph['nodes'])>allowance['max_nodes']:issue('TIER_NODES','Graph exceeds the assigned node allowance')
         for n in graph['nodes']:
             if n['tool'] not in specs:continue
+            from .demo import SOURCES
+            if allowance['access']=='research-pro' and n['tool'] in SOURCES:
+                from .curated_cloud import outputs as curated_outputs
+                try:curated_outputs(user['id'],n['tool'])
+                except ValueError as error:issue('CURATED_CLOUD_SOURCE',str(error),n['id'])
             r={**specs[n['tool']]['resources'],**n.get('resources',{})}
             if r['threads']>allowance['max_vcpus'] or r['memory_mb']>allowance['max_memory_mb'] or r.get('scratch_mb',2048)>allowance['max_scratch_mb'] or r['timeout_seconds']>allowance['max_node_seconds']:issue('TIER_RESOURCES','Requested resources exceed the assigned allowance',n['id'])
             if specs[n['tool']].get('resource')=='gpu' and allowance['max_gpu']<1:issue('TIER_GPU','GPU use requires an explicitly funded GPU allowance',n['id'])

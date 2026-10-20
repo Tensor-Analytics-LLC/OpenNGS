@@ -11,6 +11,17 @@ def profile(uid):
 def save(uid,value):
     with db.tx() as c:c.execute('INSERT INTO controls VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',('research-profile:'+uid,db.encode(value)))
 
+def ensure_curated(uid,actor_id):
+    from . import curated_cloud
+    try:
+        for source in curated_cloud.demo.SOURCES:curated_cloud.outputs(uid,source)
+        return
+    except ValueError:
+        pass
+    actor=db.query("SELECT id,role,frozen FROM users WHERE id=? AND role='admin' AND frozen=0",(actor_id,),one=True)
+    if not actor:raise ValueError('An active granting administrator is needed to stage the reviewed sample release')
+    curated_cloud.publish(actor,uid)
+
 def once():
     url=os.getenv('NGS_RESEARCH_TEMPLATE_URL');role=os.getenv('NGS_RESEARCH_CFN_ROLE')
     if not url or not role:return False
@@ -18,7 +29,9 @@ def once():
     for grant in db.query("SELECT * FROM research_allowances WHERE state='active' ORDER BY updated"):
         uid=grant['user_id'];p=profile(uid);a=json.loads(grant['body']);name='openngs-pro-'+uid[2:]
         budget.reserve_storage_capacity(uid,a)
-        if p.get('grant_version')==grant['version'] and p.get('state') in ['Ready','Blocked'] and p.get('template_url')==url:continue
+        if p.get('grant_version')==grant['version'] and p.get('state') in ['Ready','Blocked'] and p.get('template_url')==url:
+            if p['state']=='Ready':ensure_curated(uid,grant['actor'])
+            continue
         if p.get('state')=='Provisioning':
             stack=client.describe_stacks(StackName=name)['Stacks'][0];status=stack['StackStatus']
             if status.endswith('_IN_PROGRESS'):continue
@@ -50,6 +63,7 @@ def once():
                 routes.update({t:{'image':out['SecondaryImage'],'definition':out['SecondaryDefinition'],'family':'secondary-cpu-v1','source_grants_version':1} for t in secondary})
             save(uid,{'state':'Ready','grant_version':p['grant_version'],'bucket':out['Bucket'],'queue':out['Queue'],'definition':out['Definition'],'image':out['Image'],'max_scratch_mb':int(out['ScratchMiB']),'region':'us-east-1','tools':sorted(CORE_TOOLS|set(routes)),'runtime_profiles':routes,'spot_only':True,'stack':name,'instance_profile':out.get('InstanceProfile'),'template_url':url})
             with db.tx() as c:db.audit(c,'capacity-service','research.capacity.ready',uid,{'stack':name,'grant_version':p['grant_version'],'scale_to_zero':True})
+            ensure_curated(uid,grant['actor'])
             continue
         # This published profile has a finite CPU fleet and cannot invent GPU or
         # high-scratch support. Larger allowances still retain their own data.

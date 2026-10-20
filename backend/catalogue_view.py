@@ -104,10 +104,16 @@ def _availability(node, evidence, settings, limited, credentials, shared):
             block('licence', 'DATA_RIGHTS', 'Review the selected release’s data rights before execution.')
     elif node['id'] in demo.SOURCES:
         ready = any(d['id'] == 'curated-samples-v1' and d['state'] == 'Ready' for d in shared['dependencies'])
+        if config.CLOUD and not limited:
+            from .curated_cloud import outputs as curated_outputs
+            try:
+                curated_outputs(settings.get('_workspace_id',''),node['id'])
+            except ValueError:
+                ready=False
         if config.CLOUD and not ready:
             if state == 'Ready':
                 state = 'Provisioning'
-            block('dependency', 'SAMPLE_PROVISIONING', 'Curated sample verification is in progress.')
+            block('dependency', 'SAMPLE_PROVISIONING', 'The exact curated source is being staged or verified for this workspace.')
     elif evidence.get('execution_kind') == 'artifact-routing':
         # These reviewed runner operations route authenticated records, not
         # genomic bytes. A container/assay proof is the wrong readiness test.
@@ -162,6 +168,7 @@ def _availability(node, evidence, settings, limited, credentials, shared):
 def view(uid):
     shared = _shared()
     settings = data.settings(uid)
+    settings['_workspace_id']=uid
     limited = entitlements.restricted(uid)
     nodes = shared['nodes']
     for row in db.query('SELECT body,approved FROM custom_tools WHERE user_id=?', (uid,)):

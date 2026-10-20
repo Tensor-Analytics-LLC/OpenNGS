@@ -12,7 +12,7 @@ import threading
 import time
 from pathlib import Path
 import psutil
-from . import compiler,data,db,graph,registry,security,cache,budget,entitlements,asset_rights
+from . import compiler,data,db,graph,registry,security,cache,budget,entitlements,asset_rights,demo
 from .config import ROOT,DATA,TERMINAL,CLOUD,DEMO
 from . import retention
 from .migration import source_manifest
@@ -63,9 +63,13 @@ def admit(user,g,operation_id):
         snapshot={'images':s['image_approvals'],'backend':s['backend'],'batch_queue':s['batch_queue'],'batch_job_definition':s['batch_job_definition'],'catalog':{k:v for k,v in all_specs.items() if k in needed}}
         snapshot['access']=entitlements.limits(user['id'])['access']
         snapshot['assets']={}
+        snapshot['curated_sources']={}
         if CLOUD:
             for node in g['nodes']:
                 spec=all_specs[node['tool']]
+                if snapshot['access']=='research-pro' and node['tool'] in demo.SOURCES:
+                    from .curated_cloud import outputs as curated_outputs
+                    snapshot['curated_sources'][node['tool']]=curated_outputs(user['id'],node['tool'])
                 if node['tool'] in ['asset.file','reference.asset','database.asset'] or spec.get('asset_family'):
                     asset_id=node.get('params',{}).get('asset_id')
                     snapshot['assets'][asset_id]=input_asset(user['id'],asset_id)
@@ -331,6 +335,9 @@ def run(rid,order):
                 if cached is not None:
                     outputs=cached;reused=True
                     db.event(rid,'log',nid,text='Resume: verified content-addressed upstream outputs reused; no scientific tool launched.')
+                elif n['tool'] in snapshot.get('curated_sources',{}):
+                    outputs=json.loads(db.encode(snapshot['curated_sources'][n['tool']]))
+                    db.event(rid,'log',nid,text='Exact curated cloud source bound; immutable release and companion identities preserved.')
                 elif n['tool'] in ['utility.export','utility.gather','utility.condition']:
                     # These operations route authenticated artifact records.
                     # They parse no genomic bytes and need no scientific worker.
