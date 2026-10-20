@@ -149,6 +149,7 @@ def bind(uid,dataset_id,payload):
             if field=='mate' and (fmt not in ['FASTQ','FASTQ_PAIR'] or cm.get('format')!='FASTQ' or companion['id']==dataset_id):raise ValueError('A paired FASTQ requires a distinct verified FASTQ mate')
             if field in ['index','dictionary'] and cm.get('format')!='INDEX':raise ValueError('Bind a verified index/dictionary file')
             meta[field]=path;meta[field+'_sha256']=companion['sha256']
+            meta[field+'_version_id']=companion['version_id']
             if field=='mate':fmt='FASTQ_PAIR'
             if field=='index':fmt={'BAM':'INDEXED_BAM','CRAM':'INDEXED_CRAM','VCF':'INDEXED_VCF','BGZIP_VCF':'INDEXED_VCF'}.get(fmt,fmt)
     ids=payload.get('index_ids',[])

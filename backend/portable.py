@@ -53,6 +53,9 @@ def execute(job):
     import pysam
     work=Path(job['workdir']);work.mkdir(parents=True,exist_ok=True)
     tool=job['tool'];params=job.get('params',{});inputs=job.get('inputs',{})
+    if tool=='results.prepare':
+        from .remote_viewer_worker import execute as viewer_execute
+        return viewer_execute(job)
     from .assays import TOOLS as ASSAY_TOOLS,execute as execute_assay
     if tool in ASSAY_TOOLS:return execute_assay(job)
     bundled=Path(__file__).resolve().parents[1]/'demo-data'

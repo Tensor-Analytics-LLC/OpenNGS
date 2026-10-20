@@ -22,6 +22,19 @@ def select(resources):
 def configuration():
     return {k:os.getenv(v,'') for k,v in {'ami':'NGS_VM_AMI','image':'NGS_VM_IMAGE','subnet':'NGS_VM_SUBNET','security_group':'NGS_VM_SECURITY'}.items()}
 
+def runtime_route(capacity, profile, migrated=False, published=None):
+    """Preserve the qualified old VM lane without inventing a refreshed AMI."""
+    published = configuration() if published is None else published
+    if migrated:
+        raise ValueError('Migrated shared-cache inputs require the refreshed Fargate worker; the current exclusive VM image has not been qualified for that input contract')
+    if profile and profile.get('family') == 'core-cpu-refresh-v1':
+        if not capacity.get('image') or capacity['image'] != published.get('image'):
+            raise ValueError('The original core runtime does not match the published exclusive VM image')
+        return {'image': capacity['image'], 'definition': capacity['definition'], 'family': 'qualified-original-core-vm'}
+    if profile and profile['image'] != published.get('image'):
+        raise ValueError('This tool has a Fargate runtime; its digest is not present in the published exclusive VM image')
+    return profile
+
 def userdata(image,bucket,key,resources,profile,log_key):
     q=shlex.quote;seconds=resources['timeout_seconds'];disk_bytes=profile['scratch_gib']*1024**3
     # All values are pinned platform identifiers or preflight-validated integers.

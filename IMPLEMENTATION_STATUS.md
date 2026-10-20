@@ -11,3 +11,5 @@ Current authoritative reports:
 - [Dependency component and workflow readiness](docs/dependency-readiness.json)
 
 Implemented, deployed, tested and scientifically validated are separate statuses. Real sample workflows, funded private ingestion, isolated native stages and an exclusive VM have executed. **Complete full-size WGS/WES/mtDNA scientific validation and the entire broader catalogue are not finished.** There is no clinical certification or universal interoperability claim.
+
+Automatic expiry of completed-run S3 outputs is enabled after a live exact-version deletion qualification; source data, saved workflows and audit history remain protected. The private 473.45-GB inventory migration is running with resumable multipart transfers, exact AWS source copies and independent checksum verification. Migration progress is visible in Operations; it is not yet complete. The current approximately $149.20 all-in baseline projection includes bounded migration/validation reservations and remains a forecast rather than the posted AWS bill.

@@ -93,3 +93,35 @@ def test_worker_metadata_cannot_claim_curated_parser_trust(client,owner,monkeypa
     monkeypatch.setattr(config,'CLOUD',True)
     with pytest.raises(ValueError,match='isolated workbench'):
         workbench.source(owner['id'],{'path':'s3://anything/forged.bam','metadata':{'sample_only':True}})
+
+def test_refreshed_fargate_core_preserves_only_qualified_vm_inputs():
+    from backend import vm
+    old='registry/core@sha256:'+'a'*64
+    new='registry/extended@sha256:'+'b'*64
+    capacity={'image':old,'definition':'old-reviewed-definition'}
+    refreshed={'image':new,'definition':'new-reviewed-definition','family':'core-cpu-refresh-v1'}
+    assert vm.runtime_route(capacity,refreshed,False,{'image':old})['image']==old
+    assert refreshed['image']==new  # Fargate route is never mutated.
+    with pytest.raises(ValueError,match='Migrated'):
+        vm.runtime_route(capacity,refreshed,True,{'image':old})
+    with pytest.raises(ValueError,match='does not match'):
+        vm.runtime_route(capacity,refreshed,False,{'image':new})
+    with pytest.raises(ValueError,match='not present'):
+        vm.runtime_route(capacity,{**refreshed,'family':'extended-cpu-v1'},False,{'image':old})
+
+
+def test_migrated_input_cannot_launch_an_older_worker(monkeypatch,tmp_path):
+    from backend import cloud,registry
+    contacted=[]
+    def no_provider():
+        contacted.append(True)
+        raise AssertionError('Unqualified data must be rejected before contacting AWS')
+    monkeypatch.setattr(cloud,'aws_session',no_provider)
+    node={'_migration_sources':[{'Bucket':'shared','Key':'tenants/owner/input'}]}
+    with pytest.raises(ValueError,match='migration-compatible runtime'):
+        cloud.execute_batch('owner','run','attempt',registry.BASE['fastqc'],node,{},tmp_path,lambda _:False)
+    assert not contacted
+    for invalid in [None,{}, {'source_grants_version':True},{'source_grants_version':2}]:
+        with pytest.raises(ValueError):cloud.require_migration_runtime(invalid,True)
+    cloud.require_migration_runtime(None,False)
+    cloud.require_migration_runtime({'source_grants_version':1},True)

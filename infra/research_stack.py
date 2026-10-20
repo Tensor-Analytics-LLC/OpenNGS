@@ -4,9 +4,10 @@ The application may select parameters, never submit a replacement template.
 Only reviewed core-runtime tools run here; GPUs/VM-scale scratch are separate
 profiles and remain unavailable until published and validated.
 """
+import copy
 import json
 
-def template(subnet,worker_sg,execution_role,image,repository_arn,shared_bucket,kms,boundary,origin,alert_topic):
+def template(subnet,worker_sg,execution_role,image,repository_arn,shared_bucket,kms,boundary,origin,alert_topic,extension=None,secondary=None):
     if '@sha256:' not in image:raise ValueError('Pin the reviewed runtime digest')
     ref=lambda x:{'Ref':x};sub=lambda x:{'Fn::Sub':x};att=lambda x,k:{'Fn::GetAtt':[x,k]}
     tags=[{'Key':'Project','Value':'OpenNGS-Pro'},{'Key':'TenantId','Value':ref('TenantId')}]
@@ -17,10 +18,41 @@ def template(subnet,worker_sg,execution_role,image,repository_arn,shared_bucket,
     assume={'Version':'2012-10-17','Statement':[{'Effect':'Allow','Principal':{'Service':'ecs-tasks.amazonaws.com'},'Action':'sts:AssumeRole','Condition':{'StringEquals':{'aws:SourceAccount':ref('AWS::AccountId')},'ArnLike':{'aws:SourceArn':sub('arn:aws:ecs:us-east-1:${AWS::AccountId}:*')}}}]}
     add('TaskRole','AWS::IAM::Role',{'Path':'/openngs/pro/','PermissionsBoundary':boundary,'AssumeRolePolicyDocument':assume,'Tags':tags,'Policies':[{'PolicyName':'OnlyThisTenantAndImmutablePublicReferences','PolicyDocument':{'Version':'2012-10-17','Statement':[{'Effect':'Allow','Action':['s3:GetObject','s3:GetObjectVersion'],'Resource':sub('${Data.Arn}/tenants/${TenantId}/*')},{'Effect':'Allow','Action':['s3:PutObject','s3:AbortMultipartUpload','s3:ListMultipartUploadParts'],'Resource':sub('${Data.Arn}/tenants/${TenantId}/runs/*')},{'Effect':'Allow','Action':['s3:GetObject','s3:GetObjectVersion'],'Resource':'arn:aws:s3:::'+shared_bucket+'/operations/checkpoints/references/*'},{'Effect':'Allow','Action':['kms:Decrypt','kms:GenerateDataKey'],'Resource':kms,'Condition':{'StringEquals':{'kms:ViaService':'s3.us-east-1.amazonaws.com'}}}]}}]})
     assume['Statement'].append({'Effect':'Allow','Principal':{'Service':'ec2.amazonaws.com'},'Action':'sts:AssumeRole'})
+    R['TaskRole']['Properties']['Policies'][0]['PolicyDocument']['Statement'].append(
+        {'Effect':'Allow','Action':['s3:GetObject','s3:GetObjectVersion'],
+         'Resource':sub('arn:aws:s3:::'+shared_bucket+'/tenants/${TenantId}/datasets/*')})
     add('InstanceProfile','AWS::IAM::InstanceProfile',{'Path':'/openngs/pro/','Roles':[ref('TaskRole')]})
     add('Logs','AWS::Logs::LogGroup',{'LogGroupName':sub('/openngs/pro/${TenantId}'),'RetentionInDays':7,'Tags':tags})
     add('Compute','AWS::Batch::ComputeEnvironment',{'ComputeEnvironmentName':sub('openngs-pro-${TenantId}'),'Type':'MANAGED','State':'ENABLED','ComputeResources':{'Type':'FARGATE_SPOT','MaxvCpus':ref('FleetVCPU'),'Subnets':[subnet],'SecurityGroupIds':[worker_sg]},'Tags':{'Project':'OpenNGS-Pro','TenantId':ref('TenantId')}})
     add('Queue','AWS::Batch::JobQueue',{'JobQueueName':sub('openngs-pro-${TenantId}'),'State':'ENABLED','Priority':1,'ComputeEnvironmentOrder':[{'Order':1,'ComputeEnvironment':ref('Compute')}],'Tags':{'Project':'OpenNGS-Pro','TenantId':ref('TenantId')}})
     add('Definition','AWS::Batch::JobDefinition',{'JobDefinitionName':sub('openngs-pro-${TenantId}'),'Type':'container','PlatformCapabilities':['FARGATE'],'ContainerProperties':{'Image':image,'Command':['python','/opt/studio/cloud_worker.py'],'ResourceRequirements':[{'Type':'VCPU','Value':'2'},{'Type':'MEMORY','Value':'4096'}],'JobRoleArn':att('TaskRole','Arn'),'ExecutionRoleArn':execution_role,'ReadonlyRootFilesystem':True,'User':'1000:1000','EphemeralStorage':{'SizeInGiB':200},'NetworkConfiguration':{'AssignPublicIp':'DISABLED'},'Volumes':[{'Name':n} for n in ['work','inputs','tmp']],'MountPoints':[{'SourceVolume':n,'ContainerPath':'/'+n,'ReadOnly':False} for n in ['work','inputs','tmp']],'LogConfiguration':{'LogDriver':'awslogs','Options':{'awslogs-group':ref('Logs'),'awslogs-region':'us-east-1','awslogs-stream-prefix':'research'}}},'RetryStrategy':{'Attempts':1},'Timeout':{'AttemptDurationSeconds':172800},'Tags':{'Project':'OpenNGS-Pro','TenantId':ref('TenantId'),'NGSWorkerContract':'1','NGSIsolationProfile':'Fargate-tenant-role-v1'}})
     add('Budget','AWS::Budgets::Budget',{'Budget':{'BudgetName':sub('openngs-pro-${TenantId}'),'BudgetType':'COST','TimeUnit':'MONTHLY','BudgetLimit':{'Amount':ref('MonthlyBudget'),'Unit':'USD'},'CostFilters':{'TagKeyValue':[sub('TenantId$${TenantId}')]},'CostTypes':{'IncludeTax':True,'IncludeCredit':False,'IncludeRefund':False}},'NotificationsWithSubscribers':[{'Notification':{'NotificationType':kind,'ComparisonOperator':'GREATER_THAN','Threshold':90,'ThresholdType':'PERCENTAGE'},'Subscribers':[{'SubscriptionType':'SNS','Address':alert_topic}]} for kind in ['ACTUAL','FORECASTED']]})
-    return {'AWSTemplateFormatVersion':'2010-09-09','Description':'OpenNGS funded tenant: isolated data and scale-to-zero Spot queue; no On-Demand fallback','Parameters':{'TenantId':{'Type':'String','AllowedPattern':'u_[a-f0-9]{32}'},'StorageId':{'Type':'String','AllowedPattern':'[a-f0-9]{32}'},'FleetVCPU':{'Type':'Number','AllowedValues':[2,4,8,16,32,64]},'MonthlyBudget':{'Type':'Number','MinValue':1,'MaxValue':100000}},'Resources':R,'Outputs':{'Bucket':{'Value':ref('Data')},'Queue':{'Value':ref('Queue')},'Definition':{'Value':ref('Definition')},'TaskRole':{'Value':att('TaskRole','Arn')},'InstanceProfile':{'Value':att('InstanceProfile','Arn')},'Image':{'Value':image},'ScratchMiB':{'Value':'184320'}}}
+    outputs={'Bucket':{'Value':ref('Data')},'Queue':{'Value':ref('Queue')},'Definition':{'Value':ref('Definition')},'TaskRole':{'Value':att('TaskRole','Arn')},'InstanceProfile':{'Value':att('InstanceProfile','Arn')},'Image':{'Value':image},'ScratchMiB':{'Value':'184320'}}
+    if extension:
+        from backend.runtime_catalog import validate_release
+        release=validate_release(extension)
+        properties=copy.deepcopy(R['Definition']['Properties'])
+        properties['JobDefinitionName']=sub('openngs-pro-${TenantId}-extended')
+        properties['ContainerProperties']['Image']=release['image']
+        properties['Tags']['NGSRuntimeFamily']='extended-cpu-v1'
+        add('ExtendedDefinition','AWS::Batch::JobDefinition',properties)
+        outputs.update(ExtendedImage={'Value':release['image']},ExtendedDefinition={'Value':ref('ExtendedDefinition')},
+                       ExtendedTools={'Value':json.dumps(release['tools'])},ExtendedSource={'Value':release['source_sha256']})
+        if release.get('refreshed_core_tools'):
+            outputs['RefreshedCoreTools']={'Value':json.dumps(release['refreshed_core_tools'])}
+        if release.get('adjunct_tools'):
+            outputs['AdjunctTools']={'Value':json.dumps(release['adjunct_tools'])}
+        if release.get('portable_tools'):
+            outputs['PortableTools']={'Value':json.dumps(release['portable_tools'])}
+    if secondary:
+        from backend.secondary_runtime import validate_release as validate_secondary
+        release=validate_secondary(secondary)
+        if release['tools']:
+            properties=copy.deepcopy(R['Definition']['Properties'])
+            properties['JobDefinitionName']=sub('openngs-pro-${TenantId}-secondary')
+            properties['ContainerProperties']['Image']=release['image']
+            properties['Tags']['NGSRuntimeFamily']='secondary-cpu-v1'
+            add('SecondaryDefinition','AWS::Batch::JobDefinition',properties)
+            outputs.update(SecondaryImage={'Value':release['image']},SecondaryDefinition={'Value':ref('SecondaryDefinition')},
+                           SecondaryTools={'Value':json.dumps(release['tools'])},SecondarySource={'Value':release['source_sha256']})
+    return {'AWSTemplateFormatVersion':'2010-09-09','Description':'OpenNGS funded tenant: isolated data and scale-to-zero Spot queue; no On-Demand fallback','Parameters':{'TenantId':{'Type':'String','AllowedPattern':'u_[a-f0-9]{32}'},'StorageId':{'Type':'String','AllowedPattern':'[a-f0-9]{32}'},'FleetVCPU':{'Type':'Number','AllowedValues':[2,4,8,16,32,64]},'MonthlyBudget':{'Type':'Number','MinValue':1,'MaxValue':100000}},'Resources':R,'Outputs':outputs}

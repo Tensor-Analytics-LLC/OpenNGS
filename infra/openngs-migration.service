@@ -1,0 +1,22 @@
+[Unit]
+Description=OpenNGS private migration raw checksum verification
+After=network-online.target openngs.service
+[Service]
+User=openngs
+Group=openngs
+WorkingDirectory=/opt/openngs
+EnvironmentFile=/var/lib/openngs/runtime.env
+ExecStart=/opt/openngs/runtime/bin/python -m backend.migration
+Restart=always
+RestartSec=15
+MemoryMax=256M
+CPUQuota=20%
+TasksMax=32
+Nice=10
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/openngs /var/cache/openngs
+[Install]
+WantedBy=multi-user.target

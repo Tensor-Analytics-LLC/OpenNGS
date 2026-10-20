@@ -25,7 +25,30 @@ def once():
             if status not in ['CREATE_COMPLETE','UPDATE_COMPLETE']:
                 save(uid,{**p,'state':'Blocked','grant_version':grant['version'],'reason':'Tenant stack '+status+'; preserved for operator reconciliation'});continue
             out={x['OutputKey']:x['OutputValue'] for x in stack['Outputs']}
-            save(uid,{'state':'Ready','grant_version':p['grant_version'],'bucket':out['Bucket'],'queue':out['Queue'],'definition':out['Definition'],'image':out['Image'],'max_scratch_mb':int(out['ScratchMiB']),'region':'us-east-1','tools':sorted(CORE_TOOLS),'spot_only':True,'stack':name,'instance_profile':out.get('InstanceProfile'),'template_url':url})
+            routes={}
+            if out.get('ExtendedImage') and out.get('ExtendedDefinition'):
+                from .runtime_catalog import EXTENDED_TOOLS,ADJUNCT_TOOLS,PORTABLE_TOOLS
+                extra=json.loads(out.get('ExtendedTools','[]'))
+                if not isinstance(extra,list) or any(t not in EXTENDED_TOOLS for t in extra):raise ValueError('Published stack contains unreviewed runtime tools')
+                routes={t:{'image':out['ExtendedImage'],'definition':out['ExtendedDefinition'],'family':'extended-cpu-v1','source_grants_version':1} for t in extra}
+                core=json.loads(out.get('RefreshedCoreTools','[]'))
+                if not isinstance(core,list) or any(t not in CORE_TOOLS for t in core):raise ValueError('Published stack contains unreviewed core refresh routes')
+                routes.update({t:{'image':out['ExtendedImage'],'definition':out['ExtendedDefinition'],'family':'core-cpu-refresh-v1','source_grants_version':1} for t in core})
+                adjunct=json.loads(out.get('AdjunctTools','[]'))
+                if not isinstance(adjunct,list) or any(t not in ADJUNCT_TOOLS for t in adjunct):raise ValueError('Published stack contains unreviewed additional native contracts')
+                routes.update({t:{'image':out['ExtendedImage'],'definition':out['ExtendedDefinition'],'family':'extended-core-contracts-v1','source_grants_version':1} for t in adjunct})
+                portable=json.loads(out.get('PortableTools','[]'))
+                if not isinstance(portable,list) or any(t not in PORTABLE_TOOLS for t in portable):raise ValueError('Published stack contains unreviewed portable routes')
+                routes.update({t:{'image':out['ExtendedImage'],'definition':out['ExtendedDefinition'],'family':'portable-refresh-v1','source_grants_version':1} for t in portable})
+                # The internal viewer contract is not a public scientific capability;
+                # its own request/admission path independently requires verification.
+                routes['results.prepare']={'image':out['ExtendedImage'],'definition':out['ExtendedDefinition'],'family':'extended-cpu-v1','source_grants_version':1,'internal':True}
+            if out.get('SecondaryImage') and out.get('SecondaryDefinition'):
+                from .secondary_runtime import TOOLS as SECONDARY_TOOLS
+                secondary=json.loads(out.get('SecondaryTools','[]'))
+                if not isinstance(secondary,list) or any(t not in SECONDARY_TOOLS for t in secondary):raise ValueError('Unreviewed secondary runtime route')
+                routes.update({t:{'image':out['SecondaryImage'],'definition':out['SecondaryDefinition'],'family':'secondary-cpu-v1','source_grants_version':1} for t in secondary})
+            save(uid,{'state':'Ready','grant_version':p['grant_version'],'bucket':out['Bucket'],'queue':out['Queue'],'definition':out['Definition'],'image':out['Image'],'max_scratch_mb':int(out['ScratchMiB']),'region':'us-east-1','tools':sorted(CORE_TOOLS|set(routes)),'runtime_profiles':routes,'spot_only':True,'stack':name,'instance_profile':out.get('InstanceProfile'),'template_url':url})
             with db.tx() as c:db.audit(c,'capacity-service','research.capacity.ready',uid,{'stack':name,'grant_version':p['grant_version'],'scale_to_zero':True})
             continue
         # This published profile has a finite CPU fleet and cannot invent GPU or

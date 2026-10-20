@@ -56,7 +56,7 @@ python -m pytest -q
 node --test tests/*.mjs
 ```
 
-The checked source passed **69 backend tests and five JavaScript tests** on 20 October 2026. Tests cover application behavior and known-count scientific operators; they are not clinical assay validation. Real cloud execution includes synthetic germline, capture-aware WES and mitochondrial workflows, cache recovery, resumable ingestion and an exclusive VM. See the validation report for exact scope. Full-size assays remain unvalidated.
+The checked source passed **169 backend tests and 20 JavaScript tests** on 20 October 2026. Tests cover application behavior and known-count scientific operators; they are not clinical assay validation. Real cloud execution includes synthetic germline, capture-aware WES and mitochondrial workflows, cache recovery, resumable ingestion and an exclusive VM. See the validation report for exact scope. Full-size assays remain unvalidated.
 
 This is research software. Universal tool compatibility, unrestricted whole-genome scale, enterprise availability and regulatory certification are not established. Source ClinVar labels are not independent ACMG classifications. Synthetic datasets and incomplete public truth slices are labelled explicitly.
 

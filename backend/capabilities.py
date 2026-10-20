@@ -20,8 +20,10 @@ def native_profiles():
 
 def matrix(uid=None):
     from .compiler import REQUIRES_PUBLISHED
+    from .runtime_catalog import published,EXTENDED_TOOLS,EXTENDED_PACKAGES,ADJUNCT_TOOLS,BLOCKERS,CORE_PACKAGES,CORE_PACKAGE_TOOLS
     profiles=native_profiles()-REQUIRES_PUBLISHED;rows=[]
     for n in registry.catalogue(uid):
+        if n.get('hidden'):continue
         third=n['license'] in ['Commercial BYOL','Paid API BYOK','Academic','Review required']
         executable=bool(n.get('builtin') or n['id'] in profiles or n.get('api'))
         if third:status='requires-entitlement';reason='Third-party rights, credentials or permitted database/model assets must be supplied and verified'
@@ -42,6 +44,82 @@ def matrix(uid=None):
         row['hosted_runtime_image']=runtime.get('image') if row['id'] in CORE_TOOLS or core_sample else os.getenv('NGS_DEMO_IMAGE') if row['id'] in cloud_evidence else None
         row['runtime_status']=('Published digest; small-data execution recorded' if row['id'] in cloud_evidence else 'Published digest; build/version checks only') if row['hosted_runtime_image'] else 'Requires a reviewed publication or portable worker contract'
         row['sample_execution']=({'run_id':cloud_evidence[row['id']],'scope':'Small synthetic/public integration data; no full-scale or assay accuracy claim'} if row['id'] in cloud_evidence else None)
+        if row['id'] in BLOCKERS:
+            row['runtime_blocker']=BLOCKERS[row['id']]
+    from .secondary_runtime import published as published_secondary,TOOLS as SECONDARY_TOOLS,ENVIRONMENTS
+    secondary=published_secondary()
+    secondary_cases={c['tool']:c for c in secondary['qualification']['cases']} if secondary else {}
+    extension=published()
+    cases={x['tool']:x for x in extension['qualification']['cases']} if extension else {}
+    core_cases={x['tool']:x for x in extension.get('core_qualification',{}).get('cases',[])} if extension else {}
+    adjunct_cases={x['tool']:x for x in extension.get('adjunct_qualification',{}).get('cases',[])} if extension else {}
+    portable_cases={c['tool']:c for c in extension.get('portable_qualification',{}).get('cases',[])} if extension else {}
+    for row in rows:
+        if row['id'] in SECONDARY_TOOLS:
+            case=secondary_cases.get(row['id'])
+            if secondary and row['id'] in secondary['tools']:
+                row.update(hosted_runtime_image=secondary['image'],runtime_family='secondary-cpu-v1',
+                    runtime_package={'environment':SECONDARY_TOOLS[row['id']],'packages':ENVIRONMENTS[SECONDARY_TOOLS[row['id']]]['packages']},
+                    runtime_status='Published digest; scientific command executed on engineering controls',runtime_blocker=None,
+                    sample_execution={'build_id':secondary['build_id'],'scope':secondary['validation_scope'],
+                        'assertions':case['assertions'],'outputs':case['outputs'],'seconds':case['seconds']})
+            elif case:
+                row.update(runtime_status='Optional runtime execution did not pass',runtime_blocker=case.get('error','Execution qualification incomplete'))
+        if extension and row['id'] in extension.get('portable_tools',[]):
+            case=portable_cases[row['id']]
+            row.update(hosted_runtime_image=extension['image'],runtime_family='portable-refresh-v1',
+                runtime_status='Published digest; portable operator round-trip regression passed',runtime_blocker=None,
+                runtime_regression={'build_id':extension['portable_qualification']['build_id'],'assertions':case['assertions'],
+                    'outputs':case['outputs'],'seconds':case['seconds'],'scope':extension['portable_qualification']['scope']})
+            if not row.get('sample_execution'):row['sample_execution']=row['runtime_regression']
+        if extension and row['id'] in extension.get('adjunct_tools',[]):
+            case=adjunct_cases[row['id']]
+            row.update(hosted_runtime_image=extension['image'],runtime_family='extended-core-contracts-v1',
+                runtime_package=ADJUNCT_TOOLS[row['id']],runtime_status='Published digest; native command contract executed on engineering controls',
+                runtime_blocker=None,sample_execution={'build_id':extension['adjunct_qualification']['build_id'],
+                    'scope':extension['adjunct_qualification']['scope'],'assertions':case['assertions'],
+                    'outputs':case['outputs'],'seconds':case['seconds']})
+        if extension and row['id'] in extension.get('refreshed_core_tools',[]):
+            case=core_cases[row['id']]
+            row['hosted_runtime_image']=extension['image']
+            row['runtime_family']='core-cpu-refresh-v1'
+            package=CORE_PACKAGE_TOOLS[row['id']]
+            row['runtime_package']={'name':package,'version':CORE_PACKAGES[package]}
+            row['runtime_status']='Published digest; inherited native core command regression passed'
+            row['runtime_regression']={'build_id':extension['core_qualification']['build_id'],
+                'scope':extension['core_qualification']['scope'],'seconds':case['seconds'],
+                'assertions':case['assertions'],'outputs':case['outputs']}
+            if not row.get('sample_execution'):
+                row['sample_execution']=row['runtime_regression']
+        if row['id'] not in EXTENDED_TOOLS:continue
+        package=EXTENDED_TOOLS[row['id']]
+        row['runtime_family']='extended-cpu-v1'
+        row['runtime_package']={'name':package,'version':EXTENDED_PACKAGES[package]}
+        case=cases.get(row['id'])
+        if extension and row['id'] in extension['tools']:
+            row['hosted_runtime_image']=extension['image']
+            row['runtime_status']='Published digest; scientific command executed on a bounded engineering dataset'
+            row['sample_execution']={'build_id':extension['build_id'],'source_sha256':extension['source_sha256'],
+                'scope':extension['validation_scope'],'assertions':case['assertions'],'outputs':case['outputs'],'seconds':case['seconds']}
+            row['runtime_blocker']=None
+        elif case:
+            row['runtime_status']='Installed in reviewed image; execution qualification did not pass'
+            row['runtime_blocker']=case.get('error') or case.get('reason')
+        else:
+            row['runtime_status']='Version-pinned recipe; build and execution qualification pending'
+    refreshed=set(extension.get('tools',[])+extension.get('refreshed_core_tools',[])+extension.get('adjunct_tools',[])+extension.get('portable_tools',[])) if extension else set()
+    if secondary:refreshed.update(secondary['tools'])
+    metadata_only={'asset.file','database.asset','reference.asset','utility.export','utility.gather','utility.condition'}
+    for row in rows:
+        row['runtime_provenance']={'published_image':row.get('hosted_runtime_image'),'package':row.get('runtime_package'),
+            'registry_reference_image':row.get('declared_image'),
+            'authoritative':'Accepted run snapshots preserve the exact published image and environment. Registry tags are upstream references, not proof of the version executed.'}
+        if row['id'] in refreshed:
+            row['migrated_data_runtime']={'state':'qualified','source_grants_version':1,'reason':'A reviewed worker accepts only exact tenant-owned immutable migrated objects; tenant capacity and dependencies must also be ready'}
+        elif row['id'] in metadata_only or row['id'].startswith(('sample.','resource.')) or row['id']=='reference.tiny':
+            row['migrated_data_runtime']={'state':'not-applicable','reason':'Source or metadata-only node; downstream execution remains independently gated'}
+        else:
+            row['migrated_data_runtime']={'state':'requires-refreshed-runtime','reason':'Existing same-bucket behavior is unchanged. Migrated private inputs require a separately qualified source-grant worker route; admission defers this combination before AWS execution'}
     return {'schema':2,'capabilities':rows,'counts':{s:sum(x['status']==s for x in rows) for s in ['implemented-verified','awaiting-validation','requires-entitlement','unsupported']},'note':'Image pull/build success is not scientific validation. Readiness requires all exact dependencies and a published execution profile.'}
 
 def dependencies():

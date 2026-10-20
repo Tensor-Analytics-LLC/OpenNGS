@@ -25,6 +25,8 @@ def check(graph,uid,specs,order):
         if n['tool'] in ['asset.file','reference.asset','database.asset'] or spec.get('asset_family'):
             aid=p.get('asset_id');row=db.query('SELECT * FROM assets WHERE id=? AND user_id=?',(aid,uid),one=True) or db.query('SELECT * FROM artifacts WHERE id=? AND user_id=?',(aid,uid),one=True)
             if row:
+                from .migration import resolve_asset
+                row=resolve_asset(uid,row)
                 meta=json.loads(row['metadata']);descriptor={k:meta.get(k) for k in ['assembly','contig_style','reference_digest']};descriptor['assembly']=assembly(row.get('assembly') or meta.get('assembly') or p.get('assembly'))
                 if not meta.get('header_inspected'):warnings.append(spec['name']+': reference context includes declared/indexed metadata; inspect the actual header before scientific use.')
         if n['tool']=='sample.giab':descriptor={'assembly':'GRCh38','contig_style':'chr'}

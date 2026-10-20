@@ -19,8 +19,9 @@ def main():
     Path('/work').mkdir(exist_ok=True);began=time.monotonic();deadline=job['wall_seconds']
     for item in job['inputs']:
         target=Path(item['target'])
-        if not target.is_relative_to('/inputs') or '..' in target.parts or item['bucket']!=bucket or not item['key'].startswith(f"tenants/{job['tenant']}/"):raise ValueError('Invalid staging target')
-        target.parent.mkdir(parents=True,exist_ok=True);s3.download_file(bucket,item['key'],str(target))
+        proof=next((p for p in job.get('source_grants',[]) if p['Bucket']==item['bucket'] and p['Key']==item['key'] and p['VersionId']==item.get('version_id') and p['sha256']==item['sha256'] and p['bytes']==item['bytes']),None)
+        if not target.is_relative_to('/inputs') or '..' in target.parts or (item['bucket']!=bucket and not proof) or not item['key'].startswith(f"tenants/{job['tenant']}/"):raise ValueError('Invalid staging target')
+        target.parent.mkdir(parents=True,exist_ok=True);s3.download_file(item['bucket'],item['key'],str(target),ExtraArgs={'VersionId':item['version_id']} if item.get('version_id') else {})
         if target.stat().st_size!=item['bytes'] or digest(target)!=item['sha256']:raise ValueError('Input integrity check failed')
     if job['plan'].get('portable_job'):Path('/work/portable-job.json').write_text(json.dumps(job['plan']['portable_job']))
     secret_fd=None

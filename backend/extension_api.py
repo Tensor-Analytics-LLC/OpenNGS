@@ -9,8 +9,8 @@ from . import db,registry,runner,data,security,onboarding,workbench
 
 def install(app,user,admin,publish_tool):
     @app.get('/api/data/resolve')
-    def resolve(family:str,assembly:str|None=None,current=Depends(user)):
-        return {'candidates':data.resolve(current['id'],family,assembly,data.settings(current['id'])['backend'])}
+    def resolve(family:str,assembly:str|None=None,source_id:str|None=None,asset_id:str|None=None,current=Depends(user)):
+        return {'candidates':data.resolve(current['id'],family,assembly,data.settings(current['id'])['backend'],source_id,asset_id)}
 
     @app.post('/api/assets/{aid}/inspect')
     def inspect_asset(aid:str,current=Depends(user)):
@@ -80,13 +80,22 @@ def install(app,user,admin,publish_tool):
 
     @app.get('/api/results/{aid}/status')
     def status(aid:str,current=Depends(user)):
-        workbench.owned(current['id'],aid)
+        from . import remote_viewer
+        prior=db.query("SELECT id FROM viewer_requests WHERE user_id=? AND asset_id=? AND operation='variant-index' ORDER BY created DESC,id DESC LIMIT 1",(current['id'],aid),one=True)
+        if prior:return remote_viewer.status(current['id'],prior['id'])
+        row=workbench.owned(current['id'],aid)
+        if remote_viewer.required(current['id'],row):return remote_viewer.index_status(current['id'],aid)
         with workbench.LOCK:result=workbench.JOBS.get((current['id'],aid))
         if result:return result
         if workbench.index_path(current['id'],aid).exists():
             with workbench.connection(workbench.index_path(current['id'],aid)) as c:rows=json.loads(c.execute("SELECT value FROM meta WHERE key='rows'").fetchone()[0])
             return {'state':'ready','rows':rows}
         return {'state':'absent'}
+
+    @app.get('/api/viewer/{request_id}')
+    def viewer_status(request_id:str,current=Depends(user)):
+        from . import remote_viewer
+        return remote_viewer.status(current['id'],request_id)
 
     @app.post('/api/results/{aid}/query')
     def query(aid:str,payload:dict=Body(...),current=Depends(user)):return workbench.query(current['id'],aid,payload.get('filters',{}),payload.get('offset',0),payload.get('limit',100))
@@ -112,17 +121,24 @@ def install(app,user,admin,publish_tool):
     @app.get('/api/tracks/{aid}/bytes')
     def track_bytes(aid:str,request:Request,secondary:str|None=None,current=Depends(user)):
         if secondary not in [None,'index','mate']:raise ValueError('Unsupported secondary binding')
-        row=workbench.owned(current['id'],aid);source=workbench.source(current['id'],row,secondary)
-        if source.startswith('https://'):
+        row=workbench.owned(current['id'],aid)
+        source=row['path'] if row['path'].startswith('s3://') else workbench.source(current['id'],row,secondary)
+        if source.startswith('s3://'):
             # Proxy only the admitted private object; no general URL proxy.
             from .config import aws_session
             uri=row['metadata'][secondary] if secondary else row['path'];bucket,key=uri[5:].split('/',1);range_header=request.headers.get('range')
-            args={'Bucket':bucket,'Key':key}
+            args=workbench.object_args(current['id'],row,secondary)
             if range_header:
                 if not re.fullmatch(r'bytes=\d+-\d*',range_header):raise ValueError('One forward byte range is required')
+                lo,hi=range_header[6:].split('-')
+                if not hi:raise ValueError('Specify a bounded byte range')
+                if int(hi)<int(lo) or int(hi)-int(lo)+1>16*1024**2:raise ValueError('Track ranges are limited to 16 MiB per request')
                 args['Range']=range_header
             elif row['bytes']>16*1024**2:raise ValueError('Large tracks require indexed byte-range requests')
             response=aws_session().client('s3').get_object(**args)
+            from . import entitlements
+            try:entitlements.reserve_download(current,response['ContentLength'])
+            except BaseException:response['Body'].close();raise
             def chunks():
                 try:yield from response['Body'].iter_chunks(1024**2)
                 finally:response['Body'].close()

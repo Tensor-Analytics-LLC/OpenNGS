@@ -149,15 +149,10 @@ def session(current=Depends(user)):return {'user':security.public_user(current),
 
 @app.get('/api/catalog')
 def catalog(current=Depends(user)):
+    from . import catalogue_view
     limited=entitlements.restricted(current['id'])
-    all_nodes=registry.catalogue(None if limited else current['id'])
-    nodes=[n for n in all_nodes if not limited or n['id'] in demo.TOOLS]
-    templates=[t for t in registry.templates() if not limited or all(n['tool'] in demo.TOOLS for n in t['graph']['nodes'])]
-    if CLOUD and not limited:
-        capacity=data.settings(current['id']).get('research_profile',{})
-        for node in nodes:
-            node['support_note']='Portable operation; validation scope is reported separately' if node.get('builtin') else 'Core runtime; representative assay validation pending' if node['id'] in capacity.get('tools',[]) else 'Runtime not published; review the capability matrix'
-    return {'nodes':nodes,'templates':templates,'capabilities':runner.capabilities(),'demo':demo.public_info(current['id']),'full_catalogue_count':len(all_nodes)}
+    templates=[{**t,'availability':{'note':'Explore runnable' if all(n['tool'] in demo.TOOLS for n in t['graph']['nodes']) else 'Research Pro execution required; design and self-hosting remain available'}} for t in registry.templates()]
+    return {**catalogue_view.view(current['id']),'templates':templates,'capabilities':runner.capabilities(),'demo':demo.public_info(current['id'])}
 
 @app.get('/api/settings')
 def settings(current=Depends(user)):return data.settings(current['id'])
@@ -167,12 +162,28 @@ def update_settings(patch:dict=Body(...),current=Depends(user)):return data.upda
 
 @app.get('/api/assets')
 def assets(q:str='',current=Depends(user)):
-    if entitlements.restricted(current['id']):return {'assets':[],'scans':[],'public_sources':[],'transfers':[]}
-    if len(q)>200:raise ValueError('Search is too long')
-    staged=" AND id IN (SELECT id FROM datasets WHERE state='Ready')" if CLOUD else ''
-    rows=db.query('SELECT * FROM assets WHERE user_id=?'+staged+' AND (name LIKE ? OR family LIKE ? OR format LIKE ?) ORDER BY family,name LIMIT 300',(current['id'],'%'+q+'%','%'+q+'%','%'+q+'%'))
-    for r in rows:r['metadata']=json.loads(r['metadata'])
+    if entitlements.restricted(current['id']) and current['role']!='admin':return {'assets':[],'scans':[],'public_sources':[],'transfers':[]}
+    from .asset_listing import list_assets
+    rows=list_assets(current['id'],query=q,limit=300,cloud=CLOUD)
     return {'assets':rows,'scans':db.query('SELECT * FROM scans WHERE user_id=? ORDER BY started DESC LIMIT 20',(current['id'],)),'public_sources':data.PUBLIC,'transfers':db.query('SELECT * FROM transfers WHERE user_id=? ORDER BY started DESC LIMIT 30',(current['id'],))}
+
+@app.get('/api/assets/resolve')
+def resolve(family:str,assembly:str|None=None,source_id:str|None=None,asset_id:str|None=None,current=Depends(user)):return {'candidates':data.resolve(current['id'],family,assembly,data.settings(current['id'])['backend'],source_id,asset_id)}
+
+@app.get('/api/assets/{aid}/rights')
+def asset_rights_details(aid:str,current=Depends(user)):
+    from . import asset_rights
+    return asset_rights.disclosure(current['id'],asset_rights.owned(current['id'],aid))
+
+@app.post('/api/admin/data-rights/{uid}/{aid}')
+def acknowledge_data_rights(uid:str,aid:str,payload:dict=Body(...),current=Depends(admin)):
+    from . import asset_rights
+    return asset_rights.acknowledge(current,uid,aid,payload)
+
+@app.post('/api/admin/data-rights/{uid}/{identity}/revoke')
+def revoke_data_rights(uid:str,identity:str,payload:dict=Body(...),current=Depends(admin)):
+    from . import asset_rights
+    return asset_rights.revoke(current,uid,identity,str(payload.get('reason','')))
 
 @app.get('/api/assets/{aid}')
 def get_asset(aid:str,current=Depends(user)):
@@ -203,9 +214,6 @@ def tier_request(payload:dict=Body(...),current=Depends(user)):
 
 @app.post('/api/assets/scan')
 def scan(payload:dict=Body(...),current=Depends(user)):return {'id':data.scan(current['id'],payload.get('root',''))}
-
-@app.get('/api/assets/resolve')
-def resolve(family:str,assembly:str|None=None,current=Depends(user)):return {'candidates':data.resolve(current['id'],family,assembly,data.settings(current['id'])['backend'])}
 
 @app.post('/api/public/{source_id}/probe')
 def probe(source_id:str,current=Depends(user)):return data.probe_public(source_id)
@@ -328,6 +336,8 @@ async def events(rid:str,request:Request,after:int=0,current=Depends(user)):
 
 @app.get('/api/artifacts/{aid}')
 def artifact(aid:str,request:Request,current=Depends(user)):
+    from . import retention
+    retention.lease(current['id'],aid,seconds=120)
     r=db.query('SELECT * FROM artifacts WHERE id=? AND user_id=?',(aid,current['id']),one=True)
     if not r:raise HTTPException(404)
     meta=json.loads(r['metadata'])

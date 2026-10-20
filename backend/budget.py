@@ -31,6 +31,7 @@ def initialize():
         c.execute('CREATE INDEX IF NOT EXISTS cost_period_state ON cost_reservations(period,state)')
         c.execute('CREATE TABLE IF NOT EXISTS billing_checks(period TEXT PRIMARY KEY,gross_micro BIGINT NOT NULL,checked REAL NOT NULL)')
         c.execute('CREATE TABLE IF NOT EXISTS cost_allocations(reservation_id TEXT PRIMARY KEY,account TEXT NOT NULL,tenant TEXT NOT NULL)')
+        c.execute('CREATE TABLE IF NOT EXISTS baseline_storage_allocations(plan_id TEXT PRIMARY KEY,user_id TEXT NOT NULL,plan_sha256 TEXT NOT NULL,bytes BIGINT NOT NULL,created REAL NOT NULL,actor TEXT NOT NULL,reason TEXT NOT NULL)')
 
 def period():return datetime.now(timezone.utc).strftime('%Y-%m')
 
@@ -131,11 +132,85 @@ def graph_estimate(g,definitions,uid=None):
         total+=estimate;nodes.append({'node':n['id'],'maximum_hours':hours,'estimate_usd':estimate})
     return {'pretax_usd':round(total,6),'nodes':nodes,'output_gib_ceiling_per_node':.25,'includes':'maximum configured runtime, boot/reaper allowance, disk, requests and one month of bounded output storage'}
 
+def allocate_baseline_storage(actor, plan_id, reason):
+    """Explicit reviewed allocation from existing baseline storage, not a grant.
+
+    This internal operator action has no user HTTP route. Source membership is
+    established by the registered immutable migration plan, never asset tags.
+    """
+    from . import migration
+    admin = db.query('SELECT role FROM users WHERE id=?', (actor,), one=True)
+    if not admin or admin['role'] != 'admin' or len(str(reason).strip()) < 10:
+        raise ValueError('A platform administrator and allocation reason are required')
+    record = db.query('SELECT value FROM controls WHERE key=?', ('migration:plan:'+plan_id,), one=True)
+    if not record:
+        raise ValueError('Only a registered immutable migration plan can use baseline storage')
+    registration = json.loads(record['value']);plan = migration.load_plan(registration)
+    amount = int(plan['total_bytes'])
+    if amount <= 0 or amount != sum(int(o['bytes']) for o in plan['objects']):
+        raise ValueError('Migration byte total is invalid')
+    with db.tx() as c:
+        current = c.execute('SELECT value FROM controls WHERE key=?', ('migration:plan:'+plan_id,)).fetchone()
+        if not current or current['value'] != record['value']:
+            raise ValueError('Migration registration changed during allocation')
+        old = c.execute('SELECT * FROM baseline_storage_allocations WHERE plan_id=?', (plan_id,)).fetchone()
+        if old:
+            if old['plan_sha256'] != registration['sha256'] or old['bytes'] != amount or old['user_id'] != plan['owner_id']:
+                raise ValueError('An existing baseline allocation cannot change immutable identity')
+            return dict(old)
+        allocated = int(c.execute('SELECT COALESCE(SUM(bytes),0) FROM baseline_storage_allocations').fetchone()[0])
+        if allocated + amount > min(600, policy()['max_storage_gib']) * 1024**3:
+            raise BudgetFull('Reviewed migrations exceed the funded baseline storage capacity')
+        c.execute('INSERT INTO baseline_storage_allocations VALUES(?,?,?,?,?,?,?)',
+                  (plan_id, plan['owner_id'], registration['sha256'], amount, time.time(), actor, reason.strip()))
+        db.audit(c, actor, 'budget.baseline.storage.allocated', plan_id,
+                 {'owner': plan['owner_id'], 'bytes': amount, 'plan_sha256': registration['sha256'],
+                  'included_in_existing_fixed_forecast': True, 'research_access_granted': False})
+        return dict(c.execute('SELECT * FROM baseline_storage_allocations WHERE plan_id=?', (plan_id,)).fetchone())
+
+
+def baseline_storage(uid, c):
+    """Return reviewed immutable allocations; altered registrations fail closed."""
+    rows = c.execute('SELECT * FROM baseline_storage_allocations WHERE user_id=?', (uid,)).fetchall()
+    valid = []
+    for row in rows:
+        registered = c.execute('SELECT value FROM controls WHERE key=?', ('migration:plan:'+row['plan_id'],)).fetchone()
+        proof = json.loads(registered['value']) if registered else {}
+        if proof.get('sha256') == row['plan_sha256'] and proof.get('owner_id') == uid:
+            valid.append(dict(row))
+    return valid
+
+
+def baseline_stored_bytes(uid, c):
+    """Actual verified migrated objects only; aliases and user metadata add zero."""
+    datasets = {}
+    for allocation in baseline_storage(uid, c):
+        rows = c.execute("""SELECT DISTINCT d.id,d.bytes FROM datasets d
+          JOIN migration_assets m ON m.dataset_id=d.id AND m.user_id=d.user_id
+          JOIN migration_objects o ON o.user_id=d.user_id AND o.sha256=d.sha256 AND o.version_id=d.version_id
+          WHERE d.user_id=? AND o.plan_id=? AND d.state='Ready' AND o.state='Ready'""",
+          (uid, allocation['plan_id'])).fetchall()
+        if sum(int(r['bytes']) for r in rows) > allocation['bytes']:
+            raise BudgetFull('Migrated storage exceeds its reviewed baseline allocation')
+        for row in rows:
+            datasets[row['id']] = int(row['bytes'])
+    return sum(datasets.values())
+
+
+def billable_storage_capacity(uid, maximum, c):
+    included = sum(int(r['bytes']) for r in baseline_storage(uid, c))
+    return max(0, maximum-included), min(maximum, included)
+
+
 def reserve_storage_capacity(uid,allowance):
     """Fund retained capacity once per month; upload/job charges exclude it."""
-    rows=db.query("SELECT r.details FROM cost_reservations r JOIN cost_allocations a ON a.reservation_id=r.id WHERE a.tenant=? AND a.account IN ('research-pro','validation') AND r.kind='retained-capacity' AND r.period=?",(uid,period()))
-    covered=sum(json.loads(x['details']).get('additional_bytes',0) for x in rows);additional=max(0,allowance['max_storage_bytes']-covered)
-    if not additional:return
-    with db.tx() as c:reserve(c,uid,'retained-capacity:'+period()+':'+str(allowance['max_storage_bytes']),'retained-capacity',additional/1024**3*.023,{'additional_bytes':additional,'scope':'Retained S3 capacity, separate from per-request/compute reservations'})
+    with db.tx() as c:
+        target,included=billable_storage_capacity(uid,allowance['max_storage_bytes'],c)
+        rows=c.execute("SELECT r.details FROM cost_reservations r JOIN cost_allocations a ON a.reservation_id=r.id WHERE a.tenant=? AND a.account IN ('research-pro','validation') AND r.kind='retained-capacity' AND r.period=?",(uid,period())).fetchall()
+        covered=sum(json.loads(x['details']).get('additional_bytes',0) for x in rows);additional=max(0,target-covered)
+        if not additional:return
+        return reserve(c,uid,'retained-capacity-v2:'+period()+':'+str(target),'retained-capacity',additional/1024**3*.023,
+                       {'additional_bytes':additional,'baseline_funded_bytes':included,'total_tenant_capacity_bytes':allowance['max_storage_bytes'],
+                        'scope':'Only additional Pro retained capacity; reviewed migration storage remains in the baseline fixed forecast'})
 
 initialize()

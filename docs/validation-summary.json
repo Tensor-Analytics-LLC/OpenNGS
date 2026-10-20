@@ -2,8 +2,8 @@
   "date": "2026-10-20",
   "service": "https://d2j3o1re9v00qo.cloudfront.net/",
   "tests": {
-    "backend": 69,
-    "javascript": 5,
+    "backend": 169,
+    "javascript": 20,
     "status": "passed"
   },
   "scientific": [
@@ -182,5 +182,108 @@
     "state": "terminated",
     "independent_termination_logged": true,
     "elapsed_seconds": 99.28
+  },
+  "private_results": {
+    "scope": "Small synthetic private VCF/CSV/alignment integration; not full-scale or clinical validation",
+    "state": "Passed AWS isolated private viewer integration",
+    "variant_checks": {
+      "source_id": "artifact_c9e7700c51344c84a60021acb7177bd5",
+      "source_bytes": 16920,
+      "source_sha256": "sha256:a444e6679d86a0f5f5ea6bc71a48264cdf7d6a67f4546a70231e39bde15e5f57",
+      "exact_alleles": 1,
+      "query_exact": true,
+      "absent_contig_matches": 0,
+      "export_exact": true
+    },
+    "header_checks": {
+      "inspected": true,
+      "expected_contig_found": true,
+      "contig_count": 1
+    },
+    "omics_checks": {
+      "actual_points": 3,
+      "all_values_exact": true,
+      "method": "Direct table values; select raw p-values or adjusted FDR explicitly for volcano axes"
+    },
+    "pileup_checks": {
+      "reads": 100,
+      "maximum_coverage": 100,
+      "bases": 200,
+      "truncated": false,
+      "transport": "Isolated worker; exact versioned input staging and bounded region rendering"
+    },
+    "isolation_checks": {
+      "cross_tenant_status_codes": [
+        422,
+        422,
+        422
+      ],
+      "all_denied": true
+    },
+    "billing": {
+      "conservative_pretax_reserved_usd": 0.592,
+      "per_operation": {
+        "variant-index": 0.143,
+        "header": 0.143,
+        "csv-upload": 0.02,
+        "omics": 0.143,
+        "pileup": 0.143
+      },
+      "note": "Conservative admission upper bounds, not the finalized AWS invoice; no grants changed."
+    }
+  },
+  "runtime_qualification": {
+    "public_catalogue_count": 138,
+    "native_small_control_verified": 43,
+    "portable_refreshed_contracts": [
+      "bam.index",
+      "bam.sort",
+      "bam.stats",
+      "bed.intervals",
+      "fastq.merge",
+      "fastq.split",
+      "intervals.bed",
+      "qc.summary",
+      "sam.bam",
+      "vcf.bgzip",
+      "vcf.filter",
+      "vcf.index",
+      "vcf.stats"
+    ],
+    "cross_bucket_cloud_validation": {
+      "run_id": "run_f556206ebf1e492b95fbac18c574c9ca",
+      "state": "succeeded",
+      "assertions": {
+        "input_pairs": 1000,
+        "alignment_records": 2000,
+        "mapped_records": 2000,
+        "salmon_assigned_fragments": 1000.0,
+        "immutable_extension_jobs": 4,
+        "published_runtime_family": "extended-cpu-v1"
+      },
+      "elapsed_seconds": 639.359,
+      "scope": "Real tenant-isolated AWS execution on 1,000 synthetic read pairs and exact 20-kb engineering reference; not representative assay accuracy."
+    }
+  },
+  "deployment": {
+    "source_sha256": "9d9c9616a4f73825c541f98569015d0bbfcca7f682fd5d6ff358ca6e78b8b1a4",
+    "catalogue_count": 138,
+    "isolated_native_contracts": 43,
+    "refreshed_portable_contracts": 13,
+    "private_viewer_operations_passed": 4,
+    "note": "Implemented/deployed/operator-tested; full-scale and clinical qualification remain separate."
+  },
+  "migration_snapshot": {
+    "ready_objects": 1113,
+    "ready_bytes": 134027725572,
+    "transferred_bytes": 186878942245,
+    "total_unique_bytes": 473449575292,
+    "complete": false
+  },
+  "cost_snapshot": {
+    "forecast_including_tax_usd": 149.204973,
+    "available_after_safety_usd": 35.795027,
+    "safety_usd": 15.0,
+    "limit_usd": 200.0
   }
 }

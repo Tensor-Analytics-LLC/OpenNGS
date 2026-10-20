@@ -1,0 +1,6 @@
+{
+  "analysis": {"packages": ["python=3.12", "conda-forge::scanpy=1.12.4", "python-igraph=1.0.0", "leidenalg=0.12.0"], "tools": ["scanpy"]},
+  "annotation": {"packages": ["python=3.12", "snpeff=5.4.0c", "openjdk=21"], "tools": ["snpeff"]},
+  "happy": {"packages": ["python=2.7", "hap.py=0.3.15", "rtg-tools=3.13"], "tools": ["benchmark.happy"]},
+  "legacy": {"packages": ["python=2.7", "strelka=2.9.10", "manta=1.6.0"], "tools": ["strelka2", "manta"]}
+}

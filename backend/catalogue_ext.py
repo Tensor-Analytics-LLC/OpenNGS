@@ -1,6 +1,6 @@
 """Explicit interoperability contracts. Transformations never imply biological equivalence."""
 def extend(add, P, param):
-    add('sample.clinvar','ClinVar · annotated GRCh38 subset','Samples',[],[P('variants','VCF')],'First 1,000 records from the existing public ClinVar GRCh38 SSD snapshot. Retains source clinical labels and allele-frequency annotations where supplied; no clinical interpretation is generated.',builtin=True,docs='https://www.ncbi.nlm.nih.gov/clinvar/')
+    add('sample.clinvar','ClinVar · annotated GRCh38 subset','Samples',[],[P('variants','VCF')],'First 1,000 records from the packaged public ClinVar GRCh38 snapshot, staged in AWS with retained provenance. Retains source clinical labels and allele-frequency annotations where supplied; no clinical interpretation is generated.',builtin=True,docs='https://www.ncbi.nlm.nih.gov/clinvar/')
     add('sample.alignments','Alignment viewer · engineering fixture','Samples',[],[P('alignment','INDEXED_BAM'),P('reference','FASTA')],'Deterministic aligned reads with known strand and base mismatches for testing pileup rendering. Synthetic, never an accuracy benchmark.',builtin=True)
     def native(id,name,ins,outs,description,parameters,exe,image,docs,group='Adapters'):
         return add(id,name,group,ins,outs,description,parameters,executable=exe,image=image,spdx='See upstream',docs=docs)
@@ -16,8 +16,19 @@ def extend(add, P, param):
         ('1000g','1000 Genomes','1000genomes','GRCh38','DATABASE','https://registry.opendata.aws/1000-genomes/'),
         ('giab','GIAB / NIST truth variants','giab','GRCh38','VCF','https://registry.opendata.aws/giab/'),
         ('omim','OMIM licensed snapshot','omim','GRCh38','DATABASE','https://www.omim.org/'),
-        ('cosmic','COSMIC licensed snapshot','cosmic','GRCh38','DATABASE','https://cancer.sanger.ac.uk/cosmic')]:
-        add('resource.'+id,name,'References' if kind=='FASTA' else 'Databases',[],[P('reference' if kind=='FASTA' else 'variants' if kind=='VCF' else 'database',kind)],'Bind an exact permitted release from the indexed SSD inventory. The resolver ranks in-region public mirrors first for cloud execution; assembly and licensing remain explicit.',[param('asset_id','Versioned asset','',kind='asset'),param('assembly','Assembly',build)],builtin=True,asset_family=family,docs=docs,license='Academic' if id in ['omim','cosmic'] else 'FOSS',rights_note='Dataset rights are independent of the platform. Keep the release, citation and permitted use with every asset.')
+        ('cosmic','COSMIC licensed snapshot','cosmic','GRCh38','DATABASE','https://cancer.sanger.ac.uk/cosmic'),
+        ('dbnsfp','dbNSFP functional annotation scores','dbnsfp','GRCh38','DATABASE','https://www.dbnsfp.org/'),
+        ('alphamissense','AlphaMissense precomputed scores','alphamissense','GRCh38','DATABASE','https://github.com/google-deepmind/alphamissense'),
+        ('spliceai','SpliceAI precomputed splice scores','spliceai','GRCh38','DATABASE','https://github.com/Illumina/SpliceAI'),
+        ('cadd','CADD precomputed deleteriousness scores','cadd','GRCh38','DATABASE','https://cadd.gs.washington.edu/'),
+        ('revel','REVEL precomputed missense scores','revel','GRCh38','DATABASE','https://sites.google.com/site/revelgenomics/'),
+        ('exomiser','Exomiser phenotype / variant data','exomiser','GRCh38','DATABASE','https://github.com/exomiser/Exomiser'),
+        ('hpo','Human Phenotype Ontology / gene associations','hpo','GRCh38','DATABASE','https://hpo.jax.org/'),
+        ('ensembl','Ensembl transcript annotations','ensembl','GRCh38','DATABASE','https://www.ensembl.org/info/data/ftp/index.html'),
+        ('mane','MANE matched transcript annotations','mane','GRCh38','DATABASE','https://www.ncbi.nlm.nih.gov/refseq/MANE/'),
+        ('clingen','ClinGen curated gene / dosage evidence','clingen','GRCh38','DATABASE','https://clinicalgenome.org/data-sharing/'),
+        ('vep','Ensembl VEP versioned cache bundle','vep','GRCh38','DATABASE','https://www.ensembl.org/info/docs/tools/vep/script/vep_cache.html')]:
+        add('resource.'+id,name,'References' if kind=='FASTA' else 'Databases',[],[P('reference' if kind=='FASTA' else 'variants' if kind=='VCF' else 'database',kind)],'Bind an exact permitted release verified in AWS or an authorized local source in a self-hosted deployment. Availability is checked for the selected version; assembly and licensing remain explicit.',[param('asset_id','Versioned asset','',kind='asset'),param('assembly','Assembly',build)],builtin=True,asset_family=family,docs=docs,data_license_note='Data rights vary by exact release and use; selected-asset entitlement is checked separately from this binding node.',license='Academic' if id in ['omim','cosmic'] else 'FOSS',rights_note='Binding a resource does not provision it, run inference, or grant data rights. Keep its exact release, assembly, companion files, citation and permitted use; component score licenses can differ.')
     for id,name,ins,outs,description,parameters,exe,image,docs,group in [
         ('varscan2','VarScan2',[P('alignment','INDEXED_BAM'),P('reference','FASTA')],[P('variants','VCF')],'SAMtools pileup followed by VarScan mpileup2cns; review assay-specific significance and allele-frequency settings.',[param('min_coverage','Minimum coverage',10,'number',min=1,max=100000),param('min_var_freq','Minimum variant fraction',.05,'number',min=.0001,max=1)],'varscan','quay.io/biocontainers/varscan:2.4.6--hdfd78af_0','https://varscan.sourceforge.net/','Variants'),
         ('delly','Delly',[P('alignment','INDEXED_BAM'),P('reference','FASTA')],[P('variants','BCF')],'Structural variant discovery with explicit reference and evidence BAM.',[],'delly','quay.io/biocontainers/delly:1.3.3--h7b50bb2_0','https://github.com/dellytools/delly','Variants'),

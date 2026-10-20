@@ -18,8 +18,12 @@ def initialize():
 def file_identity(uid,path,cloud_settings=None):
     if path.startswith('s3://'):
         bucket,key=path[5:].split('/',1);s=cloud_settings or data.settings(uid)
-        if bucket!=s['s3_bucket'] or not key.startswith('tenants/'+uid+'/'):raise ValueError('Cache input is outside the tenant prefix')
-        head=aws_session().client('s3').head_object(Bucket=bucket,Key=key);digest=head.get('Metadata',{}).get('sha256')
+        from .migration import authorize_source
+        proof=authorize_source(uid,path)
+        if (bucket!=s['s3_bucket'] and not proof) or not key.startswith('tenants/'+uid+'/'):raise ValueError('Cache input is outside the tenant prefix')
+        args={'Bucket':bucket,'Key':key}
+        if proof:args['VersionId']=proof['VersionId']
+        head=aws_session().client('s3').head_object(**args);digest=head.get('Metadata',{}).get('sha256')
         if not digest:raise ValueError('S3 cache object lacks a cryptographic content identity')
         return {'digest':digest,'version':head.get('VersionId'),'bytes':head['ContentLength']}
     p=data.permitted_path(uid,path);st=p.stat()
@@ -61,7 +65,10 @@ def load(uid,key,cloud_settings=None):
                     if item.get('metadata',{}).get(field):
                         expected=item['metadata'].get(field+'_sha256')
                         if not expected or file_identity(uid,item['metadata'][field],cloud_settings)['digest']!=expected.removeprefix('sha256:'):return None
-        with db.tx() as c:c.execute('UPDATE node_cache SET last_hit=?,hits=hits+1 WHERE user_id=? AND cache_key=?',(time.time(),uid,key))
+        from . import retention
+        with db.tx() as c:
+            retention.ensure_outputs(uid,outputs,c)
+            c.execute('UPDATE node_cache SET last_hit=?,hits=hits+1 WHERE user_id=? AND cache_key=?',(time.time(),uid,key))
         return outputs
     except (ValueError,OSError):return None
 

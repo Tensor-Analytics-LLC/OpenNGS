@@ -1,0 +1,5681 @@
+{
+  "schema": 1,
+  "public_catalogue_count": 138,
+  "native_small_control_verified": 43,
+  "portable_refreshed_contracts": [
+    "bam.index",
+    "bam.sort",
+    "bam.stats",
+    "bed.intervals",
+    "fastq.merge",
+    "fastq.split",
+    "intervals.bed",
+    "qc.summary",
+    "sam.bam",
+    "vcf.bgzip",
+    "vcf.filter",
+    "vcf.index",
+    "vcf.stats"
+  ],
+  "capabilities": [
+    {
+      "id": "alphamissense",
+      "name": "AlphaMissense",
+      "status": "requires-entitlement-or-published-contract",
+      "reason": "No academic/commercial rights are inferred from a platform trial. An administrator must record the applicable data/model permission.",
+      "license_category": "Academic",
+      "inputs": [
+        {
+          "key": "variants",
+          "type": "VCF|BGZIP_VCF|INDEXED_VCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "database",
+          "type": "DATABASE",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "annotation",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [
+        {
+          "key": "database",
+          "type": "DATABASE",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://github.com/google-deepmind/alphamissense"
+    },
+    {
+      "id": "annotation.merge",
+      "name": "Join allele annotation reports",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "variants",
+          "type": "VCF|BGZIP_VCF|INDEXED_VCF|BCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reports",
+          "type": "REPORT",
+          "required": true,
+          "many": true
+        }
+      ],
+      "outputs": [
+        {
+          "key": "variants",
+          "type": "VCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "report",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "annovar",
+      "name": "ANNOVAR",
+      "status": "requires-entitlement-or-published-contract",
+      "reason": "Requires the user\u2019s ANNOVAR authorization and exact compatible annotation database releases.",
+      "license_category": "Commercial BYOL",
+      "inputs": [
+        {
+          "key": "variants",
+          "type": "VCF|BGZIP_VCF|INDEXED_VCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "database",
+          "type": "DATABASE",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "variants",
+          "type": "VCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [
+        {
+          "key": "database",
+          "type": "DATABASE",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://annovar.openbioinformatics.org/"
+    },
+    {
+      "id": "asset.file",
+      "name": "Local / cloud asset",
+      "status": "implemented-explicit-data-binding",
+      "reason": "Binds an exact authorized asset; neither provisioning nor data availability is implied",
+      "license_category": "FOSS",
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "data",
+          "type": "ANY",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "bam.bigwig",
+      "name": "BAM \u2192 coverage BigWig",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "alignment",
+          "type": "INDEXED_BAM",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "coverage",
+          "type": "BIGWIG",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": "quay.io/biocontainers/deeptools:3.5.6--pyhdfd78af_0",
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "extended-cpu-v1",
+        "packages": {
+          "deeptools": "3.5.6"
+        },
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "bigwig_reference_length": 20000,
+          "nonzero_coverage": true
+        },
+        "runtime_seconds": 0.41,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://deeptools.readthedocs.io/"
+    },
+    {
+      "id": "bam.cram",
+      "name": "BAM \u2192 CRAM",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "alignment",
+          "type": "BAM|SORTED_BAM|INDEXED_BAM",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "alignment",
+          "type": "CRAM",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "bam.index",
+      "name": "BAM index",
+      "status": "implemented-small-control-verified",
+      "reason": "Known-count and lossless round-trip engineering checks",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "alignment",
+          "type": "SORTED_BAM",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "alignment",
+          "type": "INDEXED_BAM",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "portable-refresh-v1",
+        "packages": {
+          "pysam": "0.24.1",
+          "python": "3.12"
+        },
+        "scope": "Known-count and lossless round-trip engineering checks",
+        "assertions": {
+          "read_records": 2000,
+          "mapped_records": 2000,
+          "index_available": true
+        },
+        "runtime_seconds": 0.003,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "bam.sam",
+      "name": "BAM \u2192 SAM",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "alignment",
+          "type": "BAM|SORTED_BAM|INDEXED_BAM",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "alignment",
+          "type": "SAM",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "bam.sort",
+      "name": "Coordinate sort",
+      "status": "implemented-small-control-verified",
+      "reason": "Known-count and lossless round-trip engineering checks",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "alignment",
+          "type": "SAM|BAM",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "alignment",
+          "type": "SORTED_BAM",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "portable-refresh-v1",
+        "packages": {
+          "pysam": "0.24.1",
+          "python": "3.12"
+        },
+        "scope": "Known-count and lossless round-trip engineering checks",
+        "assertions": {
+          "read_records": 2000,
+          "mapped_records": 2000
+        },
+        "runtime_seconds": 0.031,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "bam.stats",
+      "name": "Alignment statistics",
+      "status": "implemented-small-control-verified",
+      "reason": "Known-count and lossless round-trip engineering checks",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "alignment",
+          "type": "BAM|SORTED_BAM|INDEXED_BAM|SAM",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "report",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "portable-refresh-v1",
+        "packages": {
+          "pysam": "0.24.1",
+          "python": "3.12"
+        },
+        "scope": "Known-count and lossless round-trip engineering checks",
+        "assertions": {
+          "records": 2000
+        },
+        "runtime_seconds": 0.003,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "bcf.vcf",
+      "name": "BCF \u2192 VCF",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "variants",
+          "type": "BCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "variants",
+          "type": "VCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "bcftools",
+      "name": "Bcftools mpileup + call",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "alignment",
+          "type": "INDEXED_BAM",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "variants",
+          "type": "VCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": "quay.io/biocontainers/bcftools:1.21--h3a4d415_1",
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "core-cpu-refresh-v1",
+        "packages": {
+          "bcftools": "1.21"
+        },
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "valid_variant_records": 0,
+          "reference_contig_preserved": true,
+          "control": "Synthetic command integration; negative output permitted, no sensitivity claim"
+        },
+        "runtime_seconds": 0.18,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://github.com/google/deepvariant"
+    },
+    {
+      "id": "bcftools.annotate",
+      "name": "Normalize & annotate matching alleles",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "variants",
+          "type": "VCF|BGZIP_VCF|INDEXED_VCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "database",
+          "type": "INDEXED_VCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "variants",
+          "type": "INDEXED_VCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": "quay.io/biocontainers/bcftools:1.21--h8b25389_0",
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "core-cpu-refresh-v1",
+        "packages": {
+          "bcftools": "1.21"
+        },
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "exact_allele_annotations": 2
+        },
+        "runtime_seconds": 0.019,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [
+        {
+          "key": "database",
+          "type": "INDEXED_VCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://samtools.github.io/bcftools/bcftools.html"
+    },
+    {
+      "id": "bcl.convert",
+      "name": "Illumina BCL Convert",
+      "status": "requires-entitlement-or-published-contract",
+      "reason": "Requires a reviewed BCL Convert distribution, sample sheet/run-folder contract and applicable vendor permission.",
+      "license_category": "Commercial BYOL",
+      "inputs": [
+        {
+          "key": "run",
+          "type": "ARCHIVE",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "sample_sheet",
+          "type": "CSV",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "reads",
+          "type": "COLLECTION",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://support.illumina.com/sequencing/sequencing_software/bcl-convert.html"
+    },
+    {
+      "id": "bed.gtf",
+      "name": "BED \u2192 GTF",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "intervals",
+          "type": "BED",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "intervals",
+          "type": "GTF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "bed.intervals",
+      "name": "BED \u2192 IntervalList",
+      "status": "implemented-small-control-verified",
+      "reason": "Known-count and lossless round-trip engineering checks",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "intervals",
+          "type": "BED",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "intervals",
+          "type": "INTERVALLIST",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "portable-refresh-v1",
+        "packages": {
+          "pysam": "0.24.1",
+          "python": "3.12"
+        },
+        "scope": "Known-count and lossless round-trip engineering checks",
+        "assertions": {
+          "bed_zero_based_start": 100,
+          "interval_one_based_start": 101,
+          "end": 200
+        },
+        "runtime_seconds": 0.0,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "benchmark.exact",
+      "name": "Exact-allele benchmark",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "query",
+          "type": "VCF|BGZIP_VCF|INDEXED_VCF|BCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "truth",
+          "type": "VCF|BGZIP_VCF|INDEXED_VCF|BCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "regions",
+          "type": "BED",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "report",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [
+        {
+          "key": "regions",
+          "type": "BED",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "benchmark.happy",
+      "name": "GIAB hap.py / vcfeval",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "query",
+          "type": "VCF|BGZIP_VCF|INDEXED_VCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "truth",
+          "type": "VCF|BGZIP_VCF|INDEXED_VCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "regions",
+          "type": "BED",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "stratifications",
+          "type": "TSV",
+          "required": false,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "summary",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "extended",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:39e3588cf430712ec49d2ff66e24db9e5f1b129a587b2ad123650247f309813d",
+        "source_sha256": "dd438729244dff6e0dd54619e75709be0ef5120662b95a27f94fdcda33498c8e",
+        "runtime_family": "secondary-cpu-v1",
+        "packages": [
+          "python=2.7",
+          "hap.py=0.3.15",
+          "rtg-tools=3.13"
+        ],
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "truth_snps": 2,
+          "query_snps": 2,
+          "true_positive": 1,
+          "false_positive": 1,
+          "false_negative": 1,
+          "precision": 0.5,
+          "recall": 0.5,
+          "engine": "vcfeval",
+          "scope": "Controlled SNP accounting; not GIAB sample or indel representation accuracy validation"
+        },
+        "runtime_seconds": 3.103,
+        "output_count": 2
+      },
+      "required_reference_or_database_ports": [
+        {
+          "key": "regions",
+          "type": "BED",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "stratifications",
+          "type": "TSV",
+          "required": false,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://github.com/Illumina/hap.py"
+    },
+    {
+      "id": "bismark",
+      "name": "Bismark",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "reads",
+          "type": "FASTQ_PAIR",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "alignment",
+          "type": "BAM",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": "quay.io/biocontainers/bismark:0.24.2--hdfd78af_0",
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "extended-cpu-v1",
+        "packages": {
+          "bismark": "0.24.2"
+        },
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "bam_records": 2000,
+          "sample": "Unconverted synthetic reads; command-only, no methylation accuracy claim"
+        },
+        "runtime_seconds": 10.675,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://felixkrueger.github.io/Bismark/"
+    },
+    {
+      "id": "bowtie2",
+      "name": "Bowtie2",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "reads",
+          "type": "FASTQ_PAIR|FASTQ",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA|INDEX",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "alignment",
+          "type": "SAM",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": "quay.io/biocontainers/bowtie2:2.5.4--he96a11b_5",
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "extended-cpu-v1",
+        "packages": {
+          "bowtie2": "2.5.4"
+        },
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "read_records": 2000,
+          "mapped_records": 2000,
+          "expected_input_read_records": 2000
+        },
+        "runtime_seconds": 0.85,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [
+        {
+          "key": "reference",
+          "type": "FASTA|INDEX",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml"
+    },
+    {
+      "id": "bwa-mem2",
+      "name": "BWA-MEM2",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "reads",
+          "type": "FASTQ_PAIR|FASTQ",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA|INDEX",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "alignment",
+          "type": "SAM",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": "quay.io/biocontainers/bwa-mem2:2.2.1--hd03093a_5",
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "core-cpu-refresh-v1",
+        "packages": {
+          "bwa-mem2": "2.2.1"
+        },
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "read_records": 2000,
+          "mapped_records": 2000,
+          "expected_input_read_records": 2000
+        },
+        "runtime_seconds": 2.117,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [
+        {
+          "key": "reference",
+          "type": "FASTA|INDEX",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://github.com/bwa-mem2/bwa-mem2"
+    },
+    {
+      "id": "cadd",
+      "name": "CADD",
+      "status": "requires-entitlement-or-published-contract",
+      "reason": "No academic/commercial rights are inferred from a platform trial. An administrator must record the applicable data/model permission.",
+      "license_category": "Academic",
+      "inputs": [
+        {
+          "key": "variants",
+          "type": "VCF|BGZIP_VCF|INDEXED_VCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "database",
+          "type": "DATABASE",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "annotation",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [
+        {
+          "key": "database",
+          "type": "DATABASE",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://cadd.gs.washington.edu/"
+    },
+    {
+      "id": "cnvkit",
+      "name": "CNVkit",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "alignment",
+          "type": "INDEXED_BAM",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "targets",
+          "type": "BED",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "report",
+          "type": "CNV",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "extended-cpu-v1",
+        "packages": {
+          "cnvkit": "0.9.14"
+        },
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "segment_rows": 8,
+          "baseline": "Flat synthetic baseline; no CNV truth sensitivity claim"
+        },
+        "runtime_seconds": 5.939,
+        "output_count": 3
+      },
+      "required_reference_or_database_ports": [
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "targets",
+          "type": "BED",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://cnvkit.readthedocs.io/"
+    },
+    {
+      "id": "cohort.bind",
+      "name": "Pedigree / sample-role manifest",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "samples",
+          "type": "ANY",
+          "required": true,
+          "many": true
+        }
+      ],
+      "outputs": [
+        {
+          "key": "cohort",
+          "type": "COLLECTION",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "manifest",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "cohort.genotype",
+      "name": "GATK joint genotyping",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "gvcfs",
+          "type": "VCF|BGZIP_VCF|INDEXED_VCF",
+          "required": true,
+          "many": true
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "variants",
+          "type": "VCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": "broadinstitute/gatk:4.6.1.0",
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "extended-core-contracts-v1",
+        "packages": {
+          "gatk4": "4.6.2.0"
+        },
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "sample_names": [
+            "NORMAL",
+            "SAMPLE"
+          ],
+          "joint_genotype_records": 201,
+          "observed_homozygous_reference_genotypes": true,
+          "scope": "Two matched engineering samples; no pedigree or variant sensitivity claim"
+        },
+        "runtime_seconds": 4.905,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://gatk.broadinstitute.org/"
+    },
+    {
+      "id": "contig.rename",
+      "name": "Rename contigs",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "data",
+          "type": "VCF|BGZIP_VCF|INDEXED_VCF|BCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "data",
+          "type": "VCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "contig.rename.bed",
+      "name": "Rename BED contigs",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "data",
+          "type": "BED",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "data",
+          "type": "BED",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "cosmic",
+      "name": "COSMIC licensed dataset",
+      "status": "requires-entitlement-or-published-contract",
+      "reason": "Requires authorized COSMIC data and a validated version-specific query contract.",
+      "license_category": "Commercial BYOL",
+      "inputs": [
+        {
+          "key": "variants",
+          "type": "VCF|BGZIP_VCF|INDEXED_VCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "database",
+          "type": "DATABASE",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "result",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [
+        {
+          "key": "database",
+          "type": "DATABASE",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://cancer.sanger.ac.uk/cosmic"
+    },
+    {
+      "id": "cram.bam",
+      "name": "CRAM \u2192 BAM",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "alignment",
+          "type": "CRAM|INDEXED_CRAM",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "alignment",
+          "type": "BAM",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "cram.index",
+      "name": "CRAM index",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "alignment",
+          "type": "CRAM",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "alignment",
+          "type": "INDEXED_CRAM",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "crossmap.bed",
+      "name": "CrossMap BED liftover",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "intervals",
+          "type": "BED",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "chain",
+          "type": "CHAIN",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "intervals",
+          "type": "BED",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": "quay.io/biocontainers/crossmap:0.7.3--pyhdfd78af_0",
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "extended-cpu-v1",
+        "packages": {
+          "crossmap": "0.7.3"
+        },
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "identity_chain_round_trip": true,
+          "zero_based_half_open_interval": [
+            100,
+            200
+          ]
+        },
+        "runtime_seconds": 0.186,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [
+        {
+          "key": "chain",
+          "type": "CHAIN",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://crossmap.readthedocs.io/"
+    },
+    {
+      "id": "custom",
+      "name": "Universal container",
+      "status": "requires-entitlement-or-published-contract",
+      "reason": "Exact credentials, permitted data and runtime must be verified",
+      "license_category": "Review required",
+      "inputs": [
+        {
+          "key": "data",
+          "type": "ANY",
+          "required": true,
+          "many": true
+        }
+      ],
+      "outputs": [
+        {
+          "key": "result",
+          "type": "ANY",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "database.asset",
+      "name": "Database / model asset",
+      "status": "implemented-explicit-data-binding",
+      "reason": "Binds an exact authorized asset; neither provisioning nor data availability is implied",
+      "license_category": "FOSS",
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "database",
+          "type": "DATABASE",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "deepvariant",
+      "name": "DeepVariant",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "The version-pinned DeepVariant model/runtime has not been wrapped into the private worker contract or executed on a representative input.",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "alignment",
+          "type": "INDEXED_BAM",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "variants",
+          "type": "VCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": "google/deepvariant:1.8.0",
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://github.com/google/deepvariant"
+    },
+    {
+      "id": "delly",
+      "name": "Delly",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "alignment",
+          "type": "INDEXED_BAM",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "variants",
+          "type": "BCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": "quay.io/biocontainers/delly:1.3.3--h7b50bb2_0",
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "extended-cpu-v1",
+        "packages": {
+          "delly": "1.3.1"
+        },
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "valid_variant_records": 0,
+          "reference_contig_preserved": true,
+          "control": "Synthetic command integration; negative output permitted, no sensitivity claim"
+        },
+        "runtime_seconds": 0.019,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://github.com/dellytools/delly"
+    },
+    {
+      "id": "dorado",
+      "name": "Dorado",
+      "status": "requires-entitlement-or-published-contract",
+      "reason": "Requires reviewed ONT software/model permissions, a compatible published GPU worker and POD5/model qualification.",
+      "license_category": "Academic",
+      "inputs": [
+        {
+          "key": "signal",
+          "type": "POD5",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "alignment",
+          "type": "BAM",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://github.com/nanoporetech/dorado"
+    },
+    {
+      "id": "dragen",
+      "name": "DRAGEN",
+      "status": "requires-entitlement-or-published-contract",
+      "reason": "Requires the licensed DRAGEN distribution and supported hardware/runtime; the generic CPU lane is not an equivalent execution environment.",
+      "license_category": "Commercial BYOL",
+      "inputs": [
+        {
+          "key": "data",
+          "type": "ANY",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "result",
+          "type": "ANY",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://help.dragen.illumina.com/"
+    },
+    {
+      "id": "enformer",
+      "name": "Enformer",
+      "status": "requires-entitlement-or-published-contract",
+      "reason": "Requires permitted model weights, sequence-window assembly and a published model inference runtime; precomputed score lookup is not Enformer inference.",
+      "license_category": "Academic",
+      "inputs": [
+        {
+          "key": "sequence",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "model",
+          "type": "DATABASE",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "annotation",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://github.com/google-deepmind/deepmind-research/tree/master/enformer"
+    },
+    {
+      "id": "exomiser",
+      "name": "Exomiser",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "The Exomiser executable, versioned phenotype/variant databases and proband/pedigree analysis contract are not published.",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "variants",
+          "type": "VCF|BGZIP_VCF|INDEXED_VCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "database",
+          "type": "DATABASE",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "prioritization",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [
+        {
+          "key": "database",
+          "type": "DATABASE",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://github.com/exomiser/Exomiser"
+    },
+    {
+      "id": "expansionhunter",
+      "name": "ExpansionHunter",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "alignment",
+          "type": "INDEXED_BAM",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "catalogue",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "variants",
+          "type": "VCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "report",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "extended-cpu-v1",
+        "packages": {
+          "expansionhunter": "5.0.0"
+        },
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "motif": "CAG",
+          "expected_repeat_copies": [
+            20,
+            20
+          ],
+          "observed_repeat_copies": "20/20",
+          "sample_label": "reads",
+          "input_pairs": 600,
+          "qualification": "One synthetic reference-length positive control"
+        },
+        "runtime_seconds": 0.096,
+        "output_count": 2
+      },
+      "required_reference_or_database_ports": [
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://github.com/Illumina/ExpansionHunter"
+    },
+    {
+      "id": "fastp",
+      "name": "fastp",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "reads",
+          "type": "FASTQ_PAIR",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "reads",
+          "type": "FASTQ_PAIR",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "report",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": "quay.io/biocontainers/fastp:0.23.4--hadf994f_2",
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "core-cpu-refresh-v1",
+        "packages": {
+          "fastp": "0.24.0"
+        },
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "public_rna_input_reads": 9712,
+          "retained_reads": 9712
+        },
+        "runtime_seconds": 0.603,
+        "output_count": 3
+      },
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://github.com/OpenGene/fastp"
+    },
+    {
+      "id": "fastq.merge",
+      "name": "Interleave paired FASTQ",
+      "status": "implemented-small-control-verified",
+      "reason": "Known-count and lossless round-trip engineering checks",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "reads",
+          "type": "FASTQ_PAIR",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "reads",
+          "type": "INTERLEAVED_FASTQ",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "portable-refresh-v1",
+        "packages": {
+          "pysam": "0.24.1",
+          "python": "3.12"
+        },
+        "scope": "Known-count and lossless round-trip engineering checks",
+        "assertions": {
+          "interleaved_records": 2000
+        },
+        "runtime_seconds": 0.074,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "fastq.split",
+      "name": "Deinterleave paired FASTQ",
+      "status": "implemented-small-control-verified",
+      "reason": "Known-count and lossless round-trip engineering checks",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "reads",
+          "type": "INTERLEAVED_FASTQ",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "reads",
+          "type": "FASTQ_PAIR",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "portable-refresh-v1",
+        "packages": {
+          "pysam": "0.24.1",
+          "python": "3.12"
+        },
+        "scope": "Known-count and lossless round-trip engineering checks",
+        "assertions": {
+          "both_mates_preserved_byte_for_byte_uncompressed": true,
+          "pairs": 1000
+        },
+        "runtime_seconds": 0.055,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "fastqc",
+      "name": "FastQC",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "reads",
+          "type": "FASTQ_PAIR|FASTQ",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "report",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": "quay.io/biocontainers/fastqc:0.12.1--hdfd78af_0",
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "core-cpu-refresh-v1",
+        "packages": {
+          "fastqc": "0.12.1"
+        },
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "public_rna_read_pairs": 4856,
+          "machine_and_human_reports": 4
+        },
+        "runtime_seconds": 4.424,
+        "output_count": 4
+      },
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://www.bioinformatics.babraham.ac.uk/projects/fastqc/"
+    },
+    {
+      "id": "franklin",
+      "name": "Genoox Franklin",
+      "status": "requires-entitlement-or-published-contract",
+      "reason": "Exact credentials, permitted data and runtime must be verified",
+      "license_category": "Paid API BYOK",
+      "inputs": [
+        {
+          "key": "variants",
+          "type": "VCF|BGZIP_VCF|INDEXED_VCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "annotation",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://franklin.genoox.com/"
+    },
+    {
+      "id": "freebayes",
+      "name": "FreeBayes",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "alignment",
+          "type": "INDEXED_BAM",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "variants",
+          "type": "VCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "core-cpu-refresh-v1",
+        "packages": {
+          "freebayes": "1.3.6"
+        },
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "valid_variant_records": 0,
+          "reference_contig_preserved": true,
+          "control": "Synthetic command integration; negative output permitted, no sensitivity claim"
+        },
+        "runtime_seconds": 0.171,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://github.com/freebayes/freebayes"
+    },
+    {
+      "id": "gatk-apply-bqsr",
+      "name": "GATK ApplyBQSR",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "alignment",
+          "type": "INDEXED_BAM",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "recalibration",
+          "type": "RECAL",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "alignment",
+          "type": "SORTED_BAM",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": "broadinstitute/gatk:4.6.1.0",
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "core-cpu-refresh-v1",
+        "packages": {
+          "gatk4": "4.6.2.0"
+        },
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "read_records": 2000,
+          "mapped_records": 2000,
+          "expected_input_read_records": 2000
+        },
+        "runtime_seconds": 2.187,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://gatk.broadinstitute.org/"
+    },
+    {
+      "id": "gatk-bqsr",
+      "name": "GATK4 BaseRecalibrator",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "alignment",
+          "type": "INDEXED_BAM",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "known_sites",
+          "type": "INDEXED_VCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "report",
+          "type": "RECAL",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": "broadinstitute/gatk:4.6.1.0",
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "core-cpu-refresh-v1",
+        "packages": {
+          "gatk4": "4.6.2.0"
+        },
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "recalibration_tables": 1
+        },
+        "runtime_seconds": 5.07,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "known_sites",
+          "type": "INDEXED_VCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://gatk.broadinstitute.org/"
+    },
+    {
+      "id": "gatk.mt.call",
+      "name": "Mutect2 \u00b7 mitochondrial mode",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "alignment",
+          "type": "INDEXED_BAM",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "variants",
+          "type": "VCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "statistics",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": "broadinstitute/gatk:4.6.1.0",
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "core-cpu-refresh-v1",
+        "packages": {
+          "gatk4": "4.6.2.0"
+        },
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "valid_variant_records": 0,
+          "reference_contig_preserved": true,
+          "control": "Synthetic command integration; negative output permitted, no sensitivity claim"
+        },
+        "runtime_seconds": 2.476,
+        "output_count": 2
+      },
+      "required_reference_or_database_ports": [
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://gatk.broadinstitute.org/"
+    },
+    {
+      "id": "gatk.mt.filter",
+      "name": "FilterMutectCalls \u00b7 mitochondrial mode",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "variants",
+          "type": "VCF|BGZIP_VCF|INDEXED_VCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "statistics",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "variants",
+          "type": "VCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": "broadinstitute/gatk:4.6.1.0",
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "core-cpu-refresh-v1",
+        "packages": {
+          "gatk4": "4.6.2.0"
+        },
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "valid_variant_records": 0,
+          "reference_contig_preserved": true,
+          "control": "Synthetic command integration; negative output permitted, no sensitivity claim"
+        },
+        "runtime_seconds": 2.0,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://gatk.broadinstitute.org/"
+    },
+    {
+      "id": "gtf.bed",
+      "name": "GTF / GFF3 \u2192 BED",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "intervals",
+          "type": "GTF|GFF3",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "intervals",
+          "type": "BED",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "haplotypecaller",
+      "name": "GATK HaplotypeCaller",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "alignment",
+          "type": "INDEXED_BAM",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "intervals",
+          "type": "BED|INTERVALLIST",
+          "required": false,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "variants",
+          "type": "VCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": "broadinstitute/gatk:4.6.1.0",
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "core-cpu-refresh-v1",
+        "packages": {
+          "gatk4": "4.6.2.0"
+        },
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "valid_variant_records": 0,
+          "reference_contig_preserved": true,
+          "control": "Synthetic command integration; negative output permitted, no sensitivity claim"
+        },
+        "runtime_seconds": 2.517,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://gatk.broadinstitute.org/"
+    },
+    {
+      "id": "hgmd",
+      "name": "HGMD lookup",
+      "status": "requires-entitlement-or-published-contract",
+      "reason": "Requires an authorized HGMD release and a vendor-specific permitted query contract.",
+      "license_category": "Commercial BYOL",
+      "inputs": [
+        {
+          "key": "data",
+          "type": "ANY",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "result",
+          "type": "ANY",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://www.hgmd.cf.ac.uk/"
+    },
+    {
+      "id": "hisat2",
+      "name": "HISAT2",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "reads",
+          "type": "FASTQ_PAIR|FASTQ",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA|INDEX",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "alignment",
+          "type": "SAM",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": "quay.io/biocontainers/hisat2:2.2.1--h503566f_8",
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "extended-cpu-v1",
+        "packages": {
+          "hisat2": "2.2.1"
+        },
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "read_records": 2000,
+          "mapped_records": 2000,
+          "expected_input_read_records": 2000
+        },
+        "runtime_seconds": 0.201,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [
+        {
+          "key": "reference",
+          "type": "FASTA|INDEX",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://daehwankimlab.github.io/hisat2/"
+    },
+    {
+      "id": "intervals.bed",
+      "name": "IntervalList \u2192 BED",
+      "status": "implemented-small-control-verified",
+      "reason": "Known-count and lossless round-trip engineering checks",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "intervals",
+          "type": "INTERVALLIST",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "intervals",
+          "type": "BED",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "portable-refresh-v1",
+        "packages": {
+          "pysam": "0.24.1",
+          "python": "3.12"
+        },
+        "scope": "Known-count and lossless round-trip engineering checks",
+        "assertions": {
+          "zero_based_half_open_round_trip": [
+            100,
+            200
+          ]
+        },
+        "runtime_seconds": 0.0,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "intervar",
+      "name": "InterVar",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "InterVar requires separately permitted annotation dependencies and a validated ACMG evidence contract; a catalogue entry does not authorize those assets.",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "variants",
+          "type": "VCF|BGZIP_VCF|INDEXED_VCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "database",
+          "type": "DATABASE",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "classification",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [
+        {
+          "key": "database",
+          "type": "DATABASE",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://github.com/WGLab/InterVar"
+    },
+    {
+      "id": "kraken2",
+      "name": "Kraken2",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "reads",
+          "type": "FASTQ_PAIR|FASTQ",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "database",
+          "type": "DATABASE",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "report",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "extended-cpu-v1",
+        "packages": {
+          "kraken2": "2.1.3"
+        },
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "known_synthetic_taxon_detected": true,
+          "taxonomic_truth": "one artificial species"
+        },
+        "runtime_seconds": 0.029,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [
+        {
+          "key": "database",
+          "type": "DATABASE",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://github.com/DerrickWood/kraken2"
+    },
+    {
+      "id": "liftover.vcf",
+      "name": "Picard LiftoverVcf",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "variants",
+          "type": "VCF|BGZIP_VCF|INDEXED_VCF|BCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "chain",
+          "type": "CHAIN",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "variants",
+          "type": "VCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "rejected",
+          "type": "VCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": "quay.io/biocontainers/picard:3.3.0--hdfd78af_0",
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "extended-core-contracts-v1",
+        "packages": {
+          "picard": "3.4.0"
+        },
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "preserved_positions": [
+            1000,
+            1010
+          ],
+          "rejected_variants": 0,
+          "scope": "Identity chain only; inter-assembly liftover needs separate validation"
+        },
+        "runtime_seconds": 1.395,
+        "output_count": 2
+      },
+      "required_reference_or_database_ports": [
+        {
+          "key": "chain",
+          "type": "CHAIN",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://broadinstitute.github.io/picard/command-line-overview.html#LiftoverVcf"
+    },
+    {
+      "id": "macs3",
+      "name": "MACS3",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "treatment",
+          "type": "BAM|SORTED_BAM|INDEXED_BAM",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "control",
+          "type": "BAM|SORTED_BAM|INDEXED_BAM",
+          "required": false,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "peaks",
+          "type": "BED",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "extended-cpu-v1",
+        "packages": {
+          "macs3": "3.0.3"
+        },
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "called_peaks": 1,
+          "synthetic_enrichment": true
+        },
+        "runtime_seconds": 0.779,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://macs3-project.github.io/MACS/"
+    },
+    {
+      "id": "manta",
+      "name": "Manta",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "alignment",
+          "type": "INDEXED_BAM",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "variants",
+          "type": "VCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:39e3588cf430712ec49d2ff66e24db9e5f1b129a587b2ad123650247f309813d",
+        "source_sha256": "dd438729244dff6e0dd54619e75709be0ef5120662b95a27f94fdcda33498c8e",
+        "runtime_family": "secondary-cpu-v1",
+        "packages": [
+          "python=2.7",
+          "strelka=2.9.10",
+          "manta=1.6.0"
+        ],
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "valid_variant_records": 0,
+          "reference_contig_preserved": true,
+          "control": "Synthetic command integration; negative output permitted, no sensitivity claim"
+        },
+        "runtime_seconds": 1.089,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://github.com/Illumina/manta"
+    },
+    {
+      "id": "minimap2",
+      "name": "Minimap2",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "reads",
+          "type": "FASTQ_PAIR|FASTQ",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA|INDEX",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "alignment",
+          "type": "SAM",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": "quay.io/biocontainers/minimap2:2.28--he4a0461_3",
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "core-cpu-refresh-v1",
+        "packages": {
+          "minimap2": "2.28"
+        },
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "read_records": 2000,
+          "mapped_records": 2000,
+          "expected_input_read_records": 2000
+        },
+        "runtime_seconds": 0.047,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [
+        {
+          "key": "reference",
+          "type": "FASTA|INDEX",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://github.com/lh3/minimap2"
+    },
+    {
+      "id": "mito.extract",
+      "name": "Mitochondrial + nuclear candidate extraction",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "alignment",
+          "type": "INDEXED_BAM",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "regions",
+          "type": "BED",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "alignment",
+          "type": "BAM",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": "quay.io/biocontainers/samtools:1.21--h50ea8bc_0",
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "core-cpu-refresh-v1",
+        "packages": {
+          "samtools": "1.21"
+        },
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "read_records": 2000,
+          "mapped_records": 2000,
+          "expected_input_read_records": 2000
+        },
+        "runtime_seconds": 0.01,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [
+        {
+          "key": "regions",
+          "type": "BED",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://www.htslib.org/doc/samtools-view.html"
+    },
+    {
+      "id": "mito.liftover",
+      "name": "Lift shifted mtDNA calls back",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "variants",
+          "type": "VCF|BGZIP_VCF|INDEXED_VCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "chain",
+          "type": "CHAIN",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "variants",
+          "type": "VCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "rejected",
+          "type": "VCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": "broadinstitute/gatk:4.6.1.0",
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "core-cpu-refresh-v1",
+        "packages": {
+          "gatk4": "4.6.2.0"
+        },
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "identity_liftover_preserved_positions": [
+            1000,
+            1010
+          ],
+          "not_an_assembly_conversion_benchmark": true
+        },
+        "runtime_seconds": 1.721,
+        "output_count": 2
+      },
+      "required_reference_or_database_ports": [
+        {
+          "key": "chain",
+          "type": "CHAIN",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://gatk.broadinstitute.org/"
+    },
+    {
+      "id": "mito.realign",
+      "name": "Realign candidate reads to mtDNA reference",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "alignment",
+          "type": "BAM|INDEXED_BAM",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "alignment",
+          "type": "INDEXED_BAM",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "core-cpu-refresh-v1",
+        "packages": {
+          "bwa-mem2": "2.2.1"
+        },
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "read_records": 2000,
+          "mapped_records": 2000,
+          "expected_input_read_records": 2000
+        },
+        "runtime_seconds": 2.066,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://github.com/bwa-mem2/bwa-mem2"
+    },
+    {
+      "id": "mito.reconcile",
+      "name": "Circular mtDNA callset reconciliation",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "original",
+          "type": "VCF|BGZIP_VCF|INDEXED_VCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "shifted_back",
+          "type": "VCF|BGZIP_VCF|INDEXED_VCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "variants",
+          "type": "VCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "report",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "mito.regions",
+      "name": "Validate mitochondrial / NUMT candidate regions",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "regions",
+          "type": "BED",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "regions",
+          "type": "BED",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "report",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [
+        {
+          "key": "regions",
+          "type": "BED",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "mito.shift-reference",
+      "name": "Circular mtDNA reference bundle",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "original",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "shifted",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "chain",
+          "type": "CHAIN",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "report",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "mt.qc",
+      "name": "mtDNA allele-fraction QC",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "alignment",
+          "type": "INDEXED_BAM",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "report",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "multiqc",
+      "name": "MultiQC",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "reports",
+          "type": "REPORT|COLLECTION",
+          "required": true,
+          "many": true
+        }
+      ],
+      "outputs": [
+        {
+          "key": "report",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": "quay.io/biocontainers/multiqc:1.25.1--pyhdfd78af_0",
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "extended-cpu-v1",
+        "packages": {
+          "multiqc": "1.25.1"
+        },
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "parsed_fastqc_samples": 2,
+          "fastqc_machine_reports": true
+        },
+        "runtime_seconds": 4.792,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://docs.seqera.io/multiqc"
+    },
+    {
+      "id": "mutect-filter",
+      "name": "GATK FilterMutectCalls",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "variants",
+          "type": "VCF|BGZIP_VCF|INDEXED_VCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "statistics",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "contamination",
+          "type": "REPORT",
+          "required": false,
+          "many": false
+        },
+        {
+          "key": "orientation",
+          "type": "DATABASE",
+          "required": false,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "variants",
+          "type": "VCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": "broadinstitute/gatk:4.6.1.0",
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "extended-core-contracts-v1",
+        "packages": {
+          "gatk4": "4.6.2.0"
+        },
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "valid_variant_records": 0,
+          "reference_contig_preserved": true,
+          "control": "Synthetic command integration; negative output permitted, no sensitivity claim"
+        },
+        "runtime_seconds": 2.431,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://gatk.broadinstitute.org/"
+    },
+    {
+      "id": "mutect2",
+      "name": "GATK Mutect2",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "tumor",
+          "type": "INDEXED_BAM",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "normal",
+          "type": "INDEXED_BAM",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "variants",
+          "type": "VCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "statistics",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": "broadinstitute/gatk:4.6.1.0",
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "core-cpu-refresh-v1",
+        "packages": {
+          "gatk4": "4.6.2.0"
+        },
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "valid_variant_records": 0,
+          "reference_contig_preserved": true,
+          "control": "Synthetic command integration; negative output permitted, no sensitivity claim"
+        },
+        "runtime_seconds": 2.585,
+        "output_count": 2
+      },
+      "required_reference_or_database_ports": [
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://gatk.broadinstitute.org/"
+    },
+    {
+      "id": "oncokb",
+      "name": "OncoKB",
+      "status": "requires-entitlement-or-published-contract",
+      "reason": "Exact credentials, permitted data and runtime must be verified",
+      "license_category": "Paid API BYOK",
+      "inputs": [
+        {
+          "key": "variants",
+          "type": "VCF|BGZIP_VCF|INDEXED_VCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "annotation",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://api.oncokb.org/"
+    },
+    {
+      "id": "picard",
+      "name": "Picard MarkDuplicates",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "alignment",
+          "type": "SORTED_BAM",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "alignment",
+          "type": "SORTED_BAM",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "report",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": "quay.io/biocontainers/picard:3.3.0--hdfd78af_0",
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "core-cpu-refresh-v1",
+        "packages": {
+          "picard": "3.4.0"
+        },
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "read_records": 2000,
+          "mapped_records": 2000,
+          "expected_input_read_records": 2000
+        },
+        "runtime_seconds": 1.826,
+        "output_count": 2
+      },
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://broadinstitute.github.io/picard/"
+    },
+    {
+      "id": "qc.gate",
+      "name": "Measured QC gate / router",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "data",
+          "type": "ANY",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "report",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "passed",
+          "type": "ANY",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "rejected",
+          "type": "ANY",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "decision",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "qc.summary",
+      "name": "FASTQ quality summary",
+      "status": "implemented-small-control-verified",
+      "reason": "Known-count and lossless round-trip engineering checks",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "reads",
+          "type": "FASTQ_PAIR|FASTQ",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "report",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "portable-refresh-v1",
+        "packages": {
+          "pysam": "0.24.1",
+          "python": "3.12"
+        },
+        "scope": "Known-count and lossless round-trip engineering checks",
+        "assertions": {
+          "total_reads": 2000
+        },
+        "runtime_seconds": 0.027,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "reference.asset",
+      "name": "Reference genome",
+      "status": "implemented-explicit-data-binding",
+      "reason": "Binds an exact authorized asset; neither provisioning nor data availability is implied",
+      "license_category": "FOSS",
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "reference.dictionary",
+      "name": "Build reference dictionary",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "dictionary",
+          "type": "INTERVALLIST",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "reference.tiny",
+      "name": "Engineering reference",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "license_category": "FOSS",
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "resource.1000g",
+      "name": "1000 Genomes",
+      "status": "implemented-explicit-data-binding",
+      "reason": "Binds an exact authorized asset; neither provisioning nor data availability is implied",
+      "license_category": "FOSS",
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "database",
+          "type": "DATABASE",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://registry.opendata.aws/1000-genomes/"
+    },
+    {
+      "id": "resource.alphamissense",
+      "name": "AlphaMissense precomputed scores",
+      "status": "implemented-explicit-data-binding",
+      "reason": "Binds an exact authorized asset; neither provisioning nor data availability is implied",
+      "license_category": "FOSS",
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "database",
+          "type": "DATABASE",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://github.com/google-deepmind/alphamissense"
+    },
+    {
+      "id": "resource.cadd",
+      "name": "CADD precomputed deleteriousness scores",
+      "status": "implemented-explicit-data-binding",
+      "reason": "Binds an exact authorized asset; neither provisioning nor data availability is implied",
+      "license_category": "FOSS",
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "database",
+          "type": "DATABASE",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://cadd.gs.washington.edu/"
+    },
+    {
+      "id": "resource.chm13",
+      "name": "T2T-CHM13 reference",
+      "status": "implemented-explicit-data-binding",
+      "reason": "Binds an exact authorized asset; neither provisioning nor data availability is implied",
+      "license_category": "FOSS",
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://github.com/marbl/CHM13"
+    },
+    {
+      "id": "resource.clingen",
+      "name": "ClinGen curated gene / dosage evidence",
+      "status": "implemented-explicit-data-binding",
+      "reason": "Binds an exact authorized asset; neither provisioning nor data availability is implied",
+      "license_category": "FOSS",
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "database",
+          "type": "DATABASE",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://clinicalgenome.org/data-sharing/"
+    },
+    {
+      "id": "resource.clinvar",
+      "name": "ClinVar clinical assertions",
+      "status": "implemented-explicit-data-binding",
+      "reason": "Binds an exact authorized asset; neither provisioning nor data availability is implied",
+      "license_category": "FOSS",
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "database",
+          "type": "DATABASE",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://www.ncbi.nlm.nih.gov/clinvar/"
+    },
+    {
+      "id": "resource.cosmic",
+      "name": "COSMIC licensed snapshot",
+      "status": "implemented-explicit-data-binding",
+      "reason": "Binds an exact authorized asset; neither provisioning nor data availability is implied",
+      "license_category": "Academic",
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "database",
+          "type": "DATABASE",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://cancer.sanger.ac.uk/cosmic"
+    },
+    {
+      "id": "resource.dbnsfp",
+      "name": "dbNSFP functional annotation scores",
+      "status": "implemented-explicit-data-binding",
+      "reason": "Binds an exact authorized asset; neither provisioning nor data availability is implied",
+      "license_category": "FOSS",
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "database",
+          "type": "DATABASE",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://www.dbnsfp.org/"
+    },
+    {
+      "id": "resource.dbsnp",
+      "name": "dbSNP release",
+      "status": "implemented-explicit-data-binding",
+      "reason": "Binds an exact authorized asset; neither provisioning nor data availability is implied",
+      "license_category": "FOSS",
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "database",
+          "type": "DATABASE",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://www.ncbi.nlm.nih.gov/snp/"
+    },
+    {
+      "id": "resource.ensembl",
+      "name": "Ensembl transcript annotations",
+      "status": "implemented-explicit-data-binding",
+      "reason": "Binds an exact authorized asset; neither provisioning nor data availability is implied",
+      "license_category": "FOSS",
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "database",
+          "type": "DATABASE",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://www.ensembl.org/info/data/ftp/index.html"
+    },
+    {
+      "id": "resource.exomiser",
+      "name": "Exomiser phenotype / variant data",
+      "status": "implemented-explicit-data-binding",
+      "reason": "Binds an exact authorized asset; neither provisioning nor data availability is implied",
+      "license_category": "FOSS",
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "database",
+          "type": "DATABASE",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://github.com/exomiser/Exomiser"
+    },
+    {
+      "id": "resource.giab",
+      "name": "GIAB / NIST truth variants",
+      "status": "implemented-explicit-data-binding",
+      "reason": "Binds an exact authorized asset; neither provisioning nor data availability is implied",
+      "license_category": "FOSS",
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "variants",
+          "type": "VCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://registry.opendata.aws/giab/"
+    },
+    {
+      "id": "resource.gnomad",
+      "name": "gnomAD population frequencies",
+      "status": "implemented-explicit-data-binding",
+      "reason": "Binds an exact authorized asset; neither provisioning nor data availability is implied",
+      "license_category": "FOSS",
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "database",
+          "type": "DATABASE",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://gnomad.broadinstitute.org/data"
+    },
+    {
+      "id": "resource.grch37",
+      "name": "GRCh37 / hg19 reference",
+      "status": "implemented-explicit-data-binding",
+      "reason": "Binds an exact authorized asset; neither provisioning nor data availability is implied",
+      "license_category": "FOSS",
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://www.ncbi.nlm.nih.gov/assembly/GCF_000001405.25/"
+    },
+    {
+      "id": "resource.grch38",
+      "name": "GRCh38 / hg38 reference",
+      "status": "implemented-explicit-data-binding",
+      "reason": "Binds an exact authorized asset; neither provisioning nor data availability is implied",
+      "license_category": "FOSS",
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://www.ncbi.nlm.nih.gov/assembly/GCF_000001405.40/"
+    },
+    {
+      "id": "resource.hpo",
+      "name": "Human Phenotype Ontology / gene associations",
+      "status": "implemented-explicit-data-binding",
+      "reason": "Binds an exact authorized asset; neither provisioning nor data availability is implied",
+      "license_category": "FOSS",
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "database",
+          "type": "DATABASE",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://hpo.jax.org/"
+    },
+    {
+      "id": "resource.mane",
+      "name": "MANE matched transcript annotations",
+      "status": "implemented-explicit-data-binding",
+      "reason": "Binds an exact authorized asset; neither provisioning nor data availability is implied",
+      "license_category": "FOSS",
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "database",
+          "type": "DATABASE",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://www.ncbi.nlm.nih.gov/refseq/MANE/"
+    },
+    {
+      "id": "resource.omim",
+      "name": "OMIM licensed snapshot",
+      "status": "implemented-explicit-data-binding",
+      "reason": "Binds an exact authorized asset; neither provisioning nor data availability is implied",
+      "license_category": "Academic",
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "database",
+          "type": "DATABASE",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://www.omim.org/"
+    },
+    {
+      "id": "resource.revel",
+      "name": "REVEL precomputed missense scores",
+      "status": "implemented-explicit-data-binding",
+      "reason": "Binds an exact authorized asset; neither provisioning nor data availability is implied",
+      "license_category": "FOSS",
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "database",
+          "type": "DATABASE",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://sites.google.com/site/revelgenomics/"
+    },
+    {
+      "id": "resource.spliceai",
+      "name": "SpliceAI precomputed splice scores",
+      "status": "implemented-explicit-data-binding",
+      "reason": "Binds an exact authorized asset; neither provisioning nor data availability is implied",
+      "license_category": "FOSS",
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "database",
+          "type": "DATABASE",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://github.com/Illumina/SpliceAI"
+    },
+    {
+      "id": "resource.vep",
+      "name": "Ensembl VEP versioned cache bundle",
+      "status": "implemented-explicit-data-binding",
+      "reason": "Binds an exact authorized asset; neither provisioning nor data availability is implied",
+      "license_category": "FOSS",
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "database",
+          "type": "DATABASE",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://www.ensembl.org/info/docs/tools/vep/script/vep_cache.html"
+    },
+    {
+      "id": "revel",
+      "name": "REVEL",
+      "status": "requires-entitlement-or-published-contract",
+      "reason": "No academic/commercial rights are inferred from a platform trial. An administrator must record the applicable data/model permission.",
+      "license_category": "Academic",
+      "inputs": [
+        {
+          "key": "variants",
+          "type": "VCF|BGZIP_VCF|INDEXED_VCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "database",
+          "type": "DATABASE",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "annotation",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [
+        {
+          "key": "database",
+          "type": "DATABASE",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://sites.google.com/site/revelgenomics/"
+    },
+    {
+      "id": "rna.fdr",
+      "name": "RNA differential-expression FDR guard",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "table",
+          "type": "TSV|CSV",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "table",
+          "type": "TSV",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "report",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "salmon",
+      "name": "Salmon",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "reads",
+          "type": "FASTQ_PAIR",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA|INDEX",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "decoys",
+          "type": "TSV|REPORT",
+          "required": false,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "quantification",
+          "type": "QUANT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": "quay.io/biocontainers/salmon:1.10.3--h6dccd9a_2",
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "extended-cpu-v1",
+        "packages": {
+          "salmon": "1.10.3"
+        },
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "quantified_transcripts": 1,
+          "assigned_fragments": 1000.0,
+          "input_pairs": 1000,
+          "reference": "Single synthetic transcript; no biological abundance validation"
+        },
+        "runtime_seconds": 0.269,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [
+        {
+          "key": "reference",
+          "type": "FASTA|INDEX",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://salmon.readthedocs.io/"
+    },
+    {
+      "id": "sam.bam",
+      "name": "SAM \u2192 BAM",
+      "status": "implemented-small-control-verified",
+      "reason": "Known-count and lossless round-trip engineering checks",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "alignment",
+          "type": "SAM",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "alignment",
+          "type": "BAM",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "portable-refresh-v1",
+        "packages": {
+          "pysam": "0.24.1",
+          "python": "3.12"
+        },
+        "scope": "Known-count and lossless round-trip engineering checks",
+        "assertions": {
+          "read_records": 2000,
+          "mapped_records": 2000
+        },
+        "runtime_seconds": 0.029,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "sample.alignments",
+      "name": "Alignment viewer \u00b7 engineering fixture",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "license_category": "FOSS",
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "alignment",
+          "type": "INDEXED_BAM",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "sample.clinvar",
+      "name": "ClinVar \u00b7 annotated GRCh38 subset",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "license_category": "FOSS",
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "variants",
+          "type": "VCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://www.ncbi.nlm.nih.gov/clinvar/"
+    },
+    {
+      "id": "sample.fastq",
+      "name": "Paired reads \u00b7 engineering fixture",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "license_category": "FOSS",
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "reads",
+          "type": "FASTQ_PAIR",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "sample.giab",
+      "name": "GIAB HG002 \u00b7 chr22 variants",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "license_category": "FOSS",
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "variants",
+          "type": "VCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://registry.opendata.aws/giab/"
+    },
+    {
+      "id": "sample.rna",
+      "name": "RNA-seq \u00b7 public bacterial reads",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "license_category": "FOSS",
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "reads",
+          "type": "FASTQ_PAIR",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://github.com/nf-core/test-datasets/tree/rnaseq"
+    },
+    {
+      "id": "sample.somatic",
+      "name": "Tumor / normal \u00b7 engineering fixture",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "license_category": "FOSS",
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "tumor",
+          "type": "FASTQ_PAIR",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "normal",
+          "type": "FASTQ_PAIR",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "samtools",
+      "name": "SAMtools flagstat",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "alignment",
+          "type": "BAM|SORTED_BAM|INDEXED_BAM",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "report",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": "quay.io/biocontainers/samtools:1.21--h50ea8bc_0",
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "core-cpu-refresh-v1",
+        "packages": {
+          "samtools": "1.21"
+        },
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "statistics_bytes": 1110
+        },
+        "runtime_seconds": 0.005,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://www.htslib.org/doc/samtools.html"
+    },
+    {
+      "id": "scanpy",
+      "name": "Scanpy",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "counts",
+          "type": "H5AD",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "embedding",
+          "type": "H5AD",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:39e3588cf430712ec49d2ff66e24db9e5f1b129a587b2ad123650247f309813d",
+        "source_sha256": "dd438729244dff6e0dd54619e75709be0ef5120662b95a27f94fdcda33498c8e",
+        "runtime_family": "secondary-cpu-v1",
+        "packages": [
+          "python=3.12",
+          "conda-forge::scanpy=1.12.4",
+          "python-igraph=1.0.0",
+          "leidenalg=0.12.0"
+        ],
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "cells": 64,
+          "genes": 128,
+          "finite_umap_coordinates": 128,
+          "at_least_two_clusters": true,
+          "raw_counts_preserved": true,
+          "scope": "Two synthetic expression populations; no cell-type or batch correction validation"
+        },
+        "runtime_seconds": 12.448,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://scanpy.readthedocs.io/"
+    },
+    {
+      "id": "sentieon",
+      "name": "Sentieon",
+      "status": "requires-entitlement-or-published-contract",
+      "reason": "Requires a permitted vendor runtime, license-server contract and tool-specific execution qualification.",
+      "license_category": "Commercial BYOL",
+      "inputs": [
+        {
+          "key": "data",
+          "type": "ANY",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "result",
+          "type": "ANY",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://support.sentieon.com/"
+    },
+    {
+      "id": "seurat",
+      "name": "Seurat",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "The R/Seurat environment, explicit count-matrix bundle and complete analysis contract are not published.",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "counts",
+          "type": "MTX_DIR",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "embedding",
+          "type": "RDS",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://satijalab.org/seurat/"
+    },
+    {
+      "id": "sniffles2",
+      "name": "Sniffles2",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "alignment",
+          "type": "INDEXED_BAM",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "variants",
+          "type": "VCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "extended-cpu-v1",
+        "packages": {
+          "sniffles": "2.6.1"
+        },
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "valid_variant_records": 0,
+          "reference_contig_preserved": true,
+          "control": "Synthetic command integration; negative output permitted, no sensitivity claim"
+        },
+        "runtime_seconds": 0.384,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://github.com/fritzsedlazeck/Sniffles"
+    },
+    {
+      "id": "snpeff",
+      "name": "SnpEff",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "variants",
+          "type": "VCF|BGZIP_VCF|INDEXED_VCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "database",
+          "type": "DATABASE",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "variants",
+          "type": "VCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:39e3588cf430712ec49d2ff66e24db9e5f1b129a587b2ad123650247f309813d",
+        "source_sha256": "dd438729244dff6e0dd54619e75709be0ef5120662b95a27f94fdcda33498c8e",
+        "runtime_family": "secondary-cpu-v1",
+        "packages": [
+          "python=3.12",
+          "snpeff=5.4.0c",
+          "openjdk=21"
+        ],
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "known_coding_snv": 105,
+          "expected_missense_consequence": true,
+          "gene": "GENE1",
+          "scope": "Locally built artificial annotation; no human assembly database availability claim"
+        },
+        "runtime_seconds": 0.361,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [
+        {
+          "key": "database",
+          "type": "DATABASE",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://pcingola.github.io/SnpEff/"
+    },
+    {
+      "id": "spliceai",
+      "name": "SpliceAI",
+      "status": "requires-entitlement-or-published-contract",
+      "reason": "No academic/commercial rights are inferred from a platform trial. An administrator must record the applicable data/model permission.",
+      "license_category": "Academic",
+      "inputs": [
+        {
+          "key": "variants",
+          "type": "VCF|BGZIP_VCF|INDEXED_VCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "database",
+          "type": "DATABASE",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "annotation",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [
+        {
+          "key": "database",
+          "type": "DATABASE",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://github.com/Illumina/SpliceAI"
+    },
+    {
+      "id": "star",
+      "name": "STAR",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "reads",
+          "type": "FASTQ_PAIR|FASTQ",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA|INDEX",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "alignment",
+          "type": "SORTED_BAM",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": "quay.io/biocontainers/star:2.7.11b--h43eeafb_2",
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "extended-cpu-v1",
+        "packages": {
+          "star": "2.7.11b"
+        },
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "read_records": 2000,
+          "mapped_records": 2000,
+          "expected_input_read_records": 2000
+        },
+        "runtime_seconds": 0.289,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [
+        {
+          "key": "reference",
+          "type": "FASTA|INDEX",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://github.com/alexdobin/STAR"
+    },
+    {
+      "id": "strelka2",
+      "name": "Strelka2",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "alignment",
+          "type": "INDEXED_BAM",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "variants",
+          "type": "VCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:39e3588cf430712ec49d2ff66e24db9e5f1b129a587b2ad123650247f309813d",
+        "source_sha256": "dd438729244dff6e0dd54619e75709be0ef5120662b95a27f94fdcda33498c8e",
+        "runtime_family": "secondary-cpu-v1",
+        "packages": [
+          "python=2.7",
+          "strelka=2.9.10",
+          "manta=1.6.0"
+        ],
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "valid_variant_records": 0,
+          "reference_contig_preserved": true,
+          "control": "Synthetic command integration; negative output permitted, no sensitivity claim"
+        },
+        "runtime_seconds": 2.831,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://github.com/Illumina/strelka"
+    },
+    {
+      "id": "trimmomatic",
+      "name": "Trimmomatic",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "reads",
+          "type": "FASTQ_PAIR",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "reads",
+          "type": "FASTQ_PAIR",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": "quay.io/biocontainers/trimmomatic:0.39--hdfd78af_2",
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "extended-cpu-v1",
+        "packages": {
+          "trimmomatic": "0.39"
+        },
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "paired_reads_retained": 1000,
+          "input_pairs": 1000
+        },
+        "runtime_seconds": 1.01,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://github.com/usadellab/Trimmomatic"
+    },
+    {
+      "id": "utility.condition",
+      "name": "Conditional route",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "data",
+          "type": "ANY",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "accepted",
+          "type": "ANY",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "utility.export",
+      "name": "Publish outputs",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "data",
+          "type": "ANY",
+          "required": true,
+          "many": true
+        }
+      ],
+      "outputs": [
+        {
+          "key": "published",
+          "type": "COLLECTION",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "utility.gather",
+      "name": "Gather artifact collection",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "items",
+          "type": "ANY",
+          "required": true,
+          "many": true
+        }
+      ],
+      "outputs": [
+        {
+          "key": "collection",
+          "type": "COLLECTION",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "utility.scatter",
+      "name": "Scatter intervals",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "intervals",
+          "type": "BED",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "shards",
+          "type": "COLLECTION",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "variant.guard",
+      "name": "Variant quality guard",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "variants",
+          "type": "VCF|BGZIP_VCF|INDEXED_VCF|BCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "variants",
+          "type": "VCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "report",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "varscan2",
+      "name": "VarScan2",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "alignment",
+          "type": "INDEXED_BAM",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "variants",
+          "type": "VCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": "quay.io/biocontainers/varscan:2.4.6--hdfd78af_0",
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "extended-cpu-v1",
+        "packages": {
+          "varscan": "2.4.6"
+        },
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "valid_variant_records": 19936,
+          "reference_contig_preserved": true,
+          "control": "Synthetic command integration; negative output permitted, no sensitivity claim"
+        },
+        "runtime_seconds": 0.944,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://varscan.sourceforge.net/"
+    },
+    {
+      "id": "vcf.bcf",
+      "name": "VCF \u2192 BCF",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "variants",
+          "type": "VCF|BGZIP_VCF|INDEXED_VCF|BCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "variants",
+          "type": "BCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "vcf.bgzip",
+      "name": "VCF \u2192 BGZF",
+      "status": "implemented-small-control-verified",
+      "reason": "Known-count and lossless round-trip engineering checks",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "variants",
+          "type": "VCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "variants",
+          "type": "BGZIP_VCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "portable-refresh-v1",
+        "packages": {
+          "pysam": "0.24.1",
+          "python": "3.12"
+        },
+        "scope": "Known-count and lossless round-trip engineering checks",
+        "assertions": {
+          "preserved_variant_positions": [
+            1000,
+            1010
+          ]
+        },
+        "runtime_seconds": 0.003,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "vcf.ensemble",
+      "name": "Exact-allele caller consensus",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "callsets",
+          "type": "VCF|BGZIP_VCF|INDEXED_VCF|BCF|COLLECTION",
+          "required": true,
+          "many": true
+        }
+      ],
+      "outputs": [
+        {
+          "key": "variants",
+          "type": "VCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "report",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "vcf.filter",
+      "name": "Filter variants",
+      "status": "implemented-small-control-verified",
+      "reason": "Known-count and lossless round-trip engineering checks",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "variants",
+          "type": "VCF|BGZIP_VCF|INDEXED_VCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "variants",
+          "type": "VCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "portable-refresh-v1",
+        "packages": {
+          "pysam": "0.24.1",
+          "python": "3.12"
+        },
+        "scope": "Known-count and lossless round-trip engineering checks",
+        "assertions": {
+          "preserved_variant_positions": [
+            1000,
+            1010
+          ]
+        },
+        "runtime_seconds": 0.0,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "vcf.gather",
+      "name": "Gather contig VCFs",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "shards",
+          "type": "VCF|COLLECTION",
+          "required": true,
+          "many": true
+        }
+      ],
+      "outputs": [
+        {
+          "key": "variants",
+          "type": "VCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "vcf.index",
+      "name": "VCF index",
+      "status": "implemented-small-control-verified",
+      "reason": "Known-count and lossless round-trip engineering checks",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "variants",
+          "type": "BGZIP_VCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "variants",
+          "type": "INDEXED_VCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "portable-refresh-v1",
+        "packages": {
+          "pysam": "0.24.1",
+          "python": "3.12"
+        },
+        "scope": "Known-count and lossless round-trip engineering checks",
+        "assertions": {
+          "preserved_variant_positions": [
+            1000,
+            1010
+          ],
+          "indexed_locus_query_records": 2
+        },
+        "runtime_seconds": 0.0,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "vcf.scatter",
+      "name": "Scatter VCF by contig",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "variants",
+          "type": "VCF|BGZIP_VCF|INDEXED_VCF|BCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "shards",
+          "type": "COLLECTION",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "vcf.stats",
+      "name": "Variant statistics",
+      "status": "implemented-small-control-verified",
+      "reason": "Known-count and lossless round-trip engineering checks",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "variants",
+          "type": "VCF|BGZIP_VCF|INDEXED_VCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "report",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "portable-refresh-v1",
+        "packages": {
+          "pysam": "0.24.1",
+          "python": "3.12"
+        },
+        "scope": "Known-count and lossless round-trip engineering checks",
+        "assertions": {
+          "records": 2
+        },
+        "runtime_seconds": 0.001,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "vep",
+      "name": "Ensembl VEP",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "A matching Ensembl executable, cache release, FASTA and complete directory-bundle contract have not been provisioned and qualified.",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "variants",
+          "type": "VCF|BGZIP_VCF|INDEXED_VCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "database",
+          "type": "DATABASE",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "variants",
+          "type": "VCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [
+        {
+          "key": "database",
+          "type": "DATABASE",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://www.ensembl.org/info/docs/tools/vep/"
+    },
+    {
+      "id": "vg",
+      "name": "VG",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "A graph reference/index bundle and explicit VG mapping/genotyping contract are required; linear FASTA alignment is not a graph-analysis substitute.",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "reads",
+          "type": "FASTQ_PAIR|FASTQ",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA|INDEX",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "alignment",
+          "type": "SAM",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [
+        {
+          "key": "reference",
+          "type": "FASTA|INDEX",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://github.com/vgteam/vg"
+    },
+    {
+      "id": "wes.capture",
+      "name": "WES capture-kit & calling intervals",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "targets",
+          "type": "BED",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "targets",
+          "type": "BED",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "calling",
+          "type": "BED",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "report",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [
+        {
+          "key": "targets",
+          "type": "BED",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "wes.coverage",
+      "name": "WES target coverage",
+      "status": "awaiting-representative-runtime-validation",
+      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "alignment",
+          "type": "INDEXED_BAM",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "targets",
+          "type": "BED",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "report",
+          "type": "REPORT",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "table",
+          "type": "TSV",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": null,
+      "runtime_evidence": null,
+      "required_reference_or_database_ports": [
+        {
+          "key": "targets",
+          "type": "BED",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": null
+    },
+    {
+      "id": "whatshap",
+      "name": "WhatsHap",
+      "status": "implemented-small-control-verified",
+      "reason": "Synthetic engineering command integration; no clinical accuracy claim",
+      "license_category": "FOSS",
+      "inputs": [
+        {
+          "key": "alignment",
+          "type": "INDEXED_BAM",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "variants",
+          "type": "VCF|BGZIP_VCF|INDEXED_VCF",
+          "required": true,
+          "many": false
+        },
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "outputs": [
+        {
+          "key": "variants",
+          "type": "VCF",
+          "required": true,
+          "many": false
+        }
+      ],
+      "registry_reference_image": "quay.io/biocontainers/whatshap:2.5--py312h6c305fc_0",
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
+        "runtime_family": "extended-cpu-v1",
+        "packages": {
+          "whatshap": "2.4"
+        },
+        "scope": "Synthetic engineering command integration; no clinical accuracy claim",
+        "assertions": {
+          "valid_variant_records": 2,
+          "reference_contig_preserved": true,
+          "control": "Synthetic command integration; negative output permitted, no sensitivity claim"
+        },
+        "runtime_seconds": 0.784,
+        "output_count": 1
+      },
+      "required_reference_or_database_ports": [
+        {
+          "key": "reference",
+          "type": "FASTA",
+          "required": true,
+          "many": false
+        }
+      ],
+      "clinical_or_full_scale_validated": false,
+      "documentation": "https://whatshap.readthedocs.io/"
+    }
+  ],
+  "cross_bucket_cloud_validation": {
+    "run_id": "run_f556206ebf1e492b95fbac18c574c9ca",
+    "state": "succeeded",
+    "assertions": {
+      "input_pairs": 1000,
+      "alignment_records": 2000,
+      "mapped_records": 2000,
+      "salmon_assigned_fragments": 1000.0,
+      "immutable_extension_jobs": 4,
+      "published_runtime_family": "extended-cpu-v1"
+    },
+    "elapsed_seconds": 639.359,
+    "scope": "Real tenant-isolated AWS execution on 1,000 synthetic read pairs and exact 20-kb engineering reference; not representative assay accuracy."
+  },
+  "note": "Actual execution images/packages supersede illustrative registry tags. Qualified command contracts do not prove full assay accuracy or provision missing dependencies."
+}

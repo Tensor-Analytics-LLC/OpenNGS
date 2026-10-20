@@ -1,8 +1,38 @@
+import base64
 import json
-from fastapi import Body,Depends,HTTPException
+import math
+from fastapi import Body,Depends,HTTPException,Query
 from . import budget,cloud_data,data,db,mfa,entitlements,billing
 
 def install(app,user,admin):
+    @app.get('/api/operations/migration')
+    def migration_status(current=Depends(user)):
+        from . import migration
+        return migration.status(current['id'])
+    @app.get('/api/operations/retention')
+    def retention_status(current=Depends(user)):
+        from . import retention
+        return retention.status(current['id'])
+
+    @app.get('/api/operations/admin/retention')
+    def retention_global(current=Depends(admin)):
+        from . import retention
+        return retention.status()
+
+    @app.patch('/api/operations/admin/retention')
+    def retention_config(payload:dict=Body(...),current=Depends(admin)):
+        from . import retention
+        if set(payload)-{'enabled','reason'} or type(payload.get('enabled')) is not bool:
+            raise ValueError('Choose an explicit retention setting and reason')
+        return retention.configure(current['id'],payload['enabled'],str(payload.get('reason','')))
+
+    @app.post('/api/operations/runs/{rid}/retention')
+    def retention_pin(rid:str,payload:dict=Body(...),current=Depends(user)):
+        from . import retention
+        if set(payload)-{'pinned','reason'} or type(payload.get('pinned')) is not bool:
+            raise ValueError('Choose an explicit pin setting')
+        return retention.pin(current['id'],rid,payload['pinned'],str(payload.get('reason','Keep these derived results')))
+
     @app.get('/api/admin/audit/anchors')
     def audit_anchors(current=Depends(admin)):
         from . import audit_anchor
@@ -73,10 +103,37 @@ def install(app,user,admin):
         return result
 
     @app.get('/api/operations/datasets')
-    def datasets(current=Depends(user)):
-        rows=db.query('SELECT id,source_asset,name,bytes,sha256,state,created,updated FROM datasets WHERE user_id=? ORDER BY created DESC LIMIT 100',(current['id'],))
-        inventory=db.query("SELECT COUNT(*) AS files,COALESCE(SUM(bytes),0) AS bytes FROM assets WHERE user_id=? AND path NOT LIKE 's3://%'",(current['id'],),one=True)
-        return {'datasets':rows,'local_only_inventory':inventory}
+    def datasets(q:str=Query('',max_length=200),after:str=Query('',max_length=2048),limit:int=Query(100,ge=1,le=100),state:str=Query('',max_length=32),current=Depends(user)):
+        from . import migration  # Initialize verified alias metadata on fresh installations.
+        q=q.strip()
+        if state not in ['', 'Ready', 'Verifying', 'Transferring', 'Action required', 'cancelled']:
+            raise ValueError('Choose a supported dataset state')
+        where='d.user_id=?';args=[current['id']]
+        if state:
+            where+=' AND d.state=?';args.append(state)
+        if q:
+            pattern='%'+q.lower().replace('!','!!').replace('%','!%').replace('_','!_')+'%'
+            where+=" AND (LOWER(d.name) LIKE ? ESCAPE '!' OR LOWER(d.id) LIKE ? ESCAPE '!' OR EXISTS (SELECT 1 FROM migration_assets m JOIN assets a ON a.id=m.asset_id AND a.user_id=m.user_id WHERE m.dataset_id=d.id AND m.user_id=d.user_id AND LOWER(a.name) LIKE ? ESCAPE '!'))"
+            args.extend([pattern]*3)
+        total=int(db.query('SELECT COUNT(*) AS total FROM datasets d WHERE '+where,args,one=True)['total'])
+        if after:
+            try:
+                cursor=json.loads(base64.urlsafe_b64decode(after+'='*(-len(after)%4)))
+                if set(cursor)!={'v','created','id','q','state','owner'} or cursor['v']!=1 or cursor['q']!=q or cursor['state']!=state or cursor['owner']!=current['id'] or type(cursor['created']) not in [int,float] or not math.isfinite(cursor['created']) or not isinstance(cursor['id'],str) or not 0<len(cursor['id'])<=200:
+                    raise ValueError()
+            except Exception:
+                raise ValueError('Dataset cursor is invalid or belongs to a different search') from None
+            where+=' AND (d.created<? OR (d.created=? AND d.id<?))';args.extend([cursor['created'],cursor['created'],cursor['id']])
+        # Legacy PostgreSQL REAL columns otherwise serialize a shortened float32
+        # value that differs from the value used by SQL's cursor comparison.
+        rows=db.query('SELECT d.id,d.source_asset,d.name,d.bytes,d.sha256,d.state,CAST(d.created AS DOUBLE PRECISION) AS created,d.updated FROM datasets d WHERE '+where+' ORDER BY d.created DESC,d.id DESC LIMIT ?',(*args,limit+1))
+        next_cursor=None
+        if len(rows)>limit:
+            rows=rows[:limit];last=rows[-1]
+            next_cursor=base64.urlsafe_b64encode(db.encode({'v':1,'created':last['created'],'id':last['id'],'q':q,'state':state,'owner':current['id']}).encode()).decode().rstrip('=')
+        inventory=db.query("SELECT COUNT(*) AS files,COALESCE(SUM(a.bytes),0) AS bytes FROM assets a WHERE a.user_id=? AND a.path NOT LIKE 's3://%' AND NOT EXISTS (SELECT 1 FROM migration_assets m JOIN datasets d ON d.id=m.dataset_id AND d.user_id=m.user_id WHERE m.asset_id=a.id AND m.user_id=a.user_id AND d.state='Ready')",(current['id'],),one=True)
+        inventory={key:int(value) for key,value in inventory.items()}
+        return {'datasets':rows,'total':total,'next_cursor':next_cursor,'limit':limit,'q':q,'state':state,'local_only_inventory':inventory}
 
     @app.post('/api/operations/datasets/{ident}/companions')
     def companions(ident:str,payload:dict=Body(...),current=Depends(user)):

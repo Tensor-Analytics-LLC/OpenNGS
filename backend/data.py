@@ -23,6 +23,20 @@ PUBLIC = [
  {'id':'ensembl','name':'Ensembl · reference releases','family':'ensembl','format':'COLLECTION','https':'https://ftp.ensembl.org/pub/','region':None,'docs':'https://www.ensembl.org/info/about/legal/disclaimer.html','license':'Versioned provider terms'},
  {'id':'t2t-chm13','name':'T2T-CHM13 · v2.0','family':'reference','format':'FASTA','assembly':'T2T-CHM13','https':'https://s3-us-west-2.amazonaws.com/human-pangenomics/T2T/CHM13/assemblies/chm13v2.0.fa.gz','region':'us-west-2','docs':'https://github.com/marbl/CHM13','license':'Public reference; cite T2T Consortium'},
 ]
+PUBLIC_IDENTITIES = {
+ 'giab-hg002': {'release':'4.2.1','cohort':'HG002','scope':'autosomes 1–22 benchmark VCF','mutable':False},
+ 'gnomad-v4-chr22': {'release':'4.1','cohort':'genomes','scope':'chr22','mutable':False},
+ '1000g': {'release':'Phase 3','cohort':'1000 Genomes','scope':'archive collection; individual object must be selected','mutable':False},
+ 'broad-grch38': {'release':'hg38/v0','cohort':'Broad assembly38 reference','scope':'complete named FASTA; companion indices separate','mutable':False},
+ 'ncbi-clinvar': {'release':'latest (mutable; release date unpinned)','cohort':'ClinVar','scope':'GRCh38 VCF','mutable':True},
+ 'ensembl': {'release':'unselected','cohort':'Ensembl','scope':'release directory; individual version must be selected','mutable':True},
+ 't2t-chm13': {'release':'2.0','cohort':'CHM13','scope':'complete named FASTA; companion indices separate','mutable':False},
+}
+for _source in PUBLIC:
+    _source['source_identity'] = {'assembly':_source.get('assembly'), **PUBLIC_IDENTITIES[_source['id']]}
+    _source['identity_note'] = 'Declared release and scope; immutable object version, matching companions and scientific compatibility still require verification.'
+    if _source['source_identity']['mutable']:
+        _source['identity_note'] = 'Mutable provider listing: this does not identify the exact release of an existing local dataset.'
 POOL=concurrent.futures.ThreadPoolExecutor(max_workers=3,thread_name_prefix='data')
 
 def settings(uid):
@@ -37,6 +51,7 @@ def settings(uid):
         capacity=profile(uid)
         result.update(ssd_roots=[],backend='aws-batch',max_node_seconds=allowance['max_node_seconds'],max_upload_gib=max(1,allowance['max_scratch_mb']//1024),s3_bucket=capacity.get('bucket',''),kms_key_arn=os.getenv('NGS_KMS_KEY',''),batch_queue=capacity.get('queue',''),batch_job_definition=capacity.get('definition',''),max_concurrency=allowance['max_concurrent_jobs'],research_profile=capacity)
         result['image_approvals']={k:capacity['image'] for k in capacity.get('tools',[]) } if capacity.get('image') else {}
+        result['image_approvals'].update({k:v['image'] for k,v in capacity.get('runtime_profiles',{}).items()})
     return result
 
 def update_settings(user, patch):
@@ -154,15 +169,57 @@ def probe_public(source_id):
     except Exception as e:row.update(available=False,error=type(e).__name__+': '+str(e)[:180],checked_at=time.time())
     return row
 
-def resolve(uid, requested_family, assembly=None, backend='aws-batch'):
+def asset_source_identity(asset):
+    metadata=json.loads(asset['metadata']) if isinstance(asset['metadata'],str) else asset['metadata']
+    identity={'assembly':asset.get('assembly'),'release':None,'cohort':None,'scope':None,'mutable':False,
+              'sha256':metadata.get('sha256'),'version_id':metadata.get('version_id'),
+              'basis':'Filename declaration and preserved source checksum; provider release equivalence is not independently qualified'}
+    match=re.fullmatch(r'gnomad\.(exomes|genomes)\.v([0-9.]+)\.sites\.(chr[^.]+)\.vcf\.bgz(?:\.tbi)?',asset['name'])
+    if match:identity.update(cohort=match[1],release=match[2],scope=match[3])
+    elif asset['name'].startswith('HG002_GRCh38_1_22_v4.2.1_benchmark'):
+        identity.update(cohort='HG002',release='4.2.1',scope='autosomes 1–22 benchmark VCF' if asset['name'].endswith('.vcf.gz') else 'benchmark companion; file type must match')
+    elif asset.get('family')=='clinvar':
+        identity.update(cohort='ClinVar',release='unrecorded original snapshot',scope='Original named source file; inspect release header')
+    return identity
+
+
+def compare_source_identity(identity, requested):
+    if not requested:
+        return 'family_only_not_interchangeable', 'Family and assembly are discovery hints; datasets can differ in cohort, release and scope.'
+    if identity.get('mutable') or requested.get('mutable'):
+        return 'unverified_mutable_release', 'A mutable provider URL cannot establish equivalence to an existing release snapshot.'
+    mismatches=[key for key in ['assembly','release','cohort','scope'] if identity.get(key) and requested.get(key) and identity[key]!=requested[key]]
+    if mismatches:
+        return 'different_identity', 'Different '+', '.join(mismatches)+'. This is not a replacement for the selected source.'
+    return 'declared_identity_requires_verification', 'Matching declared labels are not proof of identical bytes, compatible indices or complete release coverage.'
+
+
+def resolve(uid, requested_family, assembly=None, backend='aws-batch', source_id=None, asset_id=None):
     candidates=[]
+    requested=None
+    if source_id and asset_id:raise ValueError('Select one source identity to compare')
+    if source_id:
+        source=next((p for p in PUBLIC if p['id']==source_id and p['family']==requested_family),None)
+        if not source:raise ValueError('Unknown source identity for this data family')
+        requested=source['source_identity']
+    if asset_id:
+        from .migration import resolve_asset
+        selected=db.query('SELECT * FROM assets WHERE id=? AND user_id=? AND family=?',(asset_id,uid,requested_family),one=True)
+        if not selected:raise ValueError('Selected source is not in this workspace and data family')
+        requested=asset_source_identity(resolve_asset(uid,selected))
     for p in PUBLIC:
         if p['family']!=requested_family or (assembly and p.get('assembly') not in [None,assembly]):continue
         rank=0 if backend=='aws-batch' and p.get('region')=='us-east-1' else 3
-        candidates.append({'kind':'public','rank':rank,'id':p['id'],'name':p['name'],'region':p.get('region'),'uri':f"s3://{p['bucket']}/{p.get('key',p.get('prefix',''))}" if p.get('bucket') else p['https'],'requires_probe':True,'reason':'Prefer in-region public source; exact object availability must be probed' if rank==0 else 'External-region/provider source; transfer and rights must be evaluated'})
+        compatibility,note=compare_source_identity(p['source_identity'],requested)
+        candidates.append({'kind':'public','rank':rank,'id':p['id'],'name':p['name'],'region':p.get('region'),'uri':f"s3://{p['bucket']}/{p.get('key',p.get('prefix',''))}" if p.get('bucket') else p['https'],'requires_probe':True,'source_identity':p['source_identity'],'compatibility':compatibility,'automatic_substitution_allowed':False,'reason':note+' '+('Located in us-east-1; this is a transport advantage only.' if rank==0 else 'Provider access, transfer costs and rights require evaluation.')})
     for a in db.query('SELECT * FROM assets WHERE user_id=? AND family=?',(uid,requested_family)):
         if assembly and a['assembly'] not in [None,assembly]:continue
-        candidates.append({'kind':'ssd','rank':0 if backend!='aws-batch' else 2,'id':a['id'],'name':a['name'],'bytes':a['bytes'],'assembly':a['assembly'],'reason':'Use SSD directly for local execution' if backend!='aws-batch' else 'Stage once to tenant cache if no usable in-region source is available'})
+        from .migration import resolve_asset
+        a=resolve_asset(uid,a)
+        cloud=a['path'].startswith('s3://')
+        identity=asset_source_identity(a);compatibility,note=compare_source_identity(identity,requested)
+        metadata=json.loads(a['metadata']) if isinstance(a['metadata'],str) else a['metadata']
+        candidates.append({'kind':'cloud' if cloud else 'ssd','rank':0 if cloud or backend!='aws-batch' else 2,'id':a['id'],'name':a['name'],'bytes':a['bytes'],'assembly':a['assembly'],'uri':a['path'] if cloud else None,'source_identity':identity,'compatibility':compatibility,'automatic_substitution_allowed':False,'provenance_warnings':metadata.get('provenance_warnings',[]),'reason':note+' '+('Verified private AWS bytes; original source identity retained.' if cloud else ('Use the explicitly selected SSD file for local execution.' if backend!='aws-batch' else 'Transfer only this exact selected source if a verified identical cloud copy is unavailable.'))})
     return sorted(candidates,key=lambda x:(x['rank'],x['name']))
 
 def hash_file(path,cancel=None):

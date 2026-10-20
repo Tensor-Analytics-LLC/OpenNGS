@@ -54,7 +54,8 @@ def grant(actor,uid,payload):
     if not 0<=body['max_gpu']<=8 or body['max_scratch_mb']>4*1024**2:raise ValueError('GPU/scratch allowance exceeds the supported profile envelope')
     if body['monthly_cpu_seconds']<body['daily_cpu_seconds'] or body['daily_cpu_seconds']<=0:raise ValueError('Daily/monthly CPU allowances are inconsistent')
     from . import budget
-    recurring_storage=body['max_storage_bytes']/1024**3*.023*(1+budget.policy()['tax_fraction'])
+    with db.tx() as c:billable_bytes,baseline_bytes=budget.billable_storage_capacity(uid,body['max_storage_bytes'],c)
+    recurring_storage=billable_bytes/1024**3*.023*(1+budget.policy()['tax_fraction'])
     if body['monthly_budget_usd']<=recurring_storage+1:raise ValueError('The additional allowance must cover its assigned retained-storage capacity, conservative tax reserve and at least $1 operational headroom')
     body.update(max_nodes=2000,max_output_bytes=body['max_storage_bytes'])
     with db.tx() as c:
@@ -62,7 +63,7 @@ def grant(actor,uid,payload):
         old=c.execute('SELECT version FROM research_allowances WHERE user_id=?',(uid,)).fetchone();version=(old['version'] if old else 0)+1
         c.execute("INSERT INTO research_allowances VALUES(?,?,'active',?,?,?) ON CONFLICT(user_id) DO UPDATE SET version=excluded.version,state=excluded.state,body=excluded.body,updated=excluded.updated,actor=excluded.actor",(uid,version,db.encode(body),time.time(),actor['id']))
         c.execute("UPDATE users SET tier='research-pro',quota_seconds=? WHERE id=?",(body['monthly_cpu_seconds'],uid))
-        db.audit(c,actor['id'],'entitlement.research.funded',uid,{'reason':reason,'version':version,'allowance':body,'funding_confirmed':True})
+        db.audit(c,actor['id'],'entitlement.research.funded',uid,{'reason':reason,'version':version,'allowance':body,'funding_confirmed':True,'baseline_storage_bytes':baseline_bytes,'additional_storage_capacity_bytes':billable_bytes})
     return limits(uid)
 
 def storage_exposure(c,uid):
@@ -78,9 +79,16 @@ def storage_exposure(c,uid):
             total+=int(item['bytes'])
     return total
 
+def output_storage_exposure(c,uid,access):
+    total=storage_exposure(c,uid)
+    if access=='explore':
+        from .budget import baseline_stored_bytes
+        total-=baseline_stored_bytes(uid,c)
+    return max(0,total)
+
 def reserve_output(c,user,rid,requested=None):
     p=limits(user['id']);pending=int(c.execute("SELECT COALESCE(SUM(bytes),0) FROM output_holds WHERE user_id=? AND state='reserved'",(user['id'],)).fetchone()[0])
-    available=p['max_storage_bytes']-storage_exposure(c,user['id'])-pending
+    available=p['max_storage_bytes']-output_storage_exposure(c,user['id'],p['access'])-pending
     desired=p['max_output_bytes'] if p['access']=='explore' else (available if requested is None else requested)
     if type(desired)!=int or desired<=0 or desired>available or desired>p['max_output_bytes']:raise ValueError('The retained-storage allowance cannot cover the requested output reservation; completed data is preserved')
     c.execute("INSERT INTO output_holds VALUES(?,?,?,'reserved')",(rid,user['id'],desired));return desired
@@ -96,7 +104,7 @@ def hold(c,user,rid,seconds):
     if queued>=p['max_queued_jobs']:raise ValueError('The assigned queued-work allowance is full; accepted jobs are preserved')
     if p['access']=='explore':
         held=c.execute("SELECT COUNT(*) FROM usage_holds WHERE user_id=? AND state='reserved'",(user['id'],)).fetchone()[0]*p['max_output_bytes']
-        if storage_exposure(c,user['id'])+held+p['max_output_bytes']>p['max_storage_bytes']:raise ValueError('Explore retained-output allowance cannot cover this run; existing outputs are preserved and an administrator must reconcile retention capacity')
+        if output_storage_exposure(c,user['id'],p['access'])+held+p['max_output_bytes']>p['max_storage_bytes']:raise ValueError('Explore retained-output allowance cannot cover this run; existing outputs are preserved and an administrator must reconcile retention capacity')
     c.execute("INSERT INTO usage_holds VALUES(?,?,?,?,?,?,0,'reserved')",(rid,user['id'],p['access'],day,month,seconds))
 
 def settle(c,rid,seconds):
@@ -117,7 +125,11 @@ def remaining(uid):
         for field,key,cap in [('day',now.strftime('%Y-%m-%d'),'daily_cpu_seconds'),('month',now.strftime('%Y-%m'),'monthly_cpu_seconds')]:
             value=int(c.execute("SELECT COALESCE(SUM(CASE WHEN state='reserved' THEN reserved ELSE used END),0) FROM usage_holds WHERE user_id=? AND ("+field+"=? OR state='reserved')",(uid,key)).fetchone()[0]);usage[cap]=max(0,p[cap]-value)
         pending=int(c.execute("SELECT COALESCE(SUM(bytes),0) FROM output_holds WHERE user_id=? AND state='reserved'",(uid,)).fetchone()[0])
-        usage['storage_bytes']=max(0,p['max_storage_bytes']-storage_exposure(c,uid)-pending)
+        from .budget import baseline_stored_bytes
+        physical=storage_exposure(c,uid);baseline=baseline_stored_bytes(uid,c)
+        usage['storage_bytes']=max(0,p['max_storage_bytes']-(max(0,physical-baseline) if p['access']=='explore' else physical)-pending)
+        usage['physical_stored_bytes']=physical
+        usage['baseline_funded_stored_bytes']=baseline
         charged=int(c.execute("SELECT COALESCE(SUM(CASE WHEN r.state='reserved' THEN r.reserved_micro ELSE r.charged_micro END),0) FROM cost_reservations r JOIN cost_allocations a ON a.reservation_id=r.id WHERE a.tenant=? AND a.account IN ('research-pro','validation') AND (r.period=? OR r.state='reserved')",(uid,now.strftime('%Y-%m'))).fetchone()[0])
         posted=c.execute('SELECT value FROM controls WHERE key=?',('pro-posted:'+uid+':'+now.strftime('%Y-%m'),)).fetchone()
         hold=c.execute('SELECT value FROM controls WHERE key=?',('pro-admission-hold:'+uid+':'+now.strftime('%Y-%m'),)).fetchone()

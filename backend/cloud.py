@@ -9,13 +9,19 @@ from .config import aws_session
 
 class UncertainCloudState(RuntimeError):pass
 
+def require_migration_runtime(profile, migrated):
+    version=(profile or {}).get('source_grants_version')
+    if migrated and (type(version) is not int or version != 1):
+        raise ValueError('This tool has no qualified worker route for migrated AWS inputs. Its source data is preserved; publish the reviewed migration-compatible runtime before running this node.')
+
 def execute_batch(uid,rid,aid,spec,node,inputs,work,cancelled):
+    require_migration_runtime({'source_grants_version':node.get('_source_grants_version')},bool(node.get('_migration_sources')))
     session=aws_session();s={**data.settings(uid),**(node.get('_cloud_settings') or {})};batch=session.client('batch',config=Config(connect_timeout=5,read_timeout=15,retries={'total_max_attempts':1}));s3=session.client('s3')
     image=node.get('_approved_image')
     definition=batch.describe_job_definitions(jobDefinitions=[node.get('_batch_job_definition') or s['batch_job_definition']]).get('jobDefinitions',[])
     if len(definition)!=1:raise ValueError('Select a published, revision-pinned Batch job-definition ARN')
     definition=definition[0];props=definition.get('containerProperties',{})
-    if spec['builtin']:image=props.get('image')
+    if spec['builtin'] and not image:image=props.get('image')
     if definition.get('status')!='ACTIVE' or props.get('image')!=image or not image or '@sha256:' not in image or definition.get('tags',{}).get('NGSWorkerContract')!='1':raise ValueError('Job-definition image/worker contract does not match the approved node release')
     if props.get('privileged') or not props.get('readonlyRootFilesystem'):raise ValueError('Published Batch profile must disable privilege and use a read-only root')
     if spec.get('resource')=='gpu':
@@ -36,12 +42,15 @@ def execute_batch(uid,rid,aid,spec,node,inputs,work,cancelled):
                     for source in item['metadata']['index_paths']:
                         target=f"/inputs/{port}/{i}/{source.rsplit('/',1)[-1]}";bindings.append((source,target));updated.append(target)
                     item['metadata']['index_paths']=updated
-        plan={'bindings':bindings,'portable_job':{'tool':node['tool'],'params':node['params'],'inputs':mapped,'workdir':'/work','threads':node['resources']['threads']},'steps':[{'argv':['python','-m','backend.portable','/work/portable-job.json'],'stdout':None}],'outputs':{}}
+        plan={'bindings':bindings,'portable_job':{'tool':node['tool'],'params':node['params'],'inputs':mapped,'workdir':'/work','threads':node['resources']['threads'],'max_output_bytes':node.get('_max_output_bytes',64*1024**2)},'steps':[{'argv':['python','-m','backend.portable','/work/portable-job.json'],'stdout':None}],'outputs':{}}
     else:plan=compiler.compile_tool(spec,node,inputs,work)
-    prefix=f'tenants/{uid}/runs/{rid}/{aid}/';objects=[];expected_digests={}
+    prefix=f'tenants/{uid}/runs/{rid}/{aid}/';objects=[];expected_digests={};versions={}
     for items in inputs.values():
         for item in items:
             if item.get('digest'):expected_digests[item['path']]=item['digest'].removeprefix('sha256:')
+            if item.get('metadata',{}).get('version_id'):versions[item['path']]=item['metadata']['version_id']
+            for secondary in item.get('metadata',{}).get('secondary_objects',[]):
+                if secondary.get('version_id'):versions[secondary['uri']]=secondary['version_id']
             for field in ['mate','index']:
                 meta=item.get('metadata',{})
                 if meta.get(field) and meta.get(field+'_sha256'):expected_digests[meta[field]]=meta[field+'_sha256']
@@ -49,11 +58,19 @@ def execute_batch(uid,rid,aid,spec,node,inputs,work,cancelled):
     for source,target in plan.pop('bindings'):
         if source.startswith('s3://'):
             source_bucket,source_key=source[5:].split('/',1)
-            if source_bucket!=s['s3_bucket'] or not source_key.startswith('tenants/'+uid+'/'):raise ValueError('Cloud input is outside the admitted tenant cache')
-            head=s3.head_object(Bucket=source_bucket,Key=source_key);digest=head.get('Metadata',{}).get('sha256')
+            migration_proof=next((p for p in node.get('_migration_sources',[]) if p['Bucket']==source_bucket and p['Key']==source_key),None)
+            if not source_key.startswith('tenants/'+uid+'/') or (source_bucket!=s['s3_bucket'] and not migration_proof):raise ValueError('Cloud input is outside the admitted tenant cache')
+            if migration_proof:
+                versions[source]=migration_proof['VersionId']
+                expected_digests[source]=migration_proof['sha256']
+            from . import retention
+            retention.lease(uid,source,seconds=3600)
+            args={'Bucket':source_bucket,'Key':source_key}
+            if versions.get(source):args['VersionId']=versions[source]
+            head=s3.head_object(**args);digest=head.get('Metadata',{}).get('sha256')
             if not digest:raise ValueError('Cloud input lacks an admitted SHA-256 identity')
             if source in expected_digests and digest!=expected_digests[source]:raise ValueError('Cloud artifact identity changed after publication')
-            objects.append({'bucket':source_bucket,'key':source_key,'target':target,'sha256':digest,'bytes':head['ContentLength']});continue
+            objects.append({'bucket':source_bucket,'key':source_key,'version_id':head.get('VersionId'),'target':target,'sha256':digest,'bytes':head['ContentLength']});continue
         source=Path(source)
         if source.stat().st_size>s['max_upload_gib']*1024**3:raise ValueError('Input exceeds this workspace staging ceiling')
         digest=data.hash_file(source);key=f'tenants/{uid}/cache/sha256/{digest}/blob'
@@ -75,6 +92,7 @@ def execute_batch(uid,rid,aid,spec,node,inputs,work,cancelled):
                 raise
         objects.append({'bucket':s['s3_bucket'],'key':key,'target':target,'sha256':digest,'bytes':source.stat().st_size})
     manifest={'schema_version':1,'tenant':uid,'run':rid,'attempt':aid,'bucket':s['s3_bucket'],'prefix':prefix,'kms_key_arn':s['kms_key_arn'],'inputs':objects,'plan':plan,'wall_seconds':node['resources']['timeout_seconds'],'max_output_bytes':node.get('_max_output_bytes',64*1024**2),'max_scratch_bytes':node['resources'].get('scratch_mb',2048)*1024**2}
+    manifest['source_grants']=node.get('_migration_sources',[])
     if spec.get('secret_delivery'):
         if definition.get('tags',{}).get('NGSSecretMemfdProfile')!='1':raise ValueError('A tested memfd-compatible licence profile is required; no plaintext licence file is staged in S3 or Fargate scratch')
         binding=node.get('_credential_node_id',spec['id']);row=security.credential_for(uid,spec['secret_delivery']['provider'],binding)
@@ -133,7 +151,7 @@ def execute_batch(uid,rid,aid,spec,node,inputs,work,cancelled):
             for secondary in companions:
                 if secondary and str(secondary).startswith('s3://') and not secondary.startswith('s3://'+s['s3_bucket']+'/'+prefix+'outputs/'):raise ValueError('Cloud companion escaped its run prefix')
                 if secondary and str(secondary).startswith('s3://'):
-                    head=s3.head_object(Bucket=s['s3_bucket'],Key=secondary[5:].split('/',1)[1]);secondary_objects.append({'uri':secondary,'bytes':head['ContentLength'],'sha256':head.get('Metadata',{}).get('sha256')})
+                    head=s3.head_object(Bucket=s['s3_bucket'],Key=secondary[5:].split('/',1)[1]);secondary_objects.append({'uri':secondary,'bytes':head['ContentLength'],'sha256':head.get('Metadata',{}).get('sha256'),'version_id':head.get('VersionId')})
             meta['secondary_objects']=secondary_objects
             path=item['path'][5:].split('/',1)[1];head=s3.head_object(Bucket=s['s3_bucket'],Key=path)
             if head['ContentLength']!=item['bytes'] or head.get('Metadata',{}).get('sha256')!=item['digest'][7:]:raise ValueError('Cloud output does not match its committed object identity')

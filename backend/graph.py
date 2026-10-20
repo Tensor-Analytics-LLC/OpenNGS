@@ -55,7 +55,10 @@ def output_type(n,spec,uid,port_key):
     if not p:return None
     if n['tool']=='asset.file':
         aid=n.get('params',{}).get('asset_id')
-        row=db.query('SELECT format FROM assets WHERE id=? AND user_id=?',(aid,uid),one=True)
+        row=db.query('SELECT * FROM assets WHERE id=? AND user_id=?',(aid,uid),one=True)
+        if row:
+            from .migration import resolve_asset
+            row=resolve_asset(uid,row)
         if not row:row=db.query('SELECT format FROM artifacts WHERE id=? AND user_id=?',(aid,uid),one=True)
         return row['format'] if row else 'UNBOUND'
     return p['type']
@@ -91,6 +94,12 @@ def preflight(graph,user,capabilities=None):
             if degree[v]==0:q.append(v)
     if len(order)!=len(nodes):issue('CYCLE','The pipeline contains a cycle. Remove a feedback connection; analyses execute as a DAG.')
     reservation=0;licenses={};reference_builds=set()
+    migrated_inputs=False
+    if CLOUD:
+        source_ids=[n.get('params',{}).get('asset_id') for n in graph['nodes'] if n.get('params',{}).get('asset_id')]
+        if source_ids:
+            marks=','.join('?' for _ in source_ids)
+            migrated_inputs=bool(db.query('SELECT asset_id FROM migration_assets WHERE user_id=? AND (asset_id IN ('+marks+') OR canonical_asset_id IN ('+marks+')) LIMIT 1',(user['id'],*source_ids,*source_ids),one=True))
     for n in graph['nodes']:
         spec=specs.get(n['tool'])
         if not spec:issue('UNKNOWN_TOOL','This node is not present in the published registry.',n['id']);continue
@@ -131,9 +140,20 @@ def preflight(graph,user,capabilities=None):
         if all(type(resources[k])==int for k in ['threads','timeout_seconds']):reservation+=max(0,resources['threads'])*max(0,resources['timeout_seconds'])
         if n['tool'] in ['asset.file','reference.asset','database.asset'] or spec.get('asset_family'):
             aid=params.get('asset_id');asset=db.query('SELECT * FROM assets WHERE id=? AND user_id=?',(aid,user['id']),one=True) or db.query('SELECT * FROM artifacts WHERE id=? AND user_id=?',(aid,user['id']),one=True)
+            if asset:
+                from .migration import resolve_asset
+                try:asset=resolve_asset(user['id'],asset)
+                except ValueError as error:issue('DATA_NOT_STAGED',str(error),n['id'])
+                if json.loads(asset['metadata']).get('migration_companions_pending'):issue('DATA_NOT_STAGED','Exact companion files are still awaiting AWS migration verification.',n['id'])
             if not asset:issue('ASSET_REQUIRED','Select an indexed SSD asset or an existing run artifact.',n['id'])
             elif n['tool']=='reference.asset' and asset.get('assembly') and params.get('assembly')!=asset['assembly']:issue('ASSEMBLY_MISMATCH','Selected assembly differs from the indexed reference asset.',n['id'])
             elif CLOUD and asset and not asset['path'].startswith('s3://'):issue('DATA_NOT_STAGED','The exact asset is still local. Complete verified AWS ingestion before execution; no SSD access is available in cloud workers.',n['id'])
+            if asset and json.loads(asset['metadata']).get('migration_companions_pending'):
+                issue('MIGRATION_COMPANIONS','The primary data is verified, but one or more exact companion files are still migrating. Wait for the complete input bundle.',n['id'])
+            if asset:
+                from .asset_rights import require as require_data_rights
+                try:require_data_rights(user['id'],asset)
+                except ValueError as error:issue('DATA_RIGHTS_REQUIRED',str(error),n['id'])
         if n['tool']=='reference.asset':reference_builds.add(params.get('assembly'))
         if spec['license'] in ['Academic','Review required','Commercial BYOL'] and spec['id'] not in settings['rights_approved']:
             issue('RIGHTS_REQUIRED',f"{spec['name']} needs an explicit rights approval; a platform trial is not a third-party licence.",n['id'])
@@ -145,15 +165,22 @@ def preflight(graph,user,capabilities=None):
                 if settings['backend']=='docker' and not capabilities.get('docker'):issue('DOCKER_UNAVAILABLE','Docker is not available. Start a runtime or select a configured AWS backend.',n['id'])
                 if settings['backend']!='hosted-demo' and not settings['image_approvals'].get(spec['id']) and not spec.get('approved') and not (specs.get(params.get('published_tool')) or {}).get('approved'):issue('IMAGE_APPROVAL',f"Resolve and approve an immutable image digest for {spec['name']}.",n['id'])
             if settings['backend']=='aws-batch' and (not settings['batch_queue'] or not settings['batch_job_definition'] or not settings['s3_bucket'] or not settings['kms_key_arn']):issue('AWS_PROFILE','Configure the us-east-1 Batch queue, published worker revision, private cache and KMS key.',n['id'])
-            cloud_task=settings['backend']=='aws-batch' and not spec.get('asset_family') and n['tool'] not in ['asset.file','reference.asset','database.asset','oncokb','franklin']
+            cloud_task=settings['backend']=='aws-batch' and not spec.get('asset_family') and n['tool'] not in ['asset.file','reference.asset','database.asset','oncokb','franklin','utility.export','utility.gather','utility.condition']
             if cloud_task and spec.get('resource')!='gpu':
                 capacity=settings.get('research_profile',{})
+                runtime_profile=capacity.get('runtime_profiles',{}).get(spec['id'])
+                from .cloud import require_migration_runtime
+                try:require_migration_runtime(runtime_profile,migrated_inputs)
+                except ValueError as error:issue('MIGRATION_RUNTIME_PENDING',str(error),n['id'])
+                if spec['id']=='results.prepare' and not runtime_profile:issue('VIEWER_RUNTIME','The isolated private-results runtime has not been published for this tenant.',n['id'])
                 if capacity and capacity.get('state')!='Ready':issue('CAPACITY_PROVISIONING',capacity.get('reason','Funded execution capacity is provisioning'),n['id'])
                 if capacity and not spec['builtin'] and spec['id'] not in capacity.get('tools',[]):issue('RUNTIME_NOT_PUBLISHED','The pinned research runtime has no reviewed executable profile for this tool.',n['id'])
                 use_vm=scratch>capacity.get('max_scratch_mb',184320) or n.get('execution_profile')=='exclusive-vm'
                 if use_vm:
                     from . import vm,entitlements
                     published=vm.configuration()
+                    try:vm.runtime_route(capacity,runtime_profile,migrated_inputs,published)
+                    except ValueError as error:issue('VM_RUNTIME_MISMATCH',str(error),n['id'])
                     if not all(published.values()) or not capacity.get('instance_profile'):issue('VM_PROFILE_UNPUBLISHED','A published private VM image and tenant instance profile are required for this scratch request; no scientific input will be reduced.',n['id'])
                     try:
                         machine=vm.select(resources);allowance=entitlements.limits(user['id'])

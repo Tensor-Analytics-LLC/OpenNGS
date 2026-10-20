@@ -6,11 +6,11 @@
       "state": "Ready",
       "requirements": "Seven immutable source nodes and companion files inside the pinned cloud image",
       "manifest_sha256": "df58978f8846f6843593bb4c15a9941c8c19386bbea492dc3f9024bb1b09def3",
-      "image": "private-reviewed-runtime@sha256:7df875975b03f7602a3553e620291fa3b901d66ce515dacc1b7312fadb076237",
+      "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:7df875975b03f7602a3553e620291fa3b901d66ce515dacc1b7312fadb076237",
       "bytes": 1591623,
       "reason": "Small engineering/public slices; no full-size WGS/WES/mtDNA readiness claim",
       "validation": {
-        "image": "private-reviewed-runtime@sha256:7df875975b03f7602a3553e620291fa3b901d66ce515dacc1b7312fadb076237",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:7df875975b03f7602a3553e620291fa3b901d66ce515dacc1b7312fadb076237",
         "manifest_sha256": "df58978f8846f6843593bb4c15a9941c8c19386bbea492dc3f9024bb1b09def3",
         "reason": "Cloud execution and output hashes verified",
         "scientific_tool_versions": "bcftools\t1.16-1\nbowtie2\t2.5.0-3+b2\nfastp\t0.23.2+dfsg-2+b1\nfastqc\t0.11.9+dfsg-6\nfreebayes\t1.3.6-2\nhisat2\t2.2.1-4+b2\nminimap2\t2.24+dfsg-3+b1\nsamtools\t1.16.1-1\n",
@@ -29,33 +29,42 @@
         "objects": [
           {
             "acquired": 1792484651.747966,
+            "bucket": "ngs-studio-cache-509505638328-us-east-1",
             "bytes": 3249912778,
             "checksum_sha256": "kxV6FhhjRkyUNQYv1nwXP9r5nLizLxRVAYNhOH/6VWQ=",
             "checksum_type": "FULL_OBJECT",
+            "key": "operations/checkpoints/references/broad-references/hg38/v0/Homo_sapiens_assembly38.fasta",
             "source_bucket": "broad-references",
             "source_etag": "\"e307d81c605fb91b7720a08f00276842-388\"",
             "source_key": "hg38/v0/Homo_sapiens_assembly38.fasta",
-            "source_version": null
+            "source_version": null,
+            "version_id": "wa1jY4BfIN6kLFxyg_ohOuNwcM2oCyd5"
           },
           {
             "acquired": 1792484652.396898,
+            "bucket": "ngs-studio-cache-509505638328-us-east-1",
             "bytes": 160928,
             "checksum_sha256": "7e/ZPEidwbrvrTEvQDiAifjbXPbcw7oJVWaerSdOi2s=",
             "checksum_type": "FULL_OBJECT",
+            "key": "operations/checkpoints/references/broad-references/hg38/v0/Homo_sapiens_assembly38.fasta.fai",
             "source_bucket": "broad-references",
             "source_etag": "\"f76371b113734a56cde236bc0372de0a\"",
             "source_key": "hg38/v0/Homo_sapiens_assembly38.fasta.fai",
-            "source_version": null
+            "source_version": null,
+            "version_id": "_0HioXqeq2XGWuF60eLndkgEQN_Cz0hE"
           },
           {
             "acquired": 1792484653.085142,
+            "bucket": "ngs-studio-cache-509505638328-us-east-1",
             "bytes": 581712,
             "checksum_sha256": "B1I7Sgr9ESeukJ+S+LORGv8JZGGu1+/z8az1vfwdwQM=",
             "checksum_type": "FULL_OBJECT",
+            "key": "operations/checkpoints/references/broad-references/hg38/v0/Homo_sapiens_assembly38.dict",
             "source_bucket": "broad-references",
             "source_etag": "\"3884c62eb0e53fa92459ed9bff133ae6\"",
             "source_key": "hg38/v0/Homo_sapiens_assembly38.dict",
-            "source_version": null
+            "source_version": null,
+            "version_id": "vg.a0_KEO8VGTbg5HsI7ZS3EMkXaZX38"
           }
         ],
         "reason": "Exact Broad hg38/v0 FASTA, FAI and dictionary verified in AWS; BWA index is not yet available",
@@ -74,33 +83,42 @@
         "objects": [
           {
             "acquired": 1792484656.272197,
+            "bucket": "ngs-studio-cache-509505638328-us-east-1",
             "bytes": 156252944,
             "checksum_sha256": "rbTUpQBIqhM1Oga4T8/Lygml0XUl76pM6kT4gi6BF1w=",
             "checksum_type": "FULL_OBJECT",
+            "key": "operations/checkpoints/references/giab/release/AshkenazimTrio/HG002_NA24385_son/NISTv4.2.1/GRCh38/HG002_GRCh38_1_22_v4.2.1_benchmark.vcf.gz",
             "source_bucket": "giab",
             "source_etag": "\"73f1d5be8739131a500a9eaf8396b5cb-10\"",
             "source_key": "release/AshkenazimTrio/HG002_NA24385_son/NISTv4.2.1/GRCh38/HG002_GRCh38_1_22_v4.2.1_benchmark.vcf.gz",
-            "source_version": null
+            "source_version": null,
+            "version_id": "KOTJvIjVbOjNl7ZF80JtKisgDgHvyJ80"
           },
           {
             "acquired": 1792484657.108588,
+            "bucket": "ngs-studio-cache-509505638328-us-east-1",
             "bytes": 11494021,
             "checksum_sha256": "+6mlfDbsiOXRTqPiWciGbHk19JmNPsD6LWw5YtpbVXU=",
             "checksum_type": "FULL_OBJECT",
+            "key": "operations/checkpoints/references/giab/release/AshkenazimTrio/HG002_NA24385_son/NISTv4.2.1/GRCh38/HG002_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed",
             "source_bucket": "giab",
             "source_etag": "\"97265e922a97c69a0391cf3f92a89b8b\"",
             "source_key": "release/AshkenazimTrio/HG002_NA24385_son/NISTv4.2.1/GRCh38/HG002_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed",
-            "source_version": null
+            "source_version": null,
+            "version_id": "VmaOj5jm5E17RAEhaL9iOVBEEGzPz_aB"
           },
           {
             "acquired": 1792485110.332483,
+            "bucket": "ngs-studio-cache-509505638328-us-east-1",
             "bytes": 1657747,
             "checksum_sha256": "IxYnElU0E7EPiJFsKL0SON63A6cje+KRBEB3O+6nGJQ=",
             "checksum_type": "FULL_OBJECT",
+            "key": "operations/checkpoints/references/giab/release/AshkenazimTrio/HG002_NA24385_son/NISTv4.2.1/GRCh38/HG002_GRCh38_1_22_v4.2.1_benchmark.vcf.gz.tbi",
             "source_bucket": "giab",
             "source_etag": "\"121e2975fb3ff0317ae6a684d0ce6f2f\"",
             "source_key": "release/AshkenazimTrio/HG002_NA24385_son/NISTv4.2.1/GRCh38/HG002_GRCh38_1_22_v4.2.1_benchmark.vcf.gz.tbi",
-            "source_version": null
+            "source_version": null,
+            "version_id": "nVhclykeJHboYK_wR7PhEMByuX57yAL0"
           }
         ],
         "reason": "Exact HG002 v4.2.1 GRCh38 truth VCF, tabix and confident BED verified in AWS; reads and stratifications remain separate",
@@ -200,6 +218,5 @@
       "reason": "Allele-fraction QC is implemented; shifted-reference caller/filter, liftover and reconciliation are implemented; representative heteroplasmy/NUMT performance is not validated",
       "clinical_validation": false
     }
-  ],
-  "note": "Private destination locations/version identifiers are omitted from public source. Exact identities and full-object checksums remain preserved in the service."
+  ]
 }

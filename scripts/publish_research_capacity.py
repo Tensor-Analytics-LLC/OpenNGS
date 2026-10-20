@@ -22,6 +22,8 @@ def main():
     key=release['kms'];bucket=release['bucket'];pro_bucket='arn:aws:s3:::openngs-pro-'+account+'-*'
     boundary_document={'Version':'2012-10-17','Statement':[{'Effect':'Allow','Action':['s3:GetObject','s3:GetObjectVersion','s3:PutObject','s3:AbortMultipartUpload','s3:ListMultipartUploadParts'],'Resource':pro_bucket+'/tenants/u_*/*'},{'Effect':'Allow','Action':['s3:GetObject','s3:GetObjectVersion'],'Resource':'arn:aws:s3:::'+bucket+'/operations/checkpoints/references/*'},{'Effect':'Allow','Action':['kms:Decrypt','kms:GenerateDataKey'],'Resource':key,'Condition':{'StringEquals':{'kms:ViaService':'s3.us-east-1.amazonaws.com'}}}]}
     boundary=f'arn:aws:iam::{account}:policy/openngs/OpenNGSResearchWorkerBoundary'
+    boundary_document['Statement'].append({'Effect':'Allow','Action':['s3:GetObject','s3:GetObjectVersion'],
+        'Resource':'arn:aws:s3:::'+bucket+'/tenants/u_*/datasets/*'})
     try:iam.create_policy(PolicyName='OpenNGSResearchWorkerBoundary',Path='/openngs/',PolicyDocument=json.dumps(boundary_document),Tags=[{'Key':'Project','Value':'OpenNGS'}])
     except iam.exceptions.EntityAlreadyExistsException:
         current=iam.get_policy(PolicyArn=boundary)['Policy']['DefaultVersionId'];observed=iam.get_policy_version(PolicyArn=boundary,VersionId=current)['PolicyVersion']['Document']
@@ -47,7 +49,11 @@ def main():
     sqs.set_queue_attributes(QueueUrl=queue,Attributes={'Policy':json.dumps(queue_policy)});s.client('sns').subscribe(TopicArn=topic,Protocol='sqs',Endpoint=attributes['QueueArn'])
     statements.append({'Effect':'Allow','Action':['budgets:ModifyBudget','budgets:ViewBudget','budgets:TagResource','budgets:UntagResource','budgets:ListTagsForResource'],'Resource':f'arn:aws:budgets::{account}:budget/openngs-pro-*'})
     iam.put_role_policy(RoleName=name,PolicyName='FixedOpenNGSTenantResources',PolicyDocument=json.dumps({'Version':'2012-10-17','Statement':statements}))
-    document=template(o['WorkerSubnet'],o['WorkerSecurity'],execution_arn,image,'arn:aws:ecr:us-east-1:'+account+':repository/openngs-demo',bucket,key,boundary,o['URL'],topic)
+    extension_path=Path('evidence/deployment/extended-release.json')
+    extension=json.loads(extension_path.read_text()) if extension_path.exists() else None
+    secondary_path=Path('evidence/deployment/secondary-release.json')
+    secondary=json.loads(secondary_path.read_text()) if secondary_path.exists() else None
+    document=template(o['WorkerSubnet'],o['WorkerSecurity'],execution_arn,image,'arn:aws:ecr:us-east-1:'+account+':repository/openngs-demo',bucket,key,boundary,o['URL'],topic,extension,secondary)
     raw=json.dumps(document,sort_keys=True).encode();digest=hashlib.sha256(raw).hexdigest();object_key='operations/releases/'+digest+'/research-tenant.json'
     uploaded=s.client('s3').put_object(Bucket=bucket,Key=object_key,Body=raw,ServerSideEncryption='aws:kms',SSEKMSKeyId=key)
     url=f'https://{bucket}.s3.us-east-1.amazonaws.com/{object_key}?versionId='+quote(uploaded['VersionId'],safe='')
@@ -55,7 +61,7 @@ def main():
     app_statements=[{'Effect':'Allow','Action':['cloudformation:CreateStack','cloudformation:UpdateStack'],'Resource':arn,'Condition':{'StringEquals':{'cloudformation:TemplateUrl':url,'cloudformation:RoleArn':role_arn}}},{'Effect':'Allow','Action':['cloudformation:DescribeStacks'],'Resource':arn},{'Effect':'Allow','Action':['iam:PassRole'],'Resource':role_arn,'Condition':{'StringEquals':{'iam:PassedToService':'cloudformation.amazonaws.com'}}},{'Effect':'Allow','Action':['s3:ListBucket','s3:GetBucketLocation','s3:ListBucketMultipartUploads'],'Resource':pro_bucket},{'Effect':'Allow','Action':['s3:GetObject','s3:GetObjectVersion','s3:PutObject','s3:AbortMultipartUpload','s3:ListMultipartUploadParts'],'Resource':pro_bucket+'/tenants/*'},{'Effect':'Allow','Action':['batch:SubmitJob','batch:TagResource'],'Resource':[f'arn:aws:batch:us-east-1:{account}:job-queue/openngs-pro-*',f'arn:aws:batch:us-east-1:{account}:job-definition/openngs-pro-*']},{'Effect':'Allow','Action':['batch:TagResource'],'Resource':f'arn:aws:batch:us-east-1:{account}:job/*','Condition':{'StringEquals':{'aws:RequestTag/Project':'OpenNGS-Pro'}}},{'Effect':'Allow','Action':['batch:TerminateJob'],'Resource':f'arn:aws:batch:us-east-1:{account}:job/*','Condition':{'StringEquals':{'aws:ResourceTag/Project':'OpenNGS-Pro'}}}]
     iam.put_role_policy(RoleName=o['AppRole'],PolicyName='OpenNGSResearchLogRead',PolicyDocument=json.dumps({'Version':'2012-10-17','Statement':[{'Effect':'Allow','Action':['logs:GetLogEvents'],'Resource':f'arn:aws:logs:us-east-1:{account}:log-group:/openngs/pro/u_*:log-stream:research/*'}]}))
     iam.put_role_policy(RoleName=o['AppRole'],PolicyName='OnlyFixedFundedResearchTemplate',PolicyDocument=json.dumps({'Version':'2012-10-17','Statement':app_statements}))
-    record={'template_url':url,'template_sha256':digest,'cfn_role':role_arn,'runtime_image':image,'budget_topic':topic,'runtime_build':build['build_id'],'validation':'Build/version checks only; native assay and scale validation are separate'}
+    record={'template_url':url,'template_sha256':digest,'cfn_role':role_arn,'runtime_image':image,'budget_topic':topic,'runtime_build':build['build_id'],'validation':'Build/version checks only; native assay and scale validation are separate','extension':extension,'secondary':secondary}
     Path('evidence/deployment/research-capacity.json').write_text(json.dumps(record,indent=2));print(json.dumps(record))
 
 if __name__=='__main__':main()

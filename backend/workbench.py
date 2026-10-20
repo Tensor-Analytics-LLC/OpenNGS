@@ -20,10 +20,34 @@ LOCK=threading.RLock();JOBS={}
 VARIANTS={'VCF','BGZIP_VCF','INDEXED_VCF','BCF'}
 
 def owned(uid,aid):
+    from . import retention
+    retention.lease(uid,aid,seconds=900)
     row=db.query('SELECT * FROM artifacts WHERE id=? AND user_id=?',(aid,uid),one=True) or db.query('SELECT * FROM assets WHERE id=? AND user_id=?',(aid,uid),one=True)
     if not row:raise ValueError('Artifact not found in this workspace')
+    from .migration import resolve_asset
+    row=resolve_asset(uid,row)
     row['metadata']=json.loads(row['metadata'])
     return row
+
+def object_args(uid,row,field=None):
+    """Authorize immutable raw object access without invoking a genomic parser."""
+    path=row['metadata'].get(field) if field else row['path']
+    if not isinstance(path,str) or not path.startswith('s3://'):
+        raise ValueError('A verified private cloud object is required')
+    bucket,key=path[5:].split('/',1)
+    from .migration import authorize_source
+    proof=authorize_source(uid,path)
+    if (bucket!=data.settings(uid)['s3_bucket'] and not proof) or not key.startswith('tenants/'+uid+'/'):
+        raise ValueError('Track is outside the private tenant cache')
+    args={'Bucket':bucket,'Key':key}
+    version=row['metadata'].get(field+'_version_id') if field else row['metadata'].get('version_id')
+    for secondary in row['metadata'].get('secondary_objects',[]):
+        if secondary.get('uri')==path:version=secondary.get('version_id') or version
+    if version:args['VersionId']=version
+    if proof:
+        if version and version!=proof['VersionId']:raise ValueError('Migration object version changed')
+        args['VersionId']=proof['VersionId']
+    return args
 
 def source(uid,row,field=None):
     from .config import CLOUD
@@ -44,6 +68,9 @@ def source(uid,row,field=None):
     return str(data.permitted_path(uid,path))
 
 def inspect_header(uid,aid):
+    from . import remote_viewer
+    if remote_viewer.required(uid,owned(uid,aid)):
+        return remote_viewer.start(uid,aid,'header')
     import pysam,re
     row=owned(uid,aid);path=source(uid,row);fmt=row['format'];metadata=row['metadata'];names=[]
     if fmt in VARIANTS:
@@ -85,8 +112,9 @@ def identity(uid,row):
 
 def index_path(uid,aid):
     # IDs are produced by this service; hash again to prevent path interpolation.
-    folder=DATA/'workbench'/uid;folder.mkdir(parents=True,exist_ok=True)
-    return folder/(hashlib.sha256(aid.encode()).hexdigest()+'.sqlite')
+    from .viewer_retention import cache_path
+    path=cache_path(uid,aid);path.parent.mkdir(parents=True,exist_ok=True)
+    return path
 
 def connection(path):
     c=sqlite3.connect(path,timeout=15);c.row_factory=sqlite3.Row
@@ -162,7 +190,10 @@ def build(uid,aid,stamp):
             c.executescript('CREATE INDEX locus ON variants(chrom,pos,id);CREATE INDEX frequency ON variants(af);CREATE INDEX gene_index ON variants(gene);CREATE INDEX clinical_index ON variants(classification);CREATE INDEX consequence_index ON variants(consequence);')
             for k,v in {'identity':stamp,'rows':count,'header':str(src.header),'assembly':row.get('assembly') or row['metadata'].get('assembly'),'created':time.time(),'schema':schema}.items():c.execute('INSERT INTO meta VALUES(?,?)',(k,db.encode(v)))
             c.commit()
-        temp.replace(path)
+        from . import retention
+        with db.tx() as c:
+            retention.ensure_available(uid,aid,c)
+            temp.replace(path)
         with LOCK:JOBS[(uid,aid)]={'state':'ready','rows':count}
         with db.tx() as c:db.audit(c,uid,'results.indexed',aid,{'rows':count,'identity':stamp})
     except Exception as e:
@@ -172,6 +203,8 @@ def build(uid,aid,stamp):
 def start_index(uid,aid):
     row=owned(uid,aid)
     if row['format'] not in VARIANTS:raise ValueError('Choose a VCF/BCF variant artifact')
+    from . import remote_viewer
+    if remote_viewer.required(uid,row):return remote_viewer.start(uid,aid)
     stamp=identity(uid,row);path=index_path(uid,aid)
     with LOCK:
         if path.exists():
@@ -207,6 +240,8 @@ def where(filters):
 
 def query(uid,aid,filters,offset=0,limit=100):
     owned(uid,aid);path=index_path(uid,aid)
+    from .viewer_retention import lease_index
+    lease_index(uid,aid)
     if not path.exists():raise ValueError('Build the results index first')
     offset=int(offset);limit=int(limit)
     if not 0<=offset<=100000000 or not 1<=limit<=200:raise ValueError('Invalid results window')
@@ -220,6 +255,9 @@ def query(uid,aid,filters,offset=0,limit=100):
 
 def stats(uid,aid,filters):
     owned(uid,aid);clause,args=where(filters)
+    from .viewer_retention import lease_index
+    lease_index(uid,aid)
+    if not index_path(uid,aid).is_file():raise ValueError('Build the results index first')
     with connection(index_path(uid,aid)) as c:
         result={key:[{'label':r[0] or 'unannotated','count':r[1]} for r in c.execute(f'SELECT {key},COUNT(*) FROM variants'+clause+f' GROUP BY {key} ORDER BY COUNT(*) DESC LIMIT 30',args)] for key in ['chrom','classification','consequence','zygosity']}
         result['quality']=[{'label':str(r[0]),'count':r[1]} for r in c.execute('SELECT CAST(qual/10 AS INTEGER)*10,COUNT(*) FROM variants'+clause+(' AND' if clause else ' WHERE')+' qual IS NOT NULL GROUP BY 1 ORDER BY 1',args)]
@@ -227,6 +265,9 @@ def stats(uid,aid,filters):
 
 def export(uid,aid,filters,fmt):
     owned(uid,aid);clause,args=where(filters);path=index_path(uid,aid)
+    from .viewer_retention import lease_index
+    lease_index(uid,aid)
+    if not path.is_file():raise ValueError('Build the results index first')
     def chunks():
         with connection(path) as c:
             if fmt=='vcf':
@@ -257,6 +298,10 @@ def pdf(uid,aid,filters):
     return buf.getvalue()
 
 def pileup(uid,alignment_id,reference_id,chrom,start,end):
+    from . import remote_viewer
+    if remote_viewer.required(uid,owned(uid,alignment_id)) or remote_viewer.required(uid,owned(uid,reference_id)):
+        if not 0<=start<end or end-start>2000:raise ValueError('Pileup window must span 1–2000 bases')
+        return remote_viewer.start(uid,alignment_id,'pileup',{'chrom':chrom,'start':start,'end':end},reference_id)
     import pysam
     if not 0<=start<end or end-start>2000:raise ValueError('Pileup window must span 1–2000 bases')
     alignment=owned(uid,alignment_id);reference=owned(uid,reference_id)
@@ -292,6 +337,8 @@ def pileup(uid,alignment_id,reference_id,chrom,start,end):
     return {'chrom':chrom,'start':start,'end':end,'reference':reference_bases,'reads':reads,'coverage':coverage,'forward':forward,'reverse':reverse,'truncated':truncated,'coverage_scope':'Coverage of rendered reads (maximum 300), not whole-file depth','transport':'HTSlib indexed region fetch; private S3 inputs use expiring range-capable URLs'}
 
 def omics(uid,aid,x=None,y=None):
+    from . import remote_viewer
+    if remote_viewer.required(uid,owned(uid,aid)):return remote_viewer.start(uid,aid,'omics',{'x':x or '', 'y':y or ''})
     import numpy as np
     row=owned(uid,aid);path=source(uid,row)
     if path.startswith('https://'):raise ValueError('Stage this expression/embedding table into the private SSD cache before charting; genome tracks support remote indexed ranges')

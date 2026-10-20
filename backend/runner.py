@@ -12,8 +12,10 @@ import threading
 import time
 from pathlib import Path
 import psutil
-from . import compiler,data,db,graph,registry,security,cache,budget,entitlements
+from . import compiler,data,db,graph,registry,security,cache,budget,entitlements,asset_rights
 from .config import ROOT,DATA,TERMINAL,CLOUD,DEMO
+from . import retention
+from .migration import source_manifest
 
 POOL=concurrent.futures.ThreadPoolExecutor(max_workers=2,thread_name_prefix='execution')
 _CAPS=None;_CAP_TIME=0
@@ -67,9 +69,13 @@ def admit(user,g,operation_id):
                 if node['tool'] in ['asset.file','reference.asset','database.asset'] or spec.get('asset_family'):
                     asset_id=node.get('params',{}).get('asset_id')
                     snapshot['assets'][asset_id]=input_asset(user['id'],asset_id)
+                    retention.ensure_available(user['id'],asset_id,c)
+                    retention.ensure_outputs(user['id'],{'source':[snapshot['assets'][asset_id]]},c)
+        snapshot['migration_sources']=list({(entry['Bucket'],entry['Key']):entry for item in snapshot['assets'].values() for entry in source_manifest(user['id'],item)}.values())
         snapshot['allowance']=entitlements.limits(user['id'])
         if CLOUD:snapshot['allowance']['max_output_bytes']=entitlements.reserve_output(c,user,rid,g.get('maximum_output_bytes'))
         snapshot['cloud_settings']={k:s[k] for k in ['s3_bucket','kms_key_arn','batch_queue','batch_job_definition','max_upload_gib']}
+        snapshot['runtime_profiles']=s.get('research_profile',{}).get('runtime_profiles',{})
         from . import vm
         snapshot['vm_configuration']=vm.configuration();snapshot['capacity']=s.get('research_profile',{})
         if entitlements.restricted(user['id']):snapshot.update(demo_image=os.getenv('NGS_DEMO_IMAGE',''),sample_manifest=os.getenv('NGS_SAMPLE_MANIFEST_SHA',''))
@@ -168,18 +174,26 @@ def run_process(argv,rid,nid,aid,work,timeout,stdout_file=None,container_name=No
         with db.tx() as c:c.execute('UPDATE attempts SET pid=NULL WHERE id=?',(aid,))
 
 def input_asset(uid,asset_id,expected=None):
+    from .asset_rights import attach as attach_data_rights
+    # Admission calls this inside its existing transaction. The atomic retention
+    # fence is checked by admit; runtime reads also check the frozen output URI.
     row=db.query('SELECT * FROM assets WHERE id=? AND user_id=?',(asset_id,uid),one=True)
     if row:
+        from .migration import resolve_asset
+        row=resolve_asset(uid,row)
+        row=attach_data_rights(uid,row);row['metadata']=db.encode(row['metadata'])
         if row['path'].startswith('s3://'):
             meta=json.loads(row['metadata']);ready=db.query("SELECT state FROM datasets WHERE id=? AND user_id=?",(meta.get('dataset_id',asset_id),uid),one=True)
             if not ready or ready['state']!='Ready' or not meta.get('sha256'):raise ValueError('Cloud dataset is not verified and Ready')
             bucket,key=row['path'][5:].split('/',1)
-            if bucket!=data.settings(uid)['s3_bucket'] or not key.startswith('tenants/'+uid+'/'):raise ValueError('Cloud dataset escaped its tenant storage')
+            from .migration import authorize_source
+            migrated=authorize_source(uid,row['path'],meta.get('version_id'),meta['sha256'])
+            if not migrated and (bucket!=data.settings(uid)['s3_bucket'] or not key.startswith('tenants/'+uid+'/')):raise ValueError('Cloud dataset escaped its tenant storage')
             return {'path':row['path'],'name':row['name'],'format':row['format'],'bytes':row['bytes'],'digest':'sha256:'+meta['sha256'],'metadata':meta}
         p=data.permitted_path(uid,row['path']);meta=json.loads(row['metadata']);meta['assembly']=row['assembly']
         return {'path':str(p),'name':row['name'],'format':row['format'],'bytes':p.stat().st_size,'metadata':meta}
     row=db.query('SELECT * FROM artifacts WHERE id=? AND user_id=?',(asset_id,uid),one=True)
-    if row:return {**row,'metadata':json.loads(row['metadata'])}
+    if row:return attach_data_rights(uid,row)
     raise ValueError('Asset binding no longer exists or belongs to another workspace')
 
 def register_artifacts(uid,rid,nid,outputs,work):
@@ -256,6 +270,8 @@ def run(rid,order):
             prior=db.query('SELECT * FROM attempts WHERE run_id=? AND node_id=? ORDER BY started DESC LIMIT 1',(rid,nid),one=True) if CLOUD else None
             if prior and prior['state']=='succeeded':
                 outputs=json.loads(prior['outputs'])
+                from .asset_rights import require_inputs
+                require_inputs(uid,outputs)
                 for items in outputs.values():
                     for item in items:
                         if cache.file_identity(uid,item['path'],snapshot.get('cloud_settings'))['digest']!=item.get('digest','').removeprefix('sha256:'):raise ValueError('Committed upstream output identity changed; resume refused')
@@ -271,7 +287,16 @@ def run(rid,order):
             if params.get('published_tool') in specs and specs[params['published_tool']].get('approved'):spec=specs[params['published_tool']]
             n['_approved_image']=snapshot.get('images',{}).get(spec['id']) or (spec.get('image') if spec.get('approved') else None)
             n['_batch_queue']=snapshot.get('batch_queue');n['_batch_job_definition']=snapshot.get('batch_job_definition')
+            runtime_profile=snapshot.get('runtime_profiles',{}).get(spec['id'])
+            if CLOUD and (n.get('execution_profile')=='exclusive-vm' or resources.get('scratch_mb',2048)>184320):
+                from . import vm
+                runtime_profile=vm.runtime_route(snapshot.get('capacity',{}),runtime_profile,bool(snapshot.get('migration_sources')),snapshot.get('vm_configuration',{}))
+            if runtime_profile:
+                n['_approved_image']=runtime_profile['image']
+                n['_batch_job_definition']=runtime_profile['definition']
             n['_cloud_settings']=snapshot.get('cloud_settings')
+            n['_migration_sources']=snapshot.get('migration_sources',[])
+            n['_source_grants_version']=(runtime_profile or {}).get('source_grants_version')
             n['_capacity']=snapshot.get('capacity',{});n['_vm_configuration']=snapshot.get('vm_configuration',{})
             n['_max_output_bytes']=allowance.get('max_output_bytes',64*1024**2)
             if CLOUD:
@@ -292,6 +317,13 @@ def run(rid,order):
                 live_settings=data.settings(uid)
                 original=specs[n['tool']]
                 if original['license'] in ['Academic','Commercial BYOL','Review required'] and original['id'] not in live_settings['rights_approved']:raise ValueError('Node rights approval was revoked')
+                from .asset_rights import require_inputs,attach as attach_data_rights
+                data_obligations=require_inputs(uid,inputs)
+                source_item=None
+                if n['tool'] in ['asset.file','reference.asset','database.asset'] or spec.get('asset_family'):
+                    source_item=json.loads(db.encode(snapshot['assets'][params['asset_id']])) if params.get('asset_id') in snapshot.get('assets',{}) else input_asset(uid,params['asset_id'])
+                    source_item=attach_data_rights(uid,source_item)
+                    data_obligations=source_item['metadata']['data_rights']
                 from .semantics import runtime as check_runtime
                 check_runtime(spec,inputs)
                 cache_key=cache.key(uid,spec,n,inputs,snapshot.get('backend'),cloud_settings=snapshot.get('cloud_settings'))
@@ -309,7 +341,7 @@ def run(rid,order):
                     from .onboarding import execute_api
                     outputs=execute_api(uid,spec,n,inputs,work,rid)
                 elif n['tool'] in ['asset.file','reference.asset','database.asset'] or spec.get('asset_family'):
-                    item=json.loads(db.encode(snapshot['assets'][params['asset_id']])) if params.get('asset_id') in snapshot.get('assets',{}) else input_asset(uid,params['asset_id']);key=spec['outputs'][0]['key']
+                    item=source_item;key=spec['outputs'][0]['key']
                     if params.get('assembly') and not item.get('metadata',{}).get('assembly'):item.setdefault('metadata',{})['assembly']=params['assembly']
                     if spec['outputs'][0]['type']=='DATABASE':item={**item,'format':'DATABASE','metadata':{**item.get('metadata',{}),'underlying_format':item['format']}}
                     outputs={key:[item]}
@@ -332,6 +364,7 @@ def run(rid,order):
                 else:outputs=native_docker(spec,n,inputs,work,rid,aid)
                 for items in outputs.values():
                     for item in items:
+                        item.setdefault('metadata',{})['data_rights']=data_obligations
                         for field in ['assembly','contig_style','reference_digest']:
                             values={i.get('metadata',{}).get(field) for rows in inputs.values() for i in rows}-{None}
                             if len(values)==1:item.setdefault('metadata',{}).setdefault(field,next(iter(values)))
