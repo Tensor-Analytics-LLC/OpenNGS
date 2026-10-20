@@ -13,6 +13,7 @@ def main():
     paths.extend(Path(x) for x in ['infra/worker_reaper.py','scripts/publish_worker_reaper.py'])
     paths.append(Path('scripts/promote_timestamp_precision.py'))
     paths.append(Path('scripts/allocate_reviewed_migration_storage.py'))
+    paths.append(Path('scripts/publish_cloud_references.py'))
     paths.extend(Path(x) for x in ['scripts/verify_private_viewer_cloud.py','infra/extended-refresh.Dockerfile','scripts/verify_retention_cloud.py'])
     paths.extend(Path(x) for x in ['infra/extended.Dockerfile','infra/extended-packages.txt','infra/viewer_worker.py','infra/openngs-retention.service','infra/openngs-migration.service','scripts/build_extended_runtime.py','scripts/finalize_extended_runtime.py','scripts/qualify_extended_runtime.py','scripts/migrate_inventory.py','scripts/publish_retention.py','scripts/verify_extended_cloud.py'])
     paths.extend(Path(x) for x in ['infra/secondary.Dockerfile','infra/secondary-refresh.Dockerfile','infra/secondary-environments.json','scripts/qualify_secondary_cloud.py','scripts/report_runtime_matrix.py','scripts/finalize_secondary_audit.py','scripts/build_secondary_runtime.py','scripts/finalize_secondary_runtime.py','scripts/install_secondary_environments.py','scripts/qualify_secondary_runtime.py','scripts/qualify_portable_refresh.py'])

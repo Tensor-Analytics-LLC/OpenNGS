@@ -1,6 +1,6 @@
 """Acquire an exact approved public-object plan inside AWS, with conditional copies.
 
-No local download, latest-release substitution, deletion or SSD dependency. The
+Acquisition preserves exact releases and source data. The
 checkpoint records each immutable destination version and AWS SHA-256 checksum.
 Readiness of an assembly bundle still requires matching indices and validation.
 """

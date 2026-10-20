@@ -11,11 +11,14 @@ import os
 import re
 import threading
 import time
+from collections import OrderedDict
 from botocore.config import Config
 from . import db, cloud_data
 from .config import aws_session
 
-_PLAN_CACHE = {}
+_PLAN_CACHE = OrderedDict()
+_PLAN_LOCK = threading.Lock()
+_PLAN_CACHE_LIMIT = 2
 RATE = 64 * 1024**2
 
 
@@ -48,7 +51,19 @@ def _get_json(s3, bucket, key, version=None, maximum=32 * 1024**2):
 
 def load_plan(registration):
     identity = (registration['bucket'], registration['key'], registration['version_id'], registration['sha256'])
-    if identity not in _PLAN_CACHE:
+    # Discovery and verification start together. Keep the entire cold fetch,
+    # parse and validation under one lock so they never hold duplicate expanded
+    # JSON trees. Each manifest is also bounded to 32 MiB by _get_json.
+    with _PLAN_LOCK:
+        if identity in _PLAN_CACHE:
+            plan = _PLAN_CACHE[identity]
+            if plan['owner_id'] != registration['owner_id'] or plan['plan_id'] != registration['plan_id']:
+                raise ValueError('Immutable migration plan identity verification failed')
+            _PLAN_CACHE.move_to_end(identity)
+            return plan
+        # Evict before parsing, not after a third large tree has been retained.
+        while len(_PLAN_CACHE) >= _PLAN_CACHE_LIMIT:
+            _PLAN_CACHE.popitem(last=False)
         plan, digest = _get_json(client(), *identity[:3])
         if digest != identity[3] or plan.get('owner_id') != registration['owner_id'] or plan.get('plan_id') != registration['plan_id'] or plan.get('bucket') != registration['bucket']:
             raise ValueError('Immutable migration plan identity verification failed')
@@ -58,7 +73,7 @@ def load_plan(registration):
         if len(plan['_by_sha']) != len(plan['objects']):
             raise ValueError('Migration plan has duplicate content identities')
         _PLAN_CACHE[identity] = plan
-    return _PLAN_CACHE[identity]
+        return plan
 
 
 def register_plan(actor, registration):

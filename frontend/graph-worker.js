@@ -1,2 +1,11 @@
 import {analyze,adapterPath} from './graph-core.mjs';
-self.onmessage=({data})=>{try{if(data.kind==='analyze')self.postMessage({id:data.id,version:data.version,result:analyze(data.graph,data.definitions)});if(data.kind==='adapter')self.postMessage({id:data.id,version:data.version,result:adapterPath(data.source,data.target,data.definitions)});}catch(error){self.postMessage({id:data.id,error:String(error)});}};
+import {layoutGraph,routeGraph} from './graph-layout.mjs';
+self.onmessage=({data})=>{try{
+ let result;
+ if(data.kind==='analyze')result=analyze(data.graph,data.definitions);
+ else if(data.kind==='adapter')result=adapterPath(data.source,data.target,data.definitions);
+ else if(data.kind==='layout')result=layoutGraph(data.graph,data.definitions);
+ else if(data.kind==='routes')result=routeGraph(data.graph,data.definitions);
+ else throw Error('Unknown graph operation');
+ self.postMessage({id:data.id,version:data.version,result});
+}catch(error){self.postMessage({id:data.id,version:data.version,error:String(error)});}};

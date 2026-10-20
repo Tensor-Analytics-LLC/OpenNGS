@@ -3,6 +3,7 @@ import json
 import re
 
 from . import config, db
+from .asset_presentation import describe as describe_asset
 
 
 def public_metadata(value):
@@ -17,11 +18,23 @@ def public_metadata(value):
     return value
 
 
-def list_assets(uid, query='', limit=None, cloud=None, primary_only=False):
+def list_assets(uid, query='', limit=None, cloud=None, primary_only=False, filters=None, offset=0, page=False, scope='all', node_id=''):
     if len(query) > 200:
         raise ValueError('Search is too long')
     if limit is not None and (type(limit) is not int or not 1 <= limit <= 1000):
         raise ValueError('Invalid asset listing limit')
+    filters = filters or {}
+    if set(filters)-{'family','assembly','format','release'} or any(not isinstance(v,str) or len(v)>200 for v in filters.values()):
+        raise ValueError('Invalid asset filters')
+    if type(offset) is not int or not 0 <= offset <= 1000000:
+        raise ValueError('Invalid asset offset')
+    if scope not in {'all','references','databases'}:
+        raise ValueError('Invalid asset scope')
+    from .registry import NODES
+    database_families = {n.get('asset_family') for n in NODES if n.get('group') == 'Databases'} - {None}
+    node = next((n for n in NODES if n['id'] == node_id), None) if node_id else None
+    if node_id and node is None:
+        raise ValueError('Unknown asset binding node')
     cloud = config.CLOUD if cloud is None else cloud
     # Build the owner's verified ID set once. UNION deduplicates source IDs even
     # when several dataset receipts refer to one source; there is no per-alias
@@ -36,7 +49,7 @@ def list_assets(uid, query='', limit=None, cloud=None, primary_only=False):
           UNION SELECT m.asset_id FROM migration_assets m
                 JOIN ready d ON d.id=m.dataset_id WHERE m.user_id=?
         )
-        SELECT a.*,canonical.metadata AS canonical_metadata,CASE WHEN m.asset_id IS NOT NULL THEN canonical.path ELSE a.path END AS listed_path
+        SELECT a.*,m.source_path AS discovery_source_path,canonical.metadata AS canonical_metadata,CASE WHEN m.asset_id IS NOT NULL THEN canonical.path ELSE a.path END AS listed_path
         FROM assets a JOIN bindings b ON b.asset_id=a.id
         LEFT JOIN migration_assets m ON m.asset_id=a.id AND m.user_id=a.user_id
         LEFT JOIN assets canonical ON canonical.id=m.canonical_asset_id AND canonical.user_id=a.user_id
@@ -46,7 +59,7 @@ def list_assets(uid, query='', limit=None, cloud=None, primary_only=False):
         )"""
         args = [uid, uid, uid]
     else:
-        sql = 'SELECT a.*,NULL AS canonical_metadata,a.path AS listed_path FROM assets a WHERE a.user_id=?'
+        sql = 'SELECT a.*,a.path AS discovery_source_path,NULL AS canonical_metadata,a.path AS listed_path FROM assets a WHERE a.user_id=?'
         args = [uid]
     if query:
         sql += " AND (LOWER(a.name) LIKE ? OR LOWER(a.family) LIKE ? OR LOWER(a.format) LIKE ? OR LOWER(COALESCE(a.assembly,'')) LIKE ? OR LOWER(a.metadata) LIKE ?)"
@@ -59,20 +72,55 @@ def list_assets(uid, query='', limit=None, cloud=None, primary_only=False):
             sql += ' AND LOWER(a.name) NOT LIKE ?'
             args.append('%'+suffix)
     sql += ' ORDER BY a.family,a.name,a.id'
-    if limit is not None:
-        sql += ' LIMIT ?'
-        args.append(limit)
+    # Classify all matching rows before pagination. Cache fragments can exceed
+    # 10,000 files; LIMIT before classification would hide valid primary inputs.
     rows = db.query(sql, tuple(args))
+    prepared, seen = [], set()
+    for row in rows:
+        row['metadata'] = json.loads(row['metadata'])
+        canonical = json.loads(row.pop('canonical_metadata') or '{}')
+        for key in ['sha256','version_id','dataset_id','bundle_verification']:
+            if canonical.get(key):
+                row['metadata'][key] = canonical[key]
+        row['presentation'] = describe_asset(row, row.pop('discovery_source_path') or '')
+        row['path'] = row.pop('listed_path')
+        p = row['presentation']
+        if primary_only and not p['primary_eligible']:
+            continue
+        if node:
+            family = node.get('asset_family')
+            assembly = next((parameter.get('default') for parameter in node.get('parameters',[]) if parameter['key']=='assembly'), None)
+            if not p['primary_eligible'] or (family and p['family'] != family):
+                continue
+            if family and assembly and p['assembly'] and p['assembly'] != assembly:
+                continue
+            if node['group']=='References' and p['format']!='FASTA':
+                continue
+            if node['id']=='database.asset' and p['format'] not in {'DATABASE','INDEXED_VCF','VCF','BGZIP_VCF','TSV','CSV','ARCHIVE'}:
+                continue
+            if family and node['outputs'][0]['type']=='VCF' and p['format'] not in {'VCF','BGZIP_VCF','INDEXED_VCF'}:
+                continue
+        if scope == 'references' and p['format'] != 'FASTA':
+            continue
+        if scope == 'databases' and p['family'] not in database_families and p['format'] not in {'DATABASE','ARCHIVE'}:
+            continue
+        # Collapse aliases of the exact same named scientific component. Distinct
+        # contigs must remain distinct even when empty gzip bytes are identical.
+        identity = (row['metadata'].get('sha256') or row['id'], row['metadata'].get('version_id'),
+                    p['basename'], p['family'], p['assembly'], p['release'], p.get('contig'), p.get('interval'))
+        if identity not in seen:
+            seen.add(identity)
+            prepared.append(row)
+    facets = {key: sorted({str(r['presentation'].get(key) or '') for r in prepared}-{''}) for key in ['family','assembly','format','release']}
+    matching = [row for row in prepared if all(not value or str(row['presentation'].get(key) or '') == value for key,value in filters.items())]
+    total = len(matching)
+    rows = matching[offset:offset+limit if limit is not None else None]
     from . import asset_rights
     grants = asset_rights.grant_map(uid)
     sources = asset_rights.known_sources(uid)
     for row in rows:
-        row['path'] = row.pop('listed_path')
-        row['metadata'] = json.loads(row['metadata'])
-        canonical = json.loads(row.pop('canonical_metadata') or '{}')
-        for key in ['sha256','version_id','dataset_id']:
-            if canonical.get(key):
-                row['metadata'][key] = canonical[key]
         row['data_rights'] = asset_rights.disclosure(uid,row,grants,sources)
         row['metadata'] = public_metadata(row['metadata'])
+    if page:
+        return {'assets':rows,'total':total,'offset':offset,'limit':limit,'has_more':offset+len(rows)<total,'facets':facets}
     return rows

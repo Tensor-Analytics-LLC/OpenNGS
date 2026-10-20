@@ -64,6 +64,11 @@ def install(app,user,admin):
     @app.post('/api/admin/entitlements/{uid}')
     def grant(uid:str,payload:dict=Body(...),current=Depends(admin)):return entitlements.grant(current,uid,payload)
 
+    @app.post('/api/admin/tool-rights/{uid}/{tool_id}')
+    def tool_permission(uid:str,tool_id:str,payload:dict=Body(...),current=Depends(admin)):
+        from . import tool_rights
+        return tool_rights.set_permission(current,uid,tool_id,payload)
+
     @app.post('/api/admin/budget/reconcile')
     def reconcile_budget(current=Depends(admin)):return billing.reconcile_posted()
 
@@ -136,7 +141,7 @@ def install(app,user,admin):
             where+=' AND (d.created<? OR (d.created=? AND d.id<?))';args.extend([cursor['created'],cursor['created'],cursor['id']])
         # Legacy PostgreSQL REAL columns otherwise serialize a shortened float32
         # value that differs from the value used by SQL's cursor comparison.
-        rows=db.query('SELECT d.id,d.source_asset,d.name,d.bytes,d.sha256,d.state,CAST(d.created AS DOUBLE PRECISION) AS created,d.updated,d.manifest,a.family,a.format,a.assembly,a.metadata FROM datasets d LEFT JOIN assets a ON a.user_id=d.user_id AND a.id=COALESCE(d.source_asset,d.id) WHERE '+where+' ORDER BY d.created DESC,d.id DESC LIMIT ?',(*args,limit+1))
+        rows=db.query('SELECT d.id,d.source_asset,d.name,d.bytes,d.sha256,d.state,CAST(d.created AS DOUBLE PRECISION) AS created,d.updated,d.manifest,a.family,a.format,a.assembly,a.metadata,(SELECT m.source_path FROM migration_assets m WHERE m.user_id=d.user_id AND m.dataset_id=d.id ORDER BY m.asset_id LIMIT 1) AS discovery_source_path FROM datasets d LEFT JOIN assets a ON a.user_id=d.user_id AND a.id=COALESCE(d.source_asset,d.id) WHERE '+where+' ORDER BY d.created DESC,d.id DESC LIMIT ?',(*args,limit+1))
         next_cursor=None
         if len(rows)>limit:
             rows=rows[:limit];last=rows[-1]
@@ -148,6 +153,8 @@ def install(app,user,admin):
             row['assembly']=row.get('assembly') or manifest.get('assembly')
             from .asset_listing import public_metadata
             row['metadata']=public_metadata({k:v for k,v in {**manifest,**meta}.items() if k in ['release','version','assembly','sample_id','contig_style','cohort','description','source_identity','sha256','version_id','dataset_id']})
+            from .asset_presentation import describe
+            row['presentation']=describe(row,row.pop('discovery_source_path') or '')
         inventory=db.query("SELECT COUNT(*) AS files,COALESCE(SUM(a.bytes),0) AS bytes FROM assets a WHERE a.user_id=? AND a.path NOT LIKE 's3://%' AND NOT EXISTS (SELECT 1 FROM migration_assets m JOIN datasets d ON d.id=m.dataset_id AND d.user_id=m.user_id WHERE m.asset_id=a.id AND m.user_id=a.user_id AND d.state='Ready')",(current['id'],),one=True)
         inventory={key:int(value) for key,value in inventory.items()}
         return {'datasets':rows,'total':total,'next_cursor':next_cursor,'limit':limit,'q':q,'state':state,'preparing_inventory':inventory}

@@ -44,7 +44,7 @@ def _assets(uid):
     # Never expose raw source paths, manifests or signed URLs in discovery.
     result = []
     for row in list_assets(uid, primary_only=True):
-        item = {k: row[k] for k in ['id', 'name', 'format', 'assembly', 'bytes', 'family', 'data_rights']}
+        item = {k: row[k] for k in ['id', 'name', 'format', 'assembly', 'bytes', 'family', 'data_rights', 'presentation']}
         item.update({k: row['metadata'].get(k) for k in ['release','version_id','sha256']})
         result.append(item)
     return result
@@ -108,6 +108,16 @@ def _availability(node, evidence, settings, limited, credentials, shared):
             if state == 'Ready':
                 state = 'Provisioning'
             block('dependency', 'SAMPLE_PROVISIONING', 'Curated sample verification is in progress.')
+    elif evidence.get('execution_kind') == 'artifact-routing':
+        # These reviewed runner operations route authenticated records, not
+        # genomic bytes. A container/assay proof is the wrong readiness test.
+        # Quarantine, rights and tier blockers above/below still apply.
+        contract = evidence.get('orchestration_contract') or {}
+        if evidence.get('status') != 'implemented-verified' or contract.get('version') != 1:
+            if state == 'Ready':
+                state = 'Unavailable'
+            block('validation', 'ROUTING_UNVERIFIED', 'The artifact-routing contract has not been verified.')
+        validation = evidence.get('validation_scope', 'Artifact-routing contract only; no scientific inference.')
     else:
         verified = bool(sample or case or evidence.get('status') == 'implemented-verified')
         if config.CLOUD:

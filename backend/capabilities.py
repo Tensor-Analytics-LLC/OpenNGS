@@ -8,6 +8,11 @@ from . import db,registry
 from .config import ROOT
 
 VERIFIED_OPERATORS={'qc.summary','bam.sort','bam.index','bed.intervals','intervals.bed','mt.qc','variant.guard','benchmark.exact','rna.fdr','vcf.ensemble','qc.gate','vcf.scatter','vcf.gather','annotation.merge'}
+VERIFIED_ARTIFACT_ROUTING={
+    'utility.export': 'Publish the complete ordered list of admitted artifact records without changing URI, SHA-256, companion versions or data-rights metadata.',
+    'utility.gather': 'Collect the complete ordered list of admitted artifact records without merging genomic records or changing their identities.',
+    'utility.condition': 'Route an admitted artifact using inclusive minimum/maximum declared-byte bounds; a failing branch returns no artifact.',
+}
 
 def native_profiles():
     tree=ast.parse((ROOT/'backend/compiler.py').read_text());found=set()
@@ -28,6 +33,7 @@ def matrix(uid=None):
         executable=bool(n.get('builtin') or n['id'] in profiles or n.get('api'))
         if third:status='requires-entitlement';reason='Third-party rights, credentials or permitted database/model assets must be supplied and verified'
         elif not executable:status='unsupported';reason='Requires an explicitly published and validated vendor/tool wrapper; the generic catalogue declaration has no executable native profile'
+        elif n['id'] in VERIFIED_ARTIFACT_ROUTING:status='implemented-verified';reason='Artifact-routing contract tests passed. No genomic file parsing, scientific transformation or clinical inference is performed.'
         elif n['id'] in VERIFIED_OPERATORS:status='implemented-verified';reason='Known-count or round-trip operator tests; representative full-scale clinical workflow validation is not established'
         else:status='awaiting-validation';reason='Executable implementation exists; representative dataset and runtime validation are pending'
         rows.append({'id':n['id'],'name':n['name'],'category':n['group'],'status':status,'reason':reason,'implementation':'portable' if n.get('builtin') else 'native-command' if n['id'] in profiles else 'provider-contract' if n.get('api') else None,'declared_image':n.get('image'),'verified_hosted_image':os.getenv('NGS_DEMO_IMAGE') if n['id'] in {'fastqc','fastp','minimap2','samtools','bcftools','bowtie2','hisat2','freebayes'} else None,'input_contracts':n['inputs'],'output_contracts':n['outputs'],'resources':n['resources'],'license':n['license'],'documentation':n.get('docs'),'validation_scope':'Research operator behavior; no clinical certification'})
@@ -111,9 +117,22 @@ def matrix(uid=None):
     if secondary:refreshed.update(secondary['tools'])
     metadata_only={'asset.file','database.asset','reference.asset','utility.export','utility.gather','utility.condition'}
     for row in rows:
+        if row['id'] in VERIFIED_ARTIFACT_ROUTING:
+            row.update(
+                execution_kind='artifact-routing', implementation='authenticated-orchestration',
+                hosted_runtime_image=None,
+                runtime_status='API artifact-routing contract; no scientific worker is required',
+                validation_scope='Identity-preserving orchestration only; not a scientific validation claim',
+                orchestration_contract={
+                    'version': 1, 'scope': VERIFIED_ARTIFACT_ROUTING[row['id']],
+                    'checks': ['tests/test_artifact_routing.py', 'tests/test_studio.py::test_real_quality_pipeline_and_idempotency'],
+                    'input_authority': 'Runner checks tenant ownership, immutable identities and data rights before routing. Publication registers outputs under the admitted run.',
+                })
         row['runtime_provenance']={'published_image':row.get('hosted_runtime_image'),'package':row.get('runtime_package'),
             'registry_reference_image':row.get('declared_image'),
             'authoritative':'Accepted run snapshots preserve the exact published image and environment. Registry tags are upstream references, not proof of the version executed.'}
+        if row['id'] in VERIFIED_ARTIFACT_ROUTING:
+            row['runtime_provenance']['authoritative']='The deployed API routes admitted artifact metadata; no scientific container or genomic transformation is involved.'
         if row['id'] in refreshed:
             row['migrated_data_runtime']={'state':'qualified','source_grants_version':1,'reason':'A reviewed worker accepts only exact tenant-owned immutable migrated objects; tenant capacity and dependencies must also be ready'}
         elif row['id'] in metadata_only or row['id'].startswith(('sample.','resource.')) or row['id']=='reference.tiny':

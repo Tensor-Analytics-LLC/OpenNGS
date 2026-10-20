@@ -159,11 +159,12 @@ def settings(current=Depends(user)):return data.settings(current['id'])
 def update_settings(patch:dict=Body(...),current=Depends(user)):return data.update_settings(current,patch)
 
 @app.get('/api/assets')
-def assets(q:str='',primary:bool=False,current=Depends(user)):
-    if entitlements.restricted(current['id']) and current['role']!='admin':return {'assets':[],'public_sources':[]}
+def assets(q:str='',primary:bool=False,family:str='',assembly:str='',format:str='',release:str='',offset:int=0,limit:int=100,scope:str='all',node:str='',current=Depends(user)):
+    if entitlements.restricted(current['id']) and current['role']!='admin':return {'assets':[],'public_sources':[],'total':0,'offset':0,'limit':limit,'has_more':False,'facets':{}}
     from .asset_listing import list_assets
-    rows=list_assets(current['id'],query=q,limit=300,cloud=True,primary_only=primary)
-    return {'assets':rows,'public_sources':data.PUBLIC}
+    result=list_assets(current['id'],query=q,limit=limit,cloud=True,primary_only=primary,
+                       filters={'family':family,'assembly':assembly,'format':format,'release':release},offset=offset,page=True,scope=scope,node_id=node)
+    return {**result,'public_sources':data.PUBLIC}
 
 @app.get('/api/assets/resolve')
 def resolve(family:str,assembly:str|None=None,source_id:str|None=None,asset_id:str|None=None,current=Depends(user)):return {'candidates':data.resolve(current['id'],family,assembly,data.settings(current['id'])['backend'],source_id,asset_id)}

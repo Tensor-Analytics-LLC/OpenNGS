@@ -1,0 +1,2227 @@
+{
+  "observed_at_utc": "2026-10-20T14:57:17Z",
+  "scope": "Funded admin Research Pro workspace snapshot; Explore remains curated-sample-only. Runtime availability is distinct from full assay validation and third-party rights.",
+  "catalogue_entries": 138,
+  "readiness_counts": {
+    "Ready": 86,
+    "Provisioning": 0,
+    "Requires entitlement": 18,
+    "Unavailable": 34
+  },
+  "ready_sample_workflows": [
+    {
+      "id": "quickstart",
+      "name": "Read quality \u00b7 sample"
+    },
+    {
+      "id": "giab",
+      "name": "GIAB chr22 \u00b7 variant filtering"
+    },
+    {
+      "id": "rna-qc",
+      "name": "RNA-seq \u00b7 sample quality"
+    },
+    {
+      "id": "germline",
+      "name": "Germline calling \u00b7 engineering sample"
+    },
+    {
+      "id": "native-qc",
+      "name": "FastQC + fastp \u00b7 sample reads"
+    },
+    {
+      "id": "dna-engineering",
+      "name": "DNA alignment + calls \u00b7 engineering"
+    },
+    {
+      "id": "clinvar",
+      "name": "ClinVar \u00b7 sample review"
+    },
+    {
+      "id": "pileup",
+      "name": "Genome tracks \u00b7 engineering sample"
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "sample.fastq",
+      "name": "Paired reads \u00b7 engineering fixture",
+      "category": "Samples",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "sample.rna",
+      "name": "RNA-seq \u00b7 public bacterial reads",
+      "category": "Samples",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://github.com/nf-core/test-datasets/tree/rnaseq",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "sample.giab",
+      "name": "GIAB HG002 \u00b7 chr22 variants",
+      "category": "Samples",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://registry.opendata.aws/giab/",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "sample.somatic",
+      "name": "Tumor / normal \u00b7 engineering fixture",
+      "category": "Samples",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "asset.file",
+      "name": "Cloud dataset",
+      "category": "Assets",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": null,
+      "verified_asset_candidates": 28
+    },
+    {
+      "id": "reference.tiny",
+      "name": "Engineering reference",
+      "category": "References",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "reference.asset",
+      "name": "Reference genome",
+      "category": "References",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": null,
+      "verified_asset_candidates": 1
+    },
+    {
+      "id": "database.asset",
+      "name": "Database / model asset",
+      "category": "Databases",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": null,
+      "verified_asset_candidates": 26
+    },
+    {
+      "id": "qc.summary",
+      "name": "FASTQ quality summary",
+      "category": "QC",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Operator tests passed; representative assay accuracy and full-scale performance remain separate.",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "vcf.stats",
+      "name": "Variant statistics",
+      "category": "Variants",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Thirteen portable command contracts; no scientific scale or accuracy claim",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "bam.stats",
+      "name": "Alignment statistics",
+      "category": "Post-processing",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Thirteen portable command contracts; no scientific scale or accuracy claim",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "sam.bam",
+      "name": "SAM \u2192 BAM",
+      "category": "Adapters",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Thirteen portable command contracts; no scientific scale or accuracy claim",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "bam.sort",
+      "name": "Coordinate sort",
+      "category": "Adapters",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Operator tests passed; representative assay accuracy and full-scale performance remain separate.",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "bam.index",
+      "name": "BAM index",
+      "category": "Adapters",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Operator tests passed; representative assay accuracy and full-scale performance remain separate.",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "vcf.bgzip",
+      "name": "VCF \u2192 BGZF",
+      "category": "Adapters",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Thirteen portable command contracts; no scientific scale or accuracy claim",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "vcf.index",
+      "name": "VCF index",
+      "category": "Adapters",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Thirteen portable command contracts; no scientific scale or accuracy claim",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "vcf.filter",
+      "name": "Filter variants",
+      "category": "Variants",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Thirteen portable command contracts; no scientific scale or accuracy claim",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "bed.intervals",
+      "name": "BED \u2192 IntervalList",
+      "category": "Adapters",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Operator tests passed; representative assay accuracy and full-scale performance remain separate.",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "intervals.bed",
+      "name": "IntervalList \u2192 BED",
+      "category": "Adapters",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Operator tests passed; representative assay accuracy and full-scale performance remain separate.",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "fastq.split",
+      "name": "Deinterleave paired FASTQ",
+      "category": "Adapters",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Thirteen portable command contracts; no scientific scale or accuracy claim",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "fastq.merge",
+      "name": "Interleave paired FASTQ",
+      "category": "Adapters",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Thirteen portable command contracts; no scientific scale or accuracy claim",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "utility.gather",
+      "name": "Gather artifact collection",
+      "category": "Utilities",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Identity-preserving orchestration only; not a scientific validation claim",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "utility.scatter",
+      "name": "Scatter intervals",
+      "category": "Utilities",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Unavailable",
+      "blockers": [
+        {
+          "kind": "validation",
+          "code": "EXECUTION_UNVERIFIED",
+          "message": "A representative execution case is still pending."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "utility.condition",
+      "name": "Conditional route",
+      "category": "Utilities",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Identity-preserving orchestration only; not a scientific validation claim",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "utility.export",
+      "name": "Publish outputs",
+      "category": "Utilities",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Identity-preserving orchestration only; not a scientific validation claim",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "fastqc",
+      "name": "FastQC",
+      "category": "QC",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Small synthetic/public integration data; no full-scale or assay accuracy claim",
+      "documentation": "https://www.bioinformatics.babraham.ac.uk/projects/fastqc/",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "multiqc",
+      "name": "MultiQC",
+      "category": "QC",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Reviewed isolated execution case passed; this is not full-scale or clinical assay validation.",
+      "documentation": "https://docs.seqera.io/multiqc",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "fastp",
+      "name": "fastp",
+      "category": "QC",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Small synthetic/public integration data; no full-scale or assay accuracy claim",
+      "documentation": "https://github.com/OpenGene/fastp",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "trimmomatic",
+      "name": "Trimmomatic",
+      "category": "QC",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Reviewed isolated execution case passed; this is not full-scale or clinical assay validation.",
+      "documentation": "https://github.com/usadellab/Trimmomatic",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "dorado",
+      "name": "Dorado",
+      "category": "Basecalling",
+      "licence": "Academic",
+      "credential_provider": null,
+      "state": "Requires entitlement",
+      "blockers": [
+        {
+          "kind": "licence",
+          "code": "TOOL_RIGHTS",
+          "message": "Administrator review of this tool or model licence is required."
+        },
+        {
+          "kind": "runtime",
+          "code": "RUNTIME_UNAVAILABLE",
+          "message": "A compatible published execution runtime is not available."
+        },
+        {
+          "kind": "validation",
+          "code": "EXECUTION_UNVERIFIED",
+          "message": "A representative execution case is still pending."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://github.com/nanoporetech/dorado",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "bwa-mem2",
+      "name": "BWA-MEM2",
+      "category": "Alignment",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Small synthetic/public integration data; no full-scale or assay accuracy claim",
+      "documentation": "https://github.com/bwa-mem2/bwa-mem2",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "bowtie2",
+      "name": "Bowtie2",
+      "category": "Alignment",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Reviewed isolated execution case passed; this is not full-scale or clinical assay validation.",
+      "documentation": "https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "minimap2",
+      "name": "Minimap2",
+      "category": "Alignment",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Small synthetic/public integration data; no full-scale or assay accuracy claim",
+      "documentation": "https://github.com/lh3/minimap2",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "star",
+      "name": "STAR",
+      "category": "Alignment",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Reviewed isolated execution case passed; this is not full-scale or clinical assay validation.",
+      "documentation": "https://github.com/alexdobin/STAR",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "hisat2",
+      "name": "HISAT2",
+      "category": "Alignment",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Reviewed isolated execution case passed; this is not full-scale or clinical assay validation.",
+      "documentation": "https://daehwankimlab.github.io/hisat2/",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "vg",
+      "name": "VG",
+      "category": "Alignment",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Unavailable",
+      "blockers": [
+        {
+          "kind": "runtime",
+          "code": "RUNTIME_UNAVAILABLE",
+          "message": "A compatible published execution runtime is not available."
+        },
+        {
+          "kind": "validation",
+          "code": "EXECUTION_UNVERIFIED",
+          "message": "A representative execution case is still pending."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://github.com/vgteam/vg",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "salmon",
+      "name": "Salmon",
+      "category": "RNA-seq",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Reviewed isolated execution case passed; this is not full-scale or clinical assay validation.",
+      "documentation": "https://salmon.readthedocs.io/",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "samtools",
+      "name": "SAMtools flagstat",
+      "category": "Post-processing",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Frozen inherited core command regression on engineering controls and public bacterial RNA reads; not full-scale or clinical validation.",
+      "documentation": "https://www.htslib.org/doc/samtools.html",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "picard",
+      "name": "Picard MarkDuplicates",
+      "category": "Post-processing",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Small synthetic/public integration data; no full-scale or assay accuracy claim",
+      "documentation": "https://broadinstitute.github.io/picard/",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "gatk-bqsr",
+      "name": "GATK4 BaseRecalibrator",
+      "category": "Post-processing",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Small synthetic/public integration data; no full-scale or assay accuracy claim",
+      "documentation": "https://gatk.broadinstitute.org/",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "haplotypecaller",
+      "name": "GATK HaplotypeCaller",
+      "category": "Variants",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Small synthetic/public integration data; no full-scale or assay accuracy claim",
+      "documentation": "https://gatk.broadinstitute.org/",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "deepvariant",
+      "name": "DeepVariant",
+      "category": "Variants",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Unavailable",
+      "blockers": [
+        {
+          "kind": "runtime",
+          "code": "RUNTIME_UNAVAILABLE",
+          "message": "A compatible published execution runtime is not available."
+        },
+        {
+          "kind": "validation",
+          "code": "EXECUTION_UNVERIFIED",
+          "message": "A representative execution case is still pending."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://github.com/google/deepvariant",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "mutect2",
+      "name": "GATK Mutect2",
+      "category": "Variants",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Frozen inherited core command regression on engineering controls and public bacterial RNA reads; not full-scale or clinical validation.",
+      "documentation": "https://gatk.broadinstitute.org/",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "strelka2",
+      "name": "Strelka2",
+      "category": "Variants",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "AWS command execution on tiny engineering controls only; not clinical or full-scale validation",
+      "documentation": "https://github.com/Illumina/strelka",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "freebayes",
+      "name": "FreeBayes",
+      "category": "Variants",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Small synthetic/public integration data; no full-scale or assay accuracy claim",
+      "documentation": "https://github.com/freebayes/freebayes",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "bcftools",
+      "name": "Bcftools mpileup + call",
+      "category": "Variants",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Frozen inherited core command regression on engineering controls and public bacterial RNA reads; not full-scale or clinical validation.",
+      "documentation": "https://github.com/google/deepvariant",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "manta",
+      "name": "Manta",
+      "category": "Variants",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "AWS command execution on tiny engineering controls only; not clinical or full-scale validation",
+      "documentation": "https://github.com/Illumina/manta",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "sniffles2",
+      "name": "Sniffles2",
+      "category": "Variants",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Reviewed isolated execution case passed; this is not full-scale or clinical assay validation.",
+      "documentation": "https://github.com/fritzsedlazeck/Sniffles",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "cnvkit",
+      "name": "CNVkit",
+      "category": "Variants",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Reviewed isolated execution case passed; this is not full-scale or clinical assay validation.",
+      "documentation": "https://cnvkit.readthedocs.io/",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "vep",
+      "name": "Ensembl VEP",
+      "category": "Annotation",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Unavailable",
+      "blockers": [
+        {
+          "kind": "runtime",
+          "code": "RUNTIME_UNAVAILABLE",
+          "message": "A compatible published execution runtime is not available."
+        },
+        {
+          "kind": "validation",
+          "code": "EXECUTION_UNVERIFIED",
+          "message": "A representative execution case is still pending."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://www.ensembl.org/info/docs/tools/vep/",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "annovar",
+      "name": "ANNOVAR",
+      "category": "Annotation",
+      "licence": "Commercial BYOL",
+      "credential_provider": "annovar",
+      "state": "Requires entitlement",
+      "blockers": [
+        {
+          "kind": "licence",
+          "code": "TOOL_RIGHTS",
+          "message": "Administrator review of this tool or model licence is required."
+        },
+        {
+          "kind": "credential",
+          "code": "VAULT_BINDING",
+          "message": "Bind a valid annovar key or licence token in Vault."
+        },
+        {
+          "kind": "runtime",
+          "code": "RUNTIME_UNAVAILABLE",
+          "message": "A compatible published execution runtime is not available."
+        },
+        {
+          "kind": "validation",
+          "code": "EXECUTION_UNVERIFIED",
+          "message": "A representative execution case is still pending."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://annovar.openbioinformatics.org/",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "snpeff",
+      "name": "SnpEff",
+      "category": "Annotation",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "AWS command execution on tiny engineering controls only; not clinical or full-scale validation",
+      "documentation": "https://pcingola.github.io/SnpEff/",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "exomiser",
+      "name": "Exomiser",
+      "category": "Annotation",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Unavailable",
+      "blockers": [
+        {
+          "kind": "runtime",
+          "code": "RUNTIME_UNAVAILABLE",
+          "message": "A compatible published execution runtime is not available."
+        },
+        {
+          "kind": "validation",
+          "code": "EXECUTION_UNVERIFIED",
+          "message": "A representative execution case is still pending."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://github.com/exomiser/Exomiser",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "intervar",
+      "name": "InterVar",
+      "category": "Annotation",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Unavailable",
+      "blockers": [
+        {
+          "kind": "runtime",
+          "code": "RUNTIME_UNAVAILABLE",
+          "message": "A compatible published execution runtime is not available."
+        },
+        {
+          "kind": "validation",
+          "code": "EXECUTION_UNVERIFIED",
+          "message": "A representative execution case is still pending."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://github.com/WGLab/InterVar",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "alphamissense",
+      "name": "AlphaMissense",
+      "category": "AI models",
+      "licence": "Academic",
+      "credential_provider": null,
+      "state": "Requires entitlement",
+      "blockers": [
+        {
+          "kind": "licence",
+          "code": "TOOL_RIGHTS",
+          "message": "Administrator review of this tool or model licence is required."
+        },
+        {
+          "kind": "validation",
+          "code": "EXECUTION_UNVERIFIED",
+          "message": "A representative execution case is still pending."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://github.com/google-deepmind/alphamissense",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "spliceai",
+      "name": "SpliceAI",
+      "category": "AI models",
+      "licence": "Academic",
+      "credential_provider": null,
+      "state": "Requires entitlement",
+      "blockers": [
+        {
+          "kind": "licence",
+          "code": "TOOL_RIGHTS",
+          "message": "Administrator review of this tool or model licence is required."
+        },
+        {
+          "kind": "validation",
+          "code": "EXECUTION_UNVERIFIED",
+          "message": "A representative execution case is still pending."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://github.com/Illumina/SpliceAI",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "cadd",
+      "name": "CADD",
+      "category": "AI models",
+      "licence": "Academic",
+      "credential_provider": null,
+      "state": "Requires entitlement",
+      "blockers": [
+        {
+          "kind": "licence",
+          "code": "TOOL_RIGHTS",
+          "message": "Administrator review of this tool or model licence is required."
+        },
+        {
+          "kind": "validation",
+          "code": "EXECUTION_UNVERIFIED",
+          "message": "A representative execution case is still pending."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://cadd.gs.washington.edu/",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "revel",
+      "name": "REVEL",
+      "category": "AI models",
+      "licence": "Academic",
+      "credential_provider": null,
+      "state": "Requires entitlement",
+      "blockers": [
+        {
+          "kind": "licence",
+          "code": "TOOL_RIGHTS",
+          "message": "Administrator review of this tool or model licence is required."
+        },
+        {
+          "kind": "validation",
+          "code": "EXECUTION_UNVERIFIED",
+          "message": "A representative execution case is still pending."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://sites.google.com/site/revelgenomics/",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "enformer",
+      "name": "Enformer",
+      "category": "AI models",
+      "licence": "Academic",
+      "credential_provider": null,
+      "state": "Requires entitlement",
+      "blockers": [
+        {
+          "kind": "licence",
+          "code": "TOOL_RIGHTS",
+          "message": "Administrator review of this tool or model licence is required."
+        },
+        {
+          "kind": "runtime",
+          "code": "RUNTIME_UNAVAILABLE",
+          "message": "A compatible published execution runtime is not available."
+        },
+        {
+          "kind": "validation",
+          "code": "EXECUTION_UNVERIFIED",
+          "message": "A representative execution case is still pending."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://github.com/google-deepmind/deepmind-research/tree/master/enformer",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "scanpy",
+      "name": "Scanpy",
+      "category": "Single cell",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "AWS command execution on tiny engineering controls only; not clinical or full-scale validation",
+      "documentation": "https://scanpy.readthedocs.io/",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "seurat",
+      "name": "Seurat",
+      "category": "Single cell",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Unavailable",
+      "blockers": [
+        {
+          "kind": "runtime",
+          "code": "RUNTIME_UNAVAILABLE",
+          "message": "A compatible published execution runtime is not available."
+        },
+        {
+          "kind": "validation",
+          "code": "EXECUTION_UNVERIFIED",
+          "message": "A representative execution case is still pending."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://satijalab.org/seurat/",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "macs3",
+      "name": "MACS3",
+      "category": "Epigenomics",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Reviewed isolated execution case passed; this is not full-scale or clinical assay validation.",
+      "documentation": "https://macs3-project.github.io/MACS/",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "kraken2",
+      "name": "Kraken2",
+      "category": "Metagenomics",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Reviewed isolated execution case passed; this is not full-scale or clinical assay validation.",
+      "documentation": "https://github.com/DerrickWood/kraken2",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "franklin",
+      "name": "Genoox Franklin",
+      "category": "Clinical APIs",
+      "licence": "Paid API BYOK",
+      "credential_provider": "franklin",
+      "state": "Requires entitlement",
+      "blockers": [
+        {
+          "kind": "credential",
+          "code": "VAULT_BINDING",
+          "message": "Bind a valid franklin key or licence token in Vault."
+        },
+        {
+          "kind": "runtime",
+          "code": "RUNTIME_UNAVAILABLE",
+          "message": "A compatible published execution runtime is not available."
+        },
+        {
+          "kind": "validation",
+          "code": "EXECUTION_UNVERIFIED",
+          "message": "A representative execution case is still pending."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://franklin.genoox.com/",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "oncokb",
+      "name": "OncoKB",
+      "category": "Clinical APIs",
+      "licence": "Paid API BYOK",
+      "credential_provider": "oncokb",
+      "state": "Requires entitlement",
+      "blockers": [
+        {
+          "kind": "credential",
+          "code": "VAULT_BINDING",
+          "message": "Bind a valid oncokb key or licence token in Vault."
+        },
+        {
+          "kind": "runtime",
+          "code": "RUNTIME_UNAVAILABLE",
+          "message": "A compatible published execution runtime is not available."
+        },
+        {
+          "kind": "validation",
+          "code": "EXECUTION_UNVERIFIED",
+          "message": "A representative execution case is still pending."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://api.oncokb.org/",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "sentieon",
+      "name": "Sentieon",
+      "category": "Commercial",
+      "licence": "Commercial BYOL",
+      "credential_provider": "sentieon",
+      "state": "Requires entitlement",
+      "blockers": [
+        {
+          "kind": "licence",
+          "code": "TOOL_RIGHTS",
+          "message": "Administrator review of this tool or model licence is required."
+        },
+        {
+          "kind": "credential",
+          "code": "VAULT_BINDING",
+          "message": "Bind a valid sentieon key or licence token in Vault."
+        },
+        {
+          "kind": "runtime",
+          "code": "RUNTIME_UNAVAILABLE",
+          "message": "A compatible published execution runtime is not available."
+        },
+        {
+          "kind": "validation",
+          "code": "EXECUTION_UNVERIFIED",
+          "message": "A representative execution case is still pending."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://support.sentieon.com/",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "dragen",
+      "name": "DRAGEN",
+      "category": "Commercial",
+      "licence": "Commercial BYOL",
+      "credential_provider": "dragen",
+      "state": "Requires entitlement",
+      "blockers": [
+        {
+          "kind": "licence",
+          "code": "TOOL_RIGHTS",
+          "message": "Administrator review of this tool or model licence is required."
+        },
+        {
+          "kind": "credential",
+          "code": "VAULT_BINDING",
+          "message": "Bind a valid dragen key or licence token in Vault."
+        },
+        {
+          "kind": "runtime",
+          "code": "RUNTIME_UNAVAILABLE",
+          "message": "A compatible published execution runtime is not available."
+        },
+        {
+          "kind": "validation",
+          "code": "EXECUTION_UNVERIFIED",
+          "message": "A representative execution case is still pending."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://help.dragen.illumina.com/",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "hgmd",
+      "name": "HGMD lookup",
+      "category": "Commercial",
+      "licence": "Commercial BYOL",
+      "credential_provider": "hgmd",
+      "state": "Requires entitlement",
+      "blockers": [
+        {
+          "kind": "licence",
+          "code": "TOOL_RIGHTS",
+          "message": "Administrator review of this tool or model licence is required."
+        },
+        {
+          "kind": "credential",
+          "code": "VAULT_BINDING",
+          "message": "Bind a valid hgmd key or licence token in Vault."
+        },
+        {
+          "kind": "runtime",
+          "code": "RUNTIME_UNAVAILABLE",
+          "message": "A compatible published execution runtime is not available."
+        },
+        {
+          "kind": "validation",
+          "code": "EXECUTION_UNVERIFIED",
+          "message": "A representative execution case is still pending."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://www.hgmd.cf.ac.uk/",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "custom",
+      "name": "Universal container",
+      "category": "Utilities",
+      "licence": "Review required",
+      "credential_provider": null,
+      "state": "Requires entitlement",
+      "blockers": [
+        {
+          "kind": "licence",
+          "code": "TOOL_RIGHTS",
+          "message": "Administrator review of this tool or model licence is required."
+        },
+        {
+          "kind": "runtime",
+          "code": "RUNTIME_UNAVAILABLE",
+          "message": "A compatible published execution runtime is not available."
+        },
+        {
+          "kind": "validation",
+          "code": "EXECUTION_UNVERIFIED",
+          "message": "A representative execution case is still pending."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "mt.qc",
+      "name": "mtDNA allele-fraction QC",
+      "category": "Variants",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Operator tests passed; representative assay accuracy and full-scale performance remain separate.",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "sample.clinvar",
+      "name": "ClinVar \u00b7 annotated GRCh38 subset",
+      "category": "Samples",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://www.ncbi.nlm.nih.gov/clinvar/",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "sample.alignments",
+      "name": "Alignment viewer \u00b7 engineering fixture",
+      "category": "Samples",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "resource.grch37",
+      "name": "GRCh37 / hg19 reference",
+      "category": "References",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Unavailable",
+      "blockers": [
+        {
+          "kind": "dependency",
+          "code": "SOURCE_DATA",
+          "message": "Choose a verified cloud dataset with the required assembly and companion files."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://www.ncbi.nlm.nih.gov/assembly/GCF_000001405.25/",
+      "verified_asset_candidates": 0
+    },
+    {
+      "id": "resource.grch38",
+      "name": "GRCh38 / hg38 reference",
+      "category": "References",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://www.ncbi.nlm.nih.gov/assembly/GCF_000001405.40/",
+      "verified_asset_candidates": 1
+    },
+    {
+      "id": "resource.chm13",
+      "name": "T2T-CHM13 reference",
+      "category": "References",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Unavailable",
+      "blockers": [
+        {
+          "kind": "dependency",
+          "code": "SOURCE_DATA",
+          "message": "Choose a verified cloud dataset with the required assembly and companion files."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://github.com/marbl/CHM13",
+      "verified_asset_candidates": 0
+    },
+    {
+      "id": "resource.gnomad",
+      "name": "gnomAD population frequencies",
+      "category": "Databases",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://gnomad.broadinstitute.org/data",
+      "verified_asset_candidates": 23
+    },
+    {
+      "id": "resource.clinvar",
+      "name": "ClinVar clinical assertions",
+      "category": "Databases",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Unavailable",
+      "blockers": [
+        {
+          "kind": "dependency",
+          "code": "SOURCE_DATA",
+          "message": "Choose a verified cloud dataset with the required assembly and companion files."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://www.ncbi.nlm.nih.gov/clinvar/",
+      "verified_asset_candidates": 0
+    },
+    {
+      "id": "resource.dbsnp",
+      "name": "dbSNP release",
+      "category": "Databases",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Unavailable",
+      "blockers": [
+        {
+          "kind": "dependency",
+          "code": "SOURCE_DATA",
+          "message": "Choose a verified cloud dataset with the required assembly and companion files."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://www.ncbi.nlm.nih.gov/snp/",
+      "verified_asset_candidates": 0
+    },
+    {
+      "id": "resource.1000g",
+      "name": "1000 Genomes",
+      "category": "Databases",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Unavailable",
+      "blockers": [
+        {
+          "kind": "dependency",
+          "code": "SOURCE_DATA",
+          "message": "Choose a verified cloud dataset with the required assembly and companion files."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://registry.opendata.aws/1000-genomes/",
+      "verified_asset_candidates": 0
+    },
+    {
+      "id": "resource.giab",
+      "name": "GIAB / NIST truth variants",
+      "category": "Databases",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://registry.opendata.aws/giab/",
+      "verified_asset_candidates": 1
+    },
+    {
+      "id": "resource.omim",
+      "name": "OMIM licensed snapshot",
+      "category": "Databases",
+      "licence": "Academic",
+      "credential_provider": null,
+      "state": "Requires entitlement",
+      "blockers": [
+        {
+          "kind": "licence",
+          "code": "TOOL_RIGHTS",
+          "message": "Administrator review of this tool or model licence is required."
+        },
+        {
+          "kind": "dependency",
+          "code": "SOURCE_DATA",
+          "message": "Choose a verified cloud dataset with the required assembly and companion files."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://www.omim.org/",
+      "verified_asset_candidates": 0
+    },
+    {
+      "id": "resource.cosmic",
+      "name": "COSMIC licensed snapshot",
+      "category": "Databases",
+      "licence": "Academic",
+      "credential_provider": null,
+      "state": "Requires entitlement",
+      "blockers": [
+        {
+          "kind": "licence",
+          "code": "TOOL_RIGHTS",
+          "message": "Administrator review of this tool or model licence is required."
+        },
+        {
+          "kind": "dependency",
+          "code": "SOURCE_DATA",
+          "message": "Choose a verified cloud dataset with the required assembly and companion files."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://cancer.sanger.ac.uk/cosmic",
+      "verified_asset_candidates": 0
+    },
+    {
+      "id": "resource.dbnsfp",
+      "name": "dbNSFP functional annotation scores",
+      "category": "Databases",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Unavailable",
+      "blockers": [
+        {
+          "kind": "dependency",
+          "code": "SOURCE_DATA",
+          "message": "Choose a verified cloud dataset with the required assembly and companion files."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://www.dbnsfp.org/",
+      "verified_asset_candidates": 0
+    },
+    {
+      "id": "resource.alphamissense",
+      "name": "AlphaMissense precomputed scores",
+      "category": "Databases",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Unavailable",
+      "blockers": [
+        {
+          "kind": "dependency",
+          "code": "SOURCE_DATA",
+          "message": "Choose a verified cloud dataset with the required assembly and companion files."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://github.com/google-deepmind/alphamissense",
+      "verified_asset_candidates": 0
+    },
+    {
+      "id": "resource.spliceai",
+      "name": "SpliceAI precomputed splice scores",
+      "category": "Databases",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Requires entitlement",
+      "blockers": [
+        {
+          "kind": "licence",
+          "code": "DATA_RIGHTS",
+          "message": "Review the selected release\u2019s data rights before execution."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://github.com/Illumina/SpliceAI",
+      "verified_asset_candidates": 1
+    },
+    {
+      "id": "resource.cadd",
+      "name": "CADD precomputed deleteriousness scores",
+      "category": "Databases",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Unavailable",
+      "blockers": [
+        {
+          "kind": "dependency",
+          "code": "SOURCE_DATA",
+          "message": "Choose a verified cloud dataset with the required assembly and companion files."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://cadd.gs.washington.edu/",
+      "verified_asset_candidates": 0
+    },
+    {
+      "id": "resource.revel",
+      "name": "REVEL precomputed missense scores",
+      "category": "Databases",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Unavailable",
+      "blockers": [
+        {
+          "kind": "dependency",
+          "code": "SOURCE_DATA",
+          "message": "Choose a verified cloud dataset with the required assembly and companion files."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://sites.google.com/site/revelgenomics/",
+      "verified_asset_candidates": 0
+    },
+    {
+      "id": "resource.exomiser",
+      "name": "Exomiser phenotype / variant data",
+      "category": "Databases",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Unavailable",
+      "blockers": [
+        {
+          "kind": "dependency",
+          "code": "SOURCE_DATA",
+          "message": "Choose a verified cloud dataset with the required assembly and companion files."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://github.com/exomiser/Exomiser",
+      "verified_asset_candidates": 0
+    },
+    {
+      "id": "resource.hpo",
+      "name": "Human Phenotype Ontology / gene associations",
+      "category": "Databases",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Unavailable",
+      "blockers": [
+        {
+          "kind": "dependency",
+          "code": "SOURCE_DATA",
+          "message": "Choose a verified cloud dataset with the required assembly and companion files."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://hpo.jax.org/",
+      "verified_asset_candidates": 0
+    },
+    {
+      "id": "resource.ensembl",
+      "name": "Ensembl transcript annotations",
+      "category": "Databases",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Unavailable",
+      "blockers": [
+        {
+          "kind": "dependency",
+          "code": "SOURCE_DATA",
+          "message": "Choose a verified cloud dataset with the required assembly and companion files."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://www.ensembl.org/info/data/ftp/index.html",
+      "verified_asset_candidates": 0
+    },
+    {
+      "id": "resource.mane",
+      "name": "MANE matched transcript annotations",
+      "category": "Databases",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Unavailable",
+      "blockers": [
+        {
+          "kind": "dependency",
+          "code": "SOURCE_DATA",
+          "message": "Choose a verified cloud dataset with the required assembly and companion files."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://www.ncbi.nlm.nih.gov/refseq/MANE/",
+      "verified_asset_candidates": 0
+    },
+    {
+      "id": "resource.clingen",
+      "name": "ClinGen curated gene / dosage evidence",
+      "category": "Databases",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Unavailable",
+      "blockers": [
+        {
+          "kind": "dependency",
+          "code": "SOURCE_DATA",
+          "message": "Choose a verified cloud dataset with the required assembly and companion files."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://clinicalgenome.org/data-sharing/",
+      "verified_asset_candidates": 0
+    },
+    {
+      "id": "resource.vep",
+      "name": "Ensembl VEP versioned cache bundle",
+      "category": "Databases",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Unavailable",
+      "blockers": [
+        {
+          "kind": "dependency",
+          "code": "SOURCE_DATA",
+          "message": "Choose a verified cloud dataset with the required assembly and companion files."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://www.ensembl.org/info/docs/tools/vep/script/vep_cache.html",
+      "verified_asset_candidates": 0
+    },
+    {
+      "id": "varscan2",
+      "name": "VarScan2",
+      "category": "Variants",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Reviewed isolated execution case passed; this is not full-scale or clinical assay validation.",
+      "documentation": "https://varscan.sourceforge.net/",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "delly",
+      "name": "Delly",
+      "category": "Variants",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Reviewed isolated execution case passed; this is not full-scale or clinical assay validation.",
+      "documentation": "https://github.com/dellytools/delly",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "expansionhunter",
+      "name": "ExpansionHunter",
+      "category": "Variants",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Reviewed isolated execution case passed; this is not full-scale or clinical assay validation.",
+      "documentation": "https://github.com/Illumina/ExpansionHunter",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "whatshap",
+      "name": "WhatsHap",
+      "category": "Variants",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Reviewed isolated execution case passed; this is not full-scale or clinical assay validation.",
+      "documentation": "https://whatshap.readthedocs.io/",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "bismark",
+      "name": "Bismark",
+      "category": "Epigenomics",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Reviewed isolated execution case passed; this is not full-scale or clinical assay validation.",
+      "documentation": "https://felixkrueger.github.io/Bismark/",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "gatk-apply-bqsr",
+      "name": "GATK ApplyBQSR",
+      "category": "Post-processing",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Small synthetic/public integration data; no full-scale or assay accuracy claim",
+      "documentation": "https://gatk.broadinstitute.org/",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "mutect-filter",
+      "name": "GATK FilterMutectCalls",
+      "category": "Variants",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Real core-binary command contracts on explicit tiny engineering controls; no assay accuracy or cohort-scale validation",
+      "documentation": "https://gatk.broadinstitute.org/",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "bcl.convert",
+      "name": "Illumina BCL Convert",
+      "category": "Basecalling",
+      "licence": "Commercial BYOL",
+      "credential_provider": "dragen",
+      "state": "Requires entitlement",
+      "blockers": [
+        {
+          "kind": "licence",
+          "code": "TOOL_RIGHTS",
+          "message": "Administrator review of this tool or model licence is required."
+        },
+        {
+          "kind": "credential",
+          "code": "VAULT_BINDING",
+          "message": "Bind a valid dragen key or licence token in Vault."
+        },
+        {
+          "kind": "runtime",
+          "code": "RUNTIME_UNAVAILABLE",
+          "message": "A compatible published execution runtime is not available."
+        },
+        {
+          "kind": "validation",
+          "code": "EXECUTION_UNVERIFIED",
+          "message": "A representative execution case is still pending."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://support.illumina.com/sequencing/sequencing_software/bcl-convert.html",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "cosmic",
+      "name": "COSMIC licensed dataset",
+      "category": "Commercial",
+      "licence": "Commercial BYOL",
+      "credential_provider": "cosmic",
+      "state": "Requires entitlement",
+      "blockers": [
+        {
+          "kind": "licence",
+          "code": "TOOL_RIGHTS",
+          "message": "Administrator review of this tool or model licence is required."
+        },
+        {
+          "kind": "credential",
+          "code": "VAULT_BINDING",
+          "message": "Bind a valid cosmic key or licence token in Vault."
+        },
+        {
+          "kind": "runtime",
+          "code": "RUNTIME_UNAVAILABLE",
+          "message": "A compatible published execution runtime is not available."
+        },
+        {
+          "kind": "validation",
+          "code": "EXECUTION_UNVERIFIED",
+          "message": "A representative execution case is still pending."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": "https://cancer.sanger.ac.uk/cosmic",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "annotation.merge",
+      "name": "Join allele annotation reports",
+      "category": "Annotation",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Operator tests passed; representative assay accuracy and full-scale performance remain separate.",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "contig.rename",
+      "name": "Rename contigs",
+      "category": "Adapters",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Unavailable",
+      "blockers": [
+        {
+          "kind": "validation",
+          "code": "EXECUTION_UNVERIFIED",
+          "message": "A representative execution case is still pending."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "contig.rename.bed",
+      "name": "Rename BED contigs",
+      "category": "Adapters",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Unavailable",
+      "blockers": [
+        {
+          "kind": "validation",
+          "code": "EXECUTION_UNVERIFIED",
+          "message": "A representative execution case is still pending."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "reference.dictionary",
+      "name": "Build reference dictionary",
+      "category": "Adapters",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Unavailable",
+      "blockers": [
+        {
+          "kind": "validation",
+          "code": "EXECUTION_UNVERIFIED",
+          "message": "A representative execution case is still pending."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "bam.sam",
+      "name": "BAM \u2192 SAM",
+      "category": "Adapters",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Unavailable",
+      "blockers": [
+        {
+          "kind": "validation",
+          "code": "EXECUTION_UNVERIFIED",
+          "message": "A representative execution case is still pending."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "bam.cram",
+      "name": "BAM \u2192 CRAM",
+      "category": "Adapters",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Unavailable",
+      "blockers": [
+        {
+          "kind": "validation",
+          "code": "EXECUTION_UNVERIFIED",
+          "message": "A representative execution case is still pending."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "cram.bam",
+      "name": "CRAM \u2192 BAM",
+      "category": "Adapters",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Unavailable",
+      "blockers": [
+        {
+          "kind": "validation",
+          "code": "EXECUTION_UNVERIFIED",
+          "message": "A representative execution case is still pending."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "cram.index",
+      "name": "CRAM index",
+      "category": "Adapters",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Unavailable",
+      "blockers": [
+        {
+          "kind": "validation",
+          "code": "EXECUTION_UNVERIFIED",
+          "message": "A representative execution case is still pending."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "vcf.bcf",
+      "name": "VCF \u2192 BCF",
+      "category": "Adapters",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Unavailable",
+      "blockers": [
+        {
+          "kind": "validation",
+          "code": "EXECUTION_UNVERIFIED",
+          "message": "A representative execution case is still pending."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "bcf.vcf",
+      "name": "BCF \u2192 VCF",
+      "category": "Adapters",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Unavailable",
+      "blockers": [
+        {
+          "kind": "validation",
+          "code": "EXECUTION_UNVERIFIED",
+          "message": "A representative execution case is still pending."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "gtf.bed",
+      "name": "GTF / GFF3 \u2192 BED",
+      "category": "Adapters",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Unavailable",
+      "blockers": [
+        {
+          "kind": "validation",
+          "code": "EXECUTION_UNVERIFIED",
+          "message": "A representative execution case is still pending."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "bed.gtf",
+      "name": "BED \u2192 GTF",
+      "category": "Adapters",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Unavailable",
+      "blockers": [
+        {
+          "kind": "validation",
+          "code": "EXECUTION_UNVERIFIED",
+          "message": "A representative execution case is still pending."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "liftover.vcf",
+      "name": "Picard LiftoverVcf",
+      "category": "Adapters",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Real core-binary command contracts on explicit tiny engineering controls; no assay accuracy or cohort-scale validation",
+      "documentation": "https://broadinstitute.github.io/picard/command-line-overview.html#LiftoverVcf",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "crossmap.bed",
+      "name": "CrossMap BED liftover",
+      "category": "Adapters",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Reviewed isolated execution case passed; this is not full-scale or clinical assay validation.",
+      "documentation": "https://crossmap.readthedocs.io/",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "bam.bigwig",
+      "name": "BAM \u2192 coverage BigWig",
+      "category": "Adapters",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Reviewed isolated execution case passed; this is not full-scale or clinical assay validation.",
+      "documentation": "https://deeptools.readthedocs.io/",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "vcf.scatter",
+      "name": "Scatter VCF by contig",
+      "category": "Flow control",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Operator tests passed; representative assay accuracy and full-scale performance remain separate.",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "vcf.gather",
+      "name": "Gather contig VCFs",
+      "category": "Flow control",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Operator tests passed; representative assay accuracy and full-scale performance remain separate.",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "qc.gate",
+      "name": "Measured QC gate / router",
+      "category": "Flow control",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Operator tests passed; representative assay accuracy and full-scale performance remain separate.",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "cohort.bind",
+      "name": "Pedigree / sample-role manifest",
+      "category": "Cohorts",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Unavailable",
+      "blockers": [
+        {
+          "kind": "validation",
+          "code": "EXECUTION_UNVERIFIED",
+          "message": "A representative execution case is still pending."
+        }
+      ],
+      "validation": "Awaiting representative execution and scientific validation.",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "cohort.genotype",
+      "name": "GATK joint genotyping",
+      "category": "Cohorts",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Real core-binary command contracts on explicit tiny engineering controls; no assay accuracy or cohort-scale validation",
+      "documentation": "https://gatk.broadinstitute.org/",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "vcf.ensemble",
+      "name": "Exact-allele caller consensus",
+      "category": "Variants",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Operator tests passed; representative assay accuracy and full-scale performance remain separate.",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "variant.guard",
+      "name": "Variant quality guard",
+      "category": "Validation",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Operator tests passed; representative assay accuracy and full-scale performance remain separate.",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "benchmark.exact",
+      "name": "Exact-allele benchmark",
+      "category": "Validation",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Operator tests passed; representative assay accuracy and full-scale performance remain separate.",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "benchmark.happy",
+      "name": "GIAB hap.py / vcfeval",
+      "category": "Validation",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "AWS command execution on tiny engineering controls only; not clinical or full-scale validation",
+      "documentation": "https://github.com/Illumina/hap.py",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "rna.fdr",
+      "name": "RNA differential-expression FDR guard",
+      "category": "Validation",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Operator tests passed; representative assay accuracy and full-scale performance remain separate.",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "mito.regions",
+      "name": "Validate mitochondrial / NUMT candidate regions",
+      "category": "References",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Small synthetic/public integration data; no full-scale or assay accuracy claim",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "wes.capture",
+      "name": "WES capture-kit & calling intervals",
+      "category": "Validation",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Small synthetic/public integration data; no full-scale or assay accuracy claim",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "wes.coverage",
+      "name": "WES target coverage",
+      "category": "QC",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Small synthetic/public integration data; no full-scale or assay accuracy claim",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "mito.shift-reference",
+      "name": "Circular mtDNA reference bundle",
+      "category": "References",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Small synthetic/public integration data; no full-scale or assay accuracy claim",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "mito.reconcile",
+      "name": "Circular mtDNA callset reconciliation",
+      "category": "Variants",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Small synthetic/public integration data; no full-scale or assay accuracy claim",
+      "documentation": null,
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "gatk.mt.call",
+      "name": "Mutect2 \u00b7 mitochondrial mode",
+      "category": "Variants",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Small synthetic/public integration data; no full-scale or assay accuracy claim",
+      "documentation": "https://gatk.broadinstitute.org/",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "gatk.mt.filter",
+      "name": "FilterMutectCalls \u00b7 mitochondrial mode",
+      "category": "Variants",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Small synthetic/public integration data; no full-scale or assay accuracy claim",
+      "documentation": "https://gatk.broadinstitute.org/",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "mito.liftover",
+      "name": "Lift shifted mtDNA calls back",
+      "category": "Adapters",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Small synthetic/public integration data; no full-scale or assay accuracy claim",
+      "documentation": "https://gatk.broadinstitute.org/",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "mito.extract",
+      "name": "Mitochondrial + nuclear candidate extraction",
+      "category": "Adapters",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Small synthetic/public integration data; no full-scale or assay accuracy claim",
+      "documentation": "https://www.htslib.org/doc/samtools-view.html",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "mito.realign",
+      "name": "Realign candidate reads to mtDNA reference",
+      "category": "Alignment",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Small synthetic/public integration data; no full-scale or assay accuracy claim",
+      "documentation": "https://github.com/bwa-mem2/bwa-mem2",
+      "verified_asset_candidates": null
+    },
+    {
+      "id": "bcftools.annotate",
+      "name": "Normalize & annotate matching alleles",
+      "category": "Annotation",
+      "licence": "FOSS",
+      "credential_provider": null,
+      "state": "Ready",
+      "blockers": [],
+      "validation": "Small synthetic/public integration data; no full-scale or assay accuracy claim",
+      "documentation": "https://samtools.github.io/bcftools/bcftools.html",
+      "verified_asset_candidates": null
+    }
+  ],
+  "migration": {
+    "planned_bytes": 473449575292,
+    "uploaded_bytes": 187776728980,
+    "verified_bytes": 186864640962,
+    "verified_objects": 3878,
+    "complete": false
+  },
+  "budget": {
+    "limit_usd": 200.0,
+    "forecast_including_tax_usd": 149.204973,
+    "available_after_safety_usd": 35.795027
+  }
+}

@@ -161,3 +161,28 @@ def test_primary_filter_runs_before_limit_and_public_metadata_omits_host_paths(c
     assert [row['id'] for row in list_assets(uid,cloud=True,primary_only=True,query='grch38')] == ['primary']
     assert [row['id'] for row in list_assets(uid,cloud=True,primary_only=True,query='release-2026.10')] == ['primary']
     assert list_assets('foreign-user',cloud=True,primary_only=True,query='release-2026.10') == []
+
+
+def test_component_heavy_inventory_has_complete_primary_pagination_and_facets(client,owner):
+    from backend.asset_listing import list_assets
+    uid=owner['id'];now=time.time()
+    with db.tx() as c:
+        for i in range(125):
+            ident='vep-fragment-'+str(i);name=f'{i*1000000+1}-{(i+1)*1000000}.gz'
+            meta={'release':'113','version_id':'version-'+str(i),'sha256':f'{i:064x}'}
+            c.execute('INSERT INTO assets VALUES(?,?,?,?,?,?,?,?,?,?)',(ident,uid,'s3://own/'+name,name,'DATABASE',38,now,'vep','GRCh38',db.encode(meta)))
+            c.execute('INSERT INTO datasets VALUES(?,?,?,?,?,?,?,?,?,?,?,?)',(ident,uid,None,name,38,meta['sha256'],'Ready',name,meta['version_id'],'{}',now,now))
+        for i in range(7):
+            ident='clinvar-release-'+str(i);name=f'clinvar-202610{i+1}.vcf.gz'
+            meta={'release':f'202610{i+1}','version_id':'v1','sha256':f'{i+200:064x}'}
+            c.execute('INSERT INTO assets VALUES(?,?,?,?,?,?,?,?,?,?)',(ident,uid,'s3://own/'+name,name,'INDEXED_VCF',100,now,'clinvar','GRCh38',db.encode(meta)))
+            c.execute('INSERT INTO datasets VALUES(?,?,?,?,?,?,?,?,?,?,?,?)',(ident,uid,None,name,100,meta['sha256'],'Ready',name,'v1','{}',now,now))
+    page=list_assets(uid,cloud=True,primary_only=True,page=True,limit=3)
+    assert page['total']==7 and page['has_more'] and len(page['assets'])==3
+    second=list_assets(uid,cloud=True,primary_only=True,page=True,limit=3,offset=3)
+    assert not set(r['id'] for r in page['assets'])&set(r['id'] for r in second['assets'])
+    assert page['facets']['family']==['clinvar']
+    full=list_assets(uid,cloud=True,page=True,limit=1000,filters={'family':'vep','release':'113'})
+    assert full['total']==125 and all(r['presentation']['component'] for r in full['assets'])
+    assert all(not r['presentation']['primary_eligible'] for r in full['assets'])
+    assert list_assets('foreign',cloud=True,page=True,limit=3)['total']==0

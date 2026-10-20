@@ -1,10 +1,10 @@
 import {adapterPath} from './graph-core.mjs';
-import {isIndexAsset} from './asset-presentation.mjs';
+import {isPrimaryAsset} from './asset-presentation.mjs';
 const STATES=new Set(['Ready','Provisioning','Requires entitlement','Unavailable']);
 const DATABASE_FORMATS=new Set(['DATABASE','INDEXED_VCF','VCF','BGZIP_VCF','TSV','CSV','ARCHIVE']);
 
 export function acceptsAsset(node,asset){
- if(isIndexAsset(asset))return false;
+ if(!isPrimaryAsset(asset))return false;
  if(node.id==='reference.asset'||node.group==='References')return asset.format==='FASTA';
  if(node.id==='database.asset')return DATABASE_FORMATS.has(asset.format);
  if(node.asset_family){
@@ -30,13 +30,17 @@ export function catalogueCategories(nodes){
  return ['All',...[...new Set(nodes.map(n=>n.group))].sort((a,b)=>a.localeCompare(b))];
 }
 
-export function filterCatalogue(nodes,{library='all',category='All',term=''}={}){
+export function filterCatalogue(nodes,{library='all',category='All',term='',status='',blocker='',license='',tier=''}={}){
  const query=term.trim().toLowerCase();
  return nodes.filter(node=>{
   if(library==='references'&&node.group!=='References')return false;
   if(library==='databases'&&node.group!=='Databases')return false;
   if(library==='all'&&category!=='All'&&node.group!==category)return false;
   const availability=nodeAvailability(node);
+  if(status&&availability.state!==status)return false;
+  if(blocker&&!availability.blockers.some(b=>b.kind===blocker))return false;
+  if(license&&node.license!==license)return false;
+  if(tier&&availability.tier!==tier)return false;
   return !query||[node.name,node.id,node.group,node.description,node.asset_family,node.license,node.spdx,availability.state,availability.reason].join(' ').toLowerCase().includes(query);
  });
 }

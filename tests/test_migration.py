@@ -193,3 +193,67 @@ def test_checkpoint_connection_closes_after_each_transaction(tmp_path):
         connection.execute('CREATE TABLE closed_safely(id INTEGER)')
     with pytest.raises(sqlite3.ProgrammingError, match='closed'):
         connection.execute('SELECT 1')
+
+
+def test_cold_plan_is_fetched_and_expanded_once_across_threads(migration_fixture,monkeypatch):
+    import concurrent.futures
+    import threading
+    from collections import OrderedDict
+    plan,_,_,_=migration_fixture;payload=db.encode(plan).encode();digest=hashlib.sha256(payload).hexdigest()
+    registration={'bucket':plan['bucket'],'key':'exact-plan','version_id':'version-1',
+                  'sha256':digest,'owner_id':plan['owner_id'],'plan_id':plan['plan_id']}
+    started=threading.Event();release=threading.Event();barrier=threading.Barrier(6);fetches=[]
+    monkeypatch.setattr(migration,'_PLAN_CACHE',OrderedDict())
+    monkeypatch.setattr(migration,'client',lambda:None)
+    def fetch(*args):
+        fetches.append(args);started.set()
+        assert release.wait(3)
+        return json.loads(payload),digest
+    monkeypatch.setattr(migration,'_get_json',fetch)
+    def load():
+        barrier.wait(timeout=3)
+        return migration.load_plan(registration)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:
+        futures=[pool.submit(load) for _ in range(6)]
+        try:
+            assert started.wait(3)
+            time.sleep(.05)
+            assert len(fetches)==1
+        finally:
+            release.set()
+        loaded=[f.result(timeout=3) for f in futures]
+    assert all(p is loaded[0] for p in loaded)
+    assert len(fetches)==1 and len(migration._PLAN_CACHE)==1
+    with pytest.raises(ValueError,match='identity'):
+        migration.load_plan({**registration,'owner_id':'different-owner'})
+    assert len(fetches)==1
+
+
+def test_plan_cache_evicts_before_parsing_and_keeps_failed_identity_out(migration_fixture,monkeypatch):
+    from collections import OrderedDict
+    plan,_,_,_=migration_fixture
+    monkeypatch.setattr(migration,'_PLAN_CACHE',OrderedDict())
+    monkeypatch.setattr(migration,'client',lambda:None)
+    plans={};fetches=[]
+    for n in range(3):
+        value={**plan,'plan_id':'migration_'+str(n)*24}
+        payload=db.encode(value).encode();digest=hashlib.sha256(payload).hexdigest()
+        plans['plan-'+str(n)]=(payload,digest)
+    def fetch(s3,bucket,key,version):
+        assert len(migration._PLAN_CACHE)<migration._PLAN_CACHE_LIMIT
+        fetches.append(key);payload,digest=plans[key]
+        return json.loads(payload),digest
+    monkeypatch.setattr(migration,'_get_json',fetch)
+    def registration(n):
+        return {'bucket':plan['bucket'],'key':'plan-'+str(n),'version_id':'v1',
+                'sha256':plans['plan-'+str(n)][1],'owner_id':plan['owner_id'],'plan_id':'migration_'+str(n)*24}
+    migration.load_plan(registration(0));migration.load_plan(registration(1))
+    migration.load_plan(registration(0))  # The recently used plan survives.
+    migration.load_plan(registration(2))
+    assert len(migration._PLAN_CACHE)==2
+    assert {key[1] for key in migration._PLAN_CACHE}=={'plan-0','plan-2'}
+    migration.load_plan(registration(1))
+    assert fetches==['plan-0','plan-1','plan-2','plan-1']
+    forged={**registration(0),'sha256':'f'*64}
+    with pytest.raises(ValueError,match='identity'):migration.load_plan(forged)
+    assert not any(key[3]=='f'*64 for key in migration._PLAN_CACHE)
