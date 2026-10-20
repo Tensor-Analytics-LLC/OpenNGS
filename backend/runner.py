@@ -179,25 +179,29 @@ def run_process(argv,rid,nid,aid,work,timeout,stdout_file=None,container_name=No
 
 def input_asset(uid,asset_id,expected=None):
     from .asset_rights import attach as attach_data_rights
+    from .migration import require_scientific_asset
     # Admission calls this inside its existing transaction. The atomic retention
     # fence is checked by admit; runtime reads also check the frozen output URI.
     row=db.query('SELECT * FROM assets WHERE id=? AND user_id=?',(asset_id,uid),one=True)
     if row:
         from .migration import resolve_asset
         row=resolve_asset(uid,row)
+        require_scientific_asset(uid,row)
         row=attach_data_rights(uid,row);row['metadata']=db.encode(row['metadata'])
         if row['path'].startswith('s3://'):
             meta=json.loads(row['metadata']);ready=db.query("SELECT state FROM datasets WHERE id=? AND user_id=?",(meta.get('dataset_id',asset_id),uid),one=True)
             if not ready or ready['state']!='Ready' or not meta.get('sha256'):raise ValueError('Cloud dataset is not verified and Ready')
             bucket,key=row['path'][5:].split('/',1)
             from .migration import authorize_source
-            migrated=authorize_source(uid,row['path'],meta.get('version_id'),meta['sha256'])
+            migrated=authorize_source(uid,row['path'],meta.get('version_id'),meta['sha256'],scientific=True)
             if not migrated and (bucket!=data.settings(uid)['s3_bucket'] or not key.startswith('tenants/'+uid+'/')):raise ValueError('Cloud dataset escaped its tenant storage')
             return {'path':row['path'],'name':row['name'],'format':row['format'],'bytes':row['bytes'],'digest':'sha256:'+meta['sha256'],'metadata':meta}
         p=data.permitted_path(uid,row['path']);meta=json.loads(row['metadata']);meta['assembly']=row['assembly']
         return {'path':str(p),'name':row['name'],'format':row['format'],'bytes':p.stat().st_size,'metadata':meta}
     row=db.query('SELECT * FROM artifacts WHERE id=? AND user_id=?',(asset_id,uid),one=True)
-    if row:return attach_data_rights(uid,row)
+    if row:
+        require_scientific_asset(uid,row)
+        return attach_data_rights(uid,row)
     raise ValueError('Asset binding no longer exists or belongs to another workspace')
 
 def register_artifacts(uid,rid,nid,outputs,work):
@@ -321,11 +325,15 @@ def run(rid,order):
                 live_settings=data.settings(uid)
                 original=specs[n['tool']]
                 if original['license'] in ['Academic','Commercial BYOL','Review required'] and original['id'] not in live_settings['rights_approved']:raise ValueError('Node rights approval was revoked')
+                from .migration import require_scientific_asset
+                for items in inputs.values():
+                    for item in items:require_scientific_asset(uid,item)
                 from .asset_rights import require_inputs,attach as attach_data_rights
                 data_obligations=require_inputs(uid,inputs)
                 source_item=None
                 if n['tool'] in ['asset.file','reference.asset','database.asset'] or spec.get('asset_family'):
                     source_item=json.loads(db.encode(snapshot['assets'][params['asset_id']])) if params.get('asset_id') in snapshot.get('assets',{}) else input_asset(uid,params['asset_id'])
+                    require_scientific_asset(uid,source_item)
                     source_item=attach_data_rights(uid,source_item)
                     data_obligations=source_item['metadata']['data_rights']
                 from .semantics import runtime as check_runtime

@@ -76,6 +76,8 @@ def list_assets(uid, query='', limit=None, cloud=None, primary_only=False, filte
     # Classify all matching rows before pagination. Cache fragments can exceed
     # 10,000 files; LIMIT before classification would hide valid primary inputs.
     rows = db.query(sql, tuple(args))
+    from .migration import qualification_map, asset_scientific_qualification
+    restrictions = qualification_map(uid)
     prepared, seen = [], set()
     for row in rows:
         row['metadata'] = json.loads(row['metadata'])
@@ -84,7 +86,8 @@ def list_assets(uid, query='', limit=None, cloud=None, primary_only=False, filte
             if canonical.get(key):
                 row['metadata'][key] = canonical[key]
         row = enrich_resource(row)
-        row['presentation'] = describe_asset(row, row.pop('discovery_source_path') or '')
+        row['qualification'] = asset_scientific_qualification(uid, row, restrictions=restrictions)
+        row['presentation'] = describe_asset(row, row.pop('discovery_source_path') or '', row['qualification'])
         row['path'] = row.pop('listed_path')
         p = row['presentation']
         if primary_only and not p['primary_eligible']:

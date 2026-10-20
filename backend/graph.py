@@ -151,6 +151,10 @@ def preflight(graph,user,capabilities=None):
             if asset and json.loads(asset['metadata']).get('migration_companions_pending'):
                 issue('MIGRATION_COMPANIONS','The primary data is verified, but one or more exact companion files are still migrating. Wait for the complete input bundle.',n['id'])
             if asset:
+                from .migration import require_scientific_asset
+                try:
+                    require_scientific_asset(user['id'], asset)
+                except ValueError as error:issue('DATA_QUALIFICATION_REQUIRED',str(error),n['id'])
                 from .asset_rights import require as require_data_rights
                 try:require_data_rights(user['id'],asset)
                 except ValueError as error:issue('DATA_RIGHTS_REQUIRED',str(error),n['id'])

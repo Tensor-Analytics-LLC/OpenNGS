@@ -114,7 +114,7 @@ def test_large_alias_inventory_uses_one_listing_query(client, owner, monkeypatch
     monkeypatch.setattr(migration,'resolve_asset',lambda *a:pytest.fail('Per-alias runtime resolution on discovery path'))
     rows=asset_listing.list_assets(uid,cloud=True)
     assert len(rows)==1001
-    assert len(calls)==4  # Asset CTE, grants, known digests and original migration records; independent of alias count.
+    assert len(calls)==5  # Asset CTE, qualification facts, grants, known digests and original migration records; independent of alias count.
     assert all(row['path']=='s3://private/data' for row in rows)
     assert asset_listing.list_assets('foreign-user',cloud=True)==[]
     assert len(asset_listing.list_assets(uid,cloud=True,query='bulk-alias',limit=300))==300

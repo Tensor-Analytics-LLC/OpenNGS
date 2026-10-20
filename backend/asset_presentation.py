@@ -7,7 +7,7 @@ INDEX_SUFFIX = re.compile(r'\.(?:bai|crai|tbi|csi|fai|gzi|dict|amb|ann|bwt(?:\.2
 VEP_RANGE = re.compile(r'^(\d+)-(\d+)(_reg)?\.gz$', re.I)
 
 
-def describe(row, source_path=''):
+def describe(row, source_path='', qualification=None):
     row = enrich_resource(row)
     raw = row.get('metadata') or {}
     meta = json.loads(raw) if isinstance(raw, str) else raw
@@ -77,4 +77,9 @@ def describe(row, source_path=''):
             result['role'] = 'Gene–phenotype association table'
         elif lower == 'hp.obo':
             result['role'] = 'Phenotype ontology'
+    if qualification is not None:
+        result['qualification'] = qualification
+        if not qualification['execution_allowed']:
+            result['qualification_blocked'] = result['primary_eligible']
+            result.update(primary_eligible=False, role='Release check required')
     return result

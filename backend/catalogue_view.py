@@ -43,8 +43,10 @@ def _assets(uid):
     # Original workflow IDs survive cloud ingestion and content deduplication.
     # Never expose raw source paths, manifests or signed URLs in discovery.
     result = []
-    for row in list_assets(uid, primary_only=True):
-        item = {k: row[k] for k in ['id', 'name', 'format', 'assembly', 'bytes', 'family', 'data_rights', 'presentation']}
+    for row in list_assets(uid):
+        if not (row['presentation']['primary_eligible'] or row['presentation'].get('qualification_blocked')):
+            continue
+        item = {k: row[k] for k in ['id', 'name', 'format', 'assembly', 'bytes', 'family', 'data_rights', 'presentation', 'qualification']}
         item.update({k: row['metadata'].get(k) for k in ['release','version_id','sha256']})
         result.append(item)
     return result
@@ -95,9 +97,14 @@ def _availability(node, evidence, settings, limited, credentials, shared):
     capacity = settings.get('research_profile', {})
     if source:
         if not node.get('asset_candidates'):
-            if state == 'Ready':
+            if node.get('asset_qualification_reasons'):
+                if state == 'Ready':
+                    state = 'Unavailable'
+                block('qualification', 'DATA_QUALIFICATION_REQUIRED', node['asset_qualification_reasons'][0])
+            elif state == 'Ready':
                 state = 'Requires entitlement' if limited else 'Unavailable'
-            block('dependency', 'SOURCE_DATA', 'Choose a verified cloud dataset with the required assembly and companion files.')
+            if not node.get('asset_qualification_reasons'):
+                block('dependency', 'SOURCE_DATA', 'Choose a verified cloud dataset with the required assembly and companion files.')
         elif node.get('asset_authorized_count') == 0:
             if state == 'Ready':
                 state = 'Requires entitlement'
@@ -197,6 +204,8 @@ def view(uid):
         if node['id'] in _BINDINGS or node.get('asset_family'):
             node['data_license_note'] = 'Data rights vary. The FOSS binding code does not license the selected database, scores or reference content.'
             candidates = _candidates(node, assets)
+            node['asset_qualification_reasons'] = list(dict.fromkeys(a['qualification']['reason'] for a in candidates if not a['qualification']['execution_allowed']))
+            candidates = [a for a in candidates if a['qualification']['execution_allowed']]
             node['asset_candidate_count'] = len(candidates)
             node['asset_authorized_count'] = sum(a.get('data_rights', {}).get('execution_allowed', True) for a in candidates)
             node['asset_candidates'] = candidates[:30]

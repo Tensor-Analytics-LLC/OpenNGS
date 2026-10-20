@@ -224,6 +224,80 @@ def provenance_warnings(uid, sha256=None):
     return [warning for row in rows for warning in json.loads(row['value'])]
 
 
+def public_qualification_warnings(sha256=None):
+    """Reviewed public identity conflicts apply even after a tenant renames a file."""
+    warning = {'code': 'provider-size-mismatch', 'release_qualified': False,
+        'source_sha256': 'c3a336ec1697eda0531b7b07d58432f1370d72a669bf263185aa205a9e544b34',
+        'companion_source_sha256': '1b2ebbd0c79f6b97b1408ca76c8e1abb80158d3bc1cba396a1b08479d9d3c69a',
+        'qualification_required': ['Provider release provenance', 'BGZF completeness', 'Matching index/header qualification']}
+    if sha256 is None or str(sha256).removeprefix('sha256:') in [warning['source_sha256'], warning['companion_source_sha256']]:
+        return [warning]
+    return []
+
+
+def qualification_map(uid):
+    """Authoritative scientific restrictions, indexed by original content SHA.
+
+    Raw transfer verification is not release or companion qualification. Keep
+    these checks separate from data licences and from permission to download
+    the preserved original bytes. A renamed alias cannot remove a restriction.
+    """
+    result = {}
+    for warning in public_qualification_warnings() + provenance_warnings(uid):
+        if warning.get('release_qualified') is not False:
+            continue
+        for field in ['source_sha256', 'companion_source_sha256']:
+            digest = warning.get(field)
+            if isinstance(digest, str) and re.fullmatch('[a-f0-9]{64}', digest):
+                result.setdefault(digest, []).append(warning)
+    return result
+
+
+def scientific_qualification(uid, sha256, *, restrictions=None):
+    digest = str(sha256 or '').removeprefix('sha256:')
+    restrictions = qualification_map(uid) if restrictions is None else restrictions
+    warnings = restrictions.get(digest, [])
+    if not warnings:
+        return {'state': 'Ready', 'execution_allowed': True, 'reason': ''}
+    requirements = list(dict.fromkeys(item for warning in warnings
+        for item in warning.get('qualification_required', []) if isinstance(item, str)))
+    reason = 'Release check required before scientific analysis. Exact original bytes are preserved; '
+    reason += (', '.join(requirements) + ' remain unverified.' if requirements
+               else 'the database release and matching companion files remain unverified.')
+    return {'state': 'Release check required', 'execution_allowed': False,
+            'code': 'DATA_QUALIFICATION_REQUIRED', 'reason': reason,
+            'requirements': requirements, 'warning_codes': sorted({w['code'] for w in warnings if w.get('code')})}
+
+
+def require_scientific_qualification(uid, sha256):
+    status = scientific_qualification(uid, sha256)
+    if not status['execution_allowed']:
+        raise ValueError(status['reason'])
+    return status
+
+
+def asset_scientific_qualification(uid, row, *, restrictions=None):
+    """Check actual content identities, including explicitly bound companions."""
+    meta = json.loads(row['metadata']) if isinstance(row.get('metadata'), str) else row.get('metadata', {})
+    digests = [row.get('digest') or meta.get('sha256')]
+    digests += [meta.get(key) for key in ['index_sha256', 'mate_sha256', 'dictionary_sha256']]
+    digests += list(meta.get('index_paths_sha256', {}).values())
+    restrictions = qualification_map(uid) if restrictions is None else restrictions
+    for digest in digests:
+        if digest:
+            status = scientific_qualification(uid, digest, restrictions=restrictions)
+            if not status['execution_allowed']:
+                return status
+    return {'state': 'Ready', 'execution_allowed': True, 'reason': ''}
+
+
+def require_scientific_asset(uid, row):
+    status = asset_scientific_qualification(uid, row)
+    if not status['execution_allowed']:
+        raise ValueError(status['reason'])
+    return status
+
+
 def record_provenance_warning(actor, uid, sha256, warning):
     """Internal operator metadata correction; never changes source/object bytes."""
     if not re.fullmatch('[0-9a-f]{64}', sha256) or not db.query('SELECT id FROM users WHERE id=?', (uid,), one=True):
@@ -324,7 +398,7 @@ def resolve_asset(uid, row):
     return enrich_resource({**row, 'path': canonical['path'], 'metadata': db.encode(metadata)})
 
 
-def authorize_source(uid, uri, version_id=None, sha256=None):
+def authorize_source(uid, uri, version_id=None, sha256=None, *, scientific=False):
     """Authorize only exact Ready migration objects owned by this tenant.
 
     Returns frozen Bucket/Key/VersionId/sha256/bytes or None for a non-migration
@@ -348,6 +422,8 @@ def authorize_source(uid, uri, version_id=None, sha256=None):
         raise ValueError('Migrated source version differs from its committed dataset')
     if sha256 is not None and sha256.removeprefix('sha256:') != dataset['sha256']:
         raise ValueError('Migrated source checksum differs from its committed dataset')
+    if scientific:
+        require_scientific_qualification(uid, dataset['sha256'])
     return {'Bucket': bucket, 'Key': key, 'VersionId': dataset['version_id'], 'sha256': dataset['sha256'], 'bytes': dataset['bytes'], 'dataset_id': dataset['id']}
 
 
@@ -356,7 +432,7 @@ def source_manifest(uid, item):
     paths = [item.get('path')] + [meta.get(k) for k in ['mate', 'index', 'dictionary', 'reference']] + meta.get('index_paths', [])
     result = []
     for path in dict.fromkeys(p for p in paths if isinstance(p, str)):
-        proof = authorize_source(uid, path, meta.get('version_id') if path == item.get('path') else None, item.get('digest') if path == item.get('path') else None)
+        proof = authorize_source(uid, path, meta.get('version_id') if path == item.get('path') else None, item.get('digest') if path == item.get('path') else None, scientific=True)
         if proof:
             result.append(proof)
     return result
