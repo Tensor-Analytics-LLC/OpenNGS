@@ -101,7 +101,7 @@ def test_full_original_sha256_is_saved_before_conditional_commit(original, tmp_p
         assert state['verified_original_sha256'] == hashlib.sha256(raw).hexdigest()
         assert state['provider_bytes'] == len(raw)
         assert request['IfNoneMatch'] == '*'
-        assert provider.ranges == [(offset, min(8, len(raw) - offset)) for offset in range(0, len(raw), 8)]
+        assert sorted(provider.ranges) == [(offset, min(8, len(raw) - offset)) for offset in range(0, len(raw), 8)]
         assert not client.puts
 
     client.complete_hook = before_commit
@@ -140,12 +140,12 @@ def test_interrupted_upload_rehashes_whole_prefix_and_reuses_confirmed_parts(ori
     first = MemoryProvider(raw)
     with pytest.raises(ConnectionError, match='interrupted part'):
         acquisition.acquire_archive(client, plan, obj, first, folder, RESERVATION)
-    assert first.ranges == [(0, 8), (8, 8)]
+    assert {(0,8),(8,8)}<=set(first.ranges) and len(first.ranges)<=8
     assert saved(folder, obj)['upload_id'] == 'private-upload-1'
     assert not client.puts and client.complete_calls == 0
     resumed = MemoryProvider(raw)
     acquisition.acquire_archive(client, plan, obj, resumed, folder, RESERVATION)
-    assert resumed.ranges == [(offset, min(8, len(raw) - offset)) for offset in range(0, len(raw), 8)]
+    assert sorted(resumed.ranges) == [(offset, min(8, len(raw) - offset)) for offset in range(0, len(raw), 8)]
     assert client.create_calls == client.complete_calls == 1
     assert client.part_calls.count(1) == 1 and client.part_calls.count(2) == 2
     assert client.completions[0]['UploadId'] == 'private-upload-1'

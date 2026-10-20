@@ -9,19 +9,20 @@ export function abortableDelay(milliseconds,signal){
  });
 }
 
-export async function awaitViewer(initial,{request,signal,onProgress=()=>{},delay=abortableDelay,interval=1800}){
+export async function awaitViewer(initial,{request,signal,onProgress=()=>{},delay=abortableDelay,interval=1800,statusPath}){
  let value=initial;
  while(true){
   if(signal?.aborted)throw signal.reason||new DOMException('View closed','AbortError');
   if(['failed','cancelled','interrupted','expired','regenerate'].includes(value.state))throw new Error(value.error||'Results preparation did not complete.');
   onProgress(value);
-  if(!value.request_id||value.state==='ready')return value;
+  if(value.state==='ready'||(!value.request_id&&!statusPath))return value;
   await delay(interval,signal);
   if(signal?.aborted)throw signal.reason||new DOMException('View closed','AbortError');
-  value=await request('/viewer/'+encodeURIComponent(value.request_id),{signal});
+  value=await request(statusPath||'/viewer/'+encodeURIComponent(value.request_id),{signal});
  }
 }
 
-export function preparationLabel(value){
- return ({queued:'Waiting for an available worker',staging:'Staging authorized data',starting:'Starting the isolated worker',submitted:'Worker requested',running:'Inspecting the genomic data',succeeded:'Validating the prepared result',building:'Validating the prepared result',ingesting:'Validating the prepared result',ready:'Header inspection complete',failed:'Header inspection failed'})[value.state]||String(value.state||'Requesting header inspection');
+export function preparationLabel(value,operation='header'){
+ const variants=operation==='variant-index';
+ return ({queued:'Waiting for an available worker',staging:'Staging authorized data',starting:'Starting the isolated worker',submitted:'Worker requested',running:variants?'Preparing variants in an isolated worker':'Inspecting the genomic data',succeeded:'Validating the prepared result',building:variants?'Building the variant index':'Validating the prepared result',ingesting:variants?'Building the variant index':'Validating the prepared result',ready:variants?'Variant results ready':'Header inspection complete',failed:variants?'Variant preparation failed':'Header inspection failed'})[value.state]||String(value.state||(variants?'Requesting variant preparation':'Requesting header inspection'));
 }

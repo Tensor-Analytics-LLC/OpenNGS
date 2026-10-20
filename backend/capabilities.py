@@ -59,6 +59,10 @@ def matrix(uid=None):
     deepvariant=published_deepvariant()
     from .vep_runtime import published as published_vep
     vep=published_vep()
+    from .format_contract import SCOPE as FORMAT_SCOPE
+    from .runtime_catalog import published_formats
+    formats=published_formats()
+    format_cases={c['tool']:c for c in formats['qualification']['cases']} if formats else {}
     extension=published()
     cases={x['tool']:x for x in extension['qualification']['cases']} if extension else {}
     core_cases={x['tool']:x for x in extension.get('core_qualification',{}).get('cases',[])} if extension else {}
@@ -129,8 +133,21 @@ def matrix(uid=None):
     if secondary:refreshed.update(secondary['tools'])
     if deepvariant:refreshed.update(deepvariant['tools'])
     if vep:refreshed.update(vep['tools'])
+    if formats:refreshed.update(formats['tools'])
     metadata_only={'asset.file','database.asset','reference.asset','utility.export','utility.gather','utility.condition'}
     for row in rows:
+        if formats and row['id'] in formats['tools']:
+            case=format_cases[row['id']]
+            proof={'build_id':formats['build_id'],'source_sha256':formats['source_sha256'],
+                'image':formats['image'],'scope':FORMAT_SCOPE,'assertions':case['assertions'],
+                'outputs':case['outputs'],'seconds':case.get('seconds')}
+            row.update(status='implemented-verified',implementation='portable',
+                reason='Published runtime passed known-record, coordinate, encoding and incompatible-input controls on tiny engineering data',
+                validation_scope=FORMAT_SCOPE,hosted_runtime_image=formats['image'],runtime_family=formats['family'],
+                runtime_package={'name':'OpenNGS format operators','version':formats['version'],
+                    'base_image':formats['base_image'],'versions':formats['qualification']['versions']},
+                runtime_status='Published digest; all eight bounded format execution controls passed',
+                runtime_blocker=None,sample_execution=proof,runtime_regression=proof)
         if row['id']=='vep' and vep:
             case=next(c for c in vep['qualification']['cases'] if c['id']=='release-115-cache')
             row.update(hosted_runtime_image=vep['image'],runtime_family=vep['family'],

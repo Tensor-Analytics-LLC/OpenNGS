@@ -13,6 +13,7 @@ import threading
 import time
 from collections import OrderedDict
 from botocore.config import Config
+from botocore.exceptions import ClientError
 from . import db, cloud_data
 from .config import aws_session
 
@@ -137,6 +138,81 @@ def discover(limit=100):
         with db.tx() as c:
             c.execute('INSERT INTO controls VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value', (cursor_key, next_cursor))
     return added
+
+
+def discover_one(plan_id, sha256):
+    """Discover one exact receipt without changing existing verifier authority.
+
+    Internal operator helper, not a Ready/import path. A missing completion
+    receipt returns None; all authorization, identity and provider errors remain
+    explicit. Existing states, leases and bounded retry counts are preserved.
+    """
+    if (not isinstance(plan_id, str) or not re.fullmatch(r'migration_[a-f0-9]{24}', plan_id)
+            or not isinstance(sha256, str) or not re.fullmatch(r'[a-f0-9]{64}', sha256)):
+        raise ValueError('Exact discovery requires a migration plan ID and SHA-256')
+    registered = db.query('SELECT value FROM controls WHERE key=?', ('migration:plan:' + plan_id,), one=True)
+    if not registered:
+        raise ValueError('Migration plan is not registered')
+    registration = json.loads(registered['value'])
+    def versioned(value):
+        return (isinstance(value, str) and 0 < len(value) <= 1024 and value != 'null'
+                and value == value.strip() and not any(ord(c) < 32 or ord(c) == 127 for c in value))
+    required = {'plan_id', 'owner_id', 'bucket', 'key', 'version_id', 'sha256'}
+    if (not isinstance(registration, dict) or set(registration) != required
+            or registration.get('plan_id') != plan_id
+            or not os.environ.get('NGS_BUCKET')
+            or registration.get('bucket') != os.environ.get('NGS_BUCKET')
+            or registration.get('key') != f'operations/checkpoints/migration/{plan_id}/plan.json'
+            or not versioned(registration.get('version_id'))
+            or not isinstance(registration.get('sha256'), str)
+            or not re.fullmatch(r'[a-f0-9]{64}', registration['sha256'])):
+        raise ValueError('Exact discovery requires the registered immutable private migration plan')
+    plan = load_plan(registration)
+    obj = plan['_by_sha'].get(sha256)
+    if obj is None:
+        raise ValueError('Requested SHA-256 is outside the registered migration plan')
+    dataset = obj.get('dataset_id')
+    if (not isinstance(dataset, str) or not re.fullmatch(r'[A-Za-z0-9_-]{1,100}', dataset)
+            or obj.get('sha256') != sha256 or type(obj.get('bytes')) is not int or obj['bytes'] <= 0
+            or not isinstance(obj.get('key'), str)
+            or not obj['key'].startswith(f"tenants/{plan['owner_id']}/datasets/{dataset}/")
+            or '/..' in obj['key']):
+        raise ValueError('Registered migration object has an invalid private identity')
+    identity = (plan_id, sha256)
+    existing = db.query('SELECT * FROM migration_objects WHERE plan_id=? AND sha256=?', identity, one=True)
+    if existing:
+        if existing['user_id'] != plan['owner_id']:
+            raise ValueError('Existing migration verifier row has a different owner')
+        return existing
+    s3 = client()
+    key = f'operations/checkpoints/migration/{plan_id}/uploaded/{sha256}.json'
+    try:
+        receipt, _ = _get_json(s3, plan['bucket'], key, maximum=16384)
+    except ClientError as error:
+        response = error.response
+        if (response.get('Error', {}).get('Code') in {'404', 'NoSuchKey', 'NotFound'}
+                and response.get('ResponseMetadata', {}).get('HTTPStatusCode') in [None, 404]):
+            return None
+        raise
+    if (not isinstance(receipt, dict) or receipt.get('plan_id') != plan_id
+            or any(receipt.get(k) != obj[k] for k in ['sha256', 'key', 'bytes'])
+            or type(receipt.get('bytes')) is not int or not versioned(receipt.get('version_id'))):
+        raise ValueError('Transferred object checkpoint differs from its immutable plan or version')
+    # Enqueue only a real immutable destination version. This is an identity
+    # check, not byte verification: the normal verifier still validates SHA-256.
+    head = s3.head_object(Bucket=plan['bucket'], Key=obj['key'], VersionId=receipt['version_id'])
+    if (head.get('VersionId') != receipt['version_id'] or head.get('ContentLength') != obj['bytes']
+            or head.get('Metadata', {}).get('sha256') != sha256):
+        raise ValueError('Transferred destination version differs from its immutable checkpoint')
+    with db.tx() as c:
+        c.execute("INSERT INTO migration_objects VALUES(?,?,?,'Verifying',?,0,?,0,NULL,?) ON CONFLICT(plan_id,sha256) DO NOTHING",
+                  (plan_id, sha256, plan['owner_id'], db.encode(receipt), receipt['version_id'], time.time()))
+        # A concurrent daemon may have inserted/claimed/blocked this object while
+        # S3 was read. Return that exact row; never reset its receipt or lease.
+        result = dict(c.execute('SELECT * FROM migration_objects WHERE plan_id=? AND sha256=?', identity).fetchone())
+        if result['user_id'] != plan['owner_id']:
+            raise ValueError('Existing migration verifier row has a different owner')
+    return result
 
 
 def provenance_warnings(uid, sha256=None):

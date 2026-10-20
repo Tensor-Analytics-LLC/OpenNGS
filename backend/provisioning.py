@@ -41,6 +41,21 @@ def vep_routes(outputs):
         'family':FAMILY,'source_grants_version':1,'cache_version':release['cache_version'],
         'assembly':release['assembly'],'cache_manifest_sha256':release['cache_manifest_sha256']}}
 
+def format_routes(outputs):
+    if not any(key.startswith('Formats') for key in outputs):return {}
+    from .format_contract import FAMILY
+    from .runtime_catalog import published_formats
+    release=published_formats()
+    if (not release or outputs.get('FormatsImage')!=release['image']
+            or outputs.get('FormatsSource')!=release['source_sha256']
+            or outputs.get('FormatsBaseImage')!=release['base_image']
+            or json.loads(outputs.get('FormatsTools','null'))!=release['tools']
+            or not outputs.get('FormatsDefinition')):
+        raise ValueError('Format tenant definition must match the exact published image, source, base and all eight execution controls')
+    return {tool:{'image':release['image'],'definition':outputs['FormatsDefinition'],
+        'family':FAMILY,'source_grants_version':1,'source_sha256':release['source_sha256'],
+        'base_image':release['base_image'],'version':release['version']} for tool in release['tools']}
+
 def _vep_object(value):
     if (not isinstance(value,dict) or not re.fullmatch(r's3://[^/]+/.+',value.get('uri',''))
             or value.get('version_id') in [None,'','null']
@@ -160,6 +175,7 @@ def once():
                 routes.update({t:{'image':out['SecondaryImage'],'definition':out['SecondaryDefinition'],'family':'secondary-cpu-v1','source_grants_version':1} for t in secondary})
             routes.update(deepvariant_routes(out))
             routes.update(vep_routes(out))
+            routes.update(format_routes(out))
             save(uid,{'state':'Ready','grant_version':p['grant_version'],'bucket':out['Bucket'],'queue':out['Queue'],'definition':out['Definition'],'image':out['Image'],'max_scratch_mb':int(out['ScratchMiB']),'region':'us-east-1','tools':sorted(CORE_TOOLS|set(routes)),'runtime_profiles':routes,'spot_only':True,'stack':name,'instance_profile':out.get('InstanceProfile'),'template_url':url})
             with db.tx() as c:db.audit(c,'capacity-service','research.capacity.ready',uid,{'stack':name,'grant_version':p['grant_version'],'scale_to_zero':True})
             ensure_curated(uid,grant['actor'])

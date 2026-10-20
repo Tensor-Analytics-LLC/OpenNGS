@@ -32,3 +32,13 @@ test('synchronous and cached responses return without polling; a pending delay i
  const controller=new AbortController(),waiting=abortableDelay(5000,controller.signal);controller.abort();
  await assert.rejects(waiting,{name:'AbortError'});
 });
+
+test('local variant indexing without a request ID still polls until the complete index is ready',async()=>{
+ const seen=[],states=[{state:'building',rows:1200},{state:'ready',rows:2300}],controller=new AbortController();
+ const result=await awaitViewer({state:'building',rows:0},{statusPath:'/results/asset/status',signal:controller.signal,delay:async()=>{},onProgress:value=>seen.push(value.rows),request:async(path,options)=>{assert.equal(path,'/results/asset/status');assert.equal(options.signal,controller.signal);return states.shift();}});
+ assert.equal(result.rows,2300);
+ assert.deepEqual(seen,[0,1200,2300]);
+ assert.equal(preparationLabel({state:'running'},'variant-index'),'Preparing variants in an isolated worker');
+ assert.equal(preparationLabel({state:'building',rows:0},'variant-index'),'Building the variant index');
+ assert.equal(preparationLabel({state:'ready'},'variant-index'),'Variant results ready');
+});

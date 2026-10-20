@@ -47,8 +47,8 @@ def extend(add, P, param):
         'Explicit chr-prefix transformation or JSON mapping. Rejects many-to-one collisions; changes names only, never assembly coordinates.',
         [param('style','Target naming','chr','select',options=['chr','numeric','mapping']),param('mapping','Explicit JSON name mapping','{}')])
     portable('contig.rename.bed','Rename BED contigs',[P('data','BED')],[P('data','BED')],'Explicit chr-prefix or JSON mapping for BED coordinates; never changes assembly.',[param('style','Target naming','chr','select',options=['chr','numeric','mapping']),param('mapping','Explicit JSON name mapping','{}')])
-    portable('reference.dictionary','Build reference dictionary',[P('reference','FASTA')],[P('dictionary','INTERVALLIST')],
-        'Read FASTA sequence lengths and MD5 identities into a SAM/Picard dictionary. Does not rewrite another reference.',[])
+    portable('reference.dictionary','Build reference dictionary',[P('reference','FASTA')],[P('dictionary','REFERENCE_DICTIONARY')],
+        'Read FASTA sequence lengths and MD5 identities into a SAM/Picard sequence dictionary. Contains no calling intervals.',[])
     for id,name,src,dst in [('bam.sam','BAM → SAM','BAM|SORTED_BAM|INDEXED_BAM','SAM'),('bam.cram','BAM → CRAM','BAM|SORTED_BAM|INDEXED_BAM','CRAM'),('cram.bam','CRAM → BAM','CRAM|INDEXED_CRAM','BAM')]:
         portable(id,name,[P('alignment',src)]+([P('reference','FASTA')] if 'cram' in id else []),[P('alignment',dst)],'HTSlib conversion. CRAM requires the exact reference sequence; output indexing is a separate operation.')
     portable('cram.index','CRAM index',[P('alignment','CRAM')],[P('alignment','INDEXED_CRAM')],'Build CRAI for coordinate-sorted CRAM; unsorted files fail.')

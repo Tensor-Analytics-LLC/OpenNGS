@@ -7,7 +7,7 @@ profiles and remain unavailable until published and validated.
 import copy
 import json
 
-def template(subnet,worker_sg,execution_role,image,repository_arn,shared_bucket,kms,boundary,origin,alert_topic,extension=None,secondary=None,deepvariant=None,vep=None):
+def template(subnet,worker_sg,execution_role,image,repository_arn,shared_bucket,kms,boundary,origin,alert_topic,extension=None,secondary=None,deepvariant=None,vep=None,formats=None):
     if '@sha256:' not in image:raise ValueError('Pin the reviewed runtime digest')
     ref=lambda x:{'Ref':x};sub=lambda x:{'Fn::Sub':x};att=lambda x,k:{'Fn::GetAtt':[x,k]}
     tags=[{'Key':'Project','Value':'OpenNGS-Pro'},{'Key':'TenantId','Value':ref('TenantId')}]
@@ -80,4 +80,16 @@ def template(subnet,worker_sg,execution_role,image,repository_arn,shared_bucket,
                        VEPTools={'Value':json.dumps(release['tools'])},VEPSource={'Value':release['source_sha256']},
                        VEPCacheVersion={'Value':str(release['cache_version'])},VEPAssembly={'Value':release['assembly']},
                        VEPCacheManifest={'Value':release['cache_manifest_sha256']})
+    if formats:
+        from backend.format_contract import FAMILY
+        from backend.runtime_catalog import validate_format_release
+        release=validate_format_release(formats)
+        properties=copy.deepcopy(R['Definition']['Properties'])
+        properties['JobDefinitionName']=sub('openngs-pro-${TenantId}-formats')
+        properties['ContainerProperties']['Image']=release['image']
+        properties['Tags']['NGSRuntimeFamily']=FAMILY
+        add('FormatsDefinition','AWS::Batch::JobDefinition',properties)
+        outputs.update(FormatsImage={'Value':release['image']},FormatsDefinition={'Value':ref('FormatsDefinition')},
+                       FormatsTools={'Value':json.dumps(release['tools'])},FormatsSource={'Value':release['source_sha256']},
+                       FormatsBaseImage={'Value':release['base_image']})
     return {'AWSTemplateFormatVersion':'2010-09-09','Description':'OpenNGS funded tenant: isolated data and scale-to-zero Spot queue; no On-Demand fallback','Parameters':{'TenantId':{'Type':'String','AllowedPattern':'u_[a-f0-9]{32}'},'StorageId':{'Type':'String','AllowedPattern':'[a-f0-9]{32}'},'FleetVCPU':{'Type':'Number','AllowedValues':[2,4,8,16,32,64]},'MonthlyBudget':{'Type':'Number','MinValue':1,'MaxValue':500}},'Resources':R,'Outputs':outputs}

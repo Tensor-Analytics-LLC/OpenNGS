@@ -101,7 +101,8 @@ def permitted_path(uid,path):
 
 def file_type(path):
     n=path.name.lower()
-    if n.endswith(('.fai','.gzi','.bai','.crai','.csi','.tbi','.mmi','.bt2','.ht2','.dict','.idx','.gzi')):return 'INDEX'
+    if n.endswith('.dict'):return 'REFERENCE_DICTIONARY'
+    if n.endswith(('.fai','.gzi','.bai','.crai','.csi','.tbi','.mmi','.bt2','.ht2','.idx','.gzi')):return 'INDEX'
     if n.endswith(('.vcf','.vcf.gz','.vcf.bgz')):
         return 'INDEXED_VCF' if Path(str(path)+'.tbi').exists() or Path(str(path)+'.csi').exists() else 'VCF'
     for endings,fmt in [(('.fastq','.fastq.gz','.fq','.fq.gz'),'FASTQ'),(('.fasta','.fa','.fa.gz','.fasta.gz','.fa.bgz','.fna','.fna.gz'),'FASTA'),(('.bam',),'BAM'),(('.sam',),'SAM'),(('.cram',),'CRAM'),(('.bed','.bed.gz'),'BED'),(('.interval_list',),'INTERVALLIST'),(('.h5ad',),'H5AD'),(('.rds',),'RDS'),(('.pod5',),'POD5'),(('.zip','.tar','.tar.gz','.tgz'),'ARCHIVE'),(('.bcf',),'BCF'),(('.chain','.chain.gz'),'CHAIN'),(('.gtf','.gtf.gz'),'GTF'),(('.gff','.gff3','.gff3.gz'),'GFF3'),(('.csv',),'CSV'),(('.tsv','.tsv.gz'),'TSV'),(('.json',),'REPORT'),(('.bw','.bigwig'),'BIGWIG')]:

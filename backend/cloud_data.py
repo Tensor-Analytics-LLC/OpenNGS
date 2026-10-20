@@ -147,7 +147,10 @@ def bind(uid,dataset_id,payload):
         if payload.get(field+'_id'):
             companion,cm,path=get(payload[field+'_id'])
             if field=='mate' and (fmt not in ['FASTQ','FASTQ_PAIR'] or cm.get('format')!='FASTQ' or companion['id']==dataset_id):raise ValueError('A paired FASTQ requires a distinct verified FASTQ mate')
-            if field in ['index','dictionary'] and cm.get('format')!='INDEX':raise ValueError('Bind a verified index/dictionary file')
+            if field=='index' and cm.get('format')!='INDEX':raise ValueError('Bind a verified index file')
+            # Preserve existing versioned INDEX-classified dictionary manifests;
+            # new dictionaries have a separate semantic type, never intervals.
+            if field=='dictionary' and cm.get('format') not in ['INDEX','REFERENCE_DICTIONARY']:raise ValueError('Bind a verified sequence dictionary file')
             meta[field]=path;meta[field+'_sha256']=companion['sha256']
             meta[field+'_version_id']=companion['version_id']
             if field=='mate':fmt='FASTQ_PAIR'
@@ -158,7 +161,7 @@ def bind(uid,dataset_id,payload):
         meta['index_paths']=[];meta['index_paths_sha256']={}
         for ident in ids:
             companion,cm,path=get(ident)
-            if cm.get('format')!='INDEX':raise ValueError('Every index bundle member must be a verified index')
+            if cm.get('format') not in ['INDEX','REFERENCE_DICTIONARY']:raise ValueError('Every index bundle member must be a verified index or sequence dictionary')
             meta['index_paths'].append(path);meta['index_paths_sha256'][path]=companion['sha256']
     elif 'index_ids' in payload:
         meta.pop('index_paths',None);meta.pop('index_paths_sha256',None)

@@ -120,3 +120,73 @@ def published():
     except (ValueError, TypeError, KeyError):
         # Invalid publication must never turn catalogue declarations into approval.
         return None
+
+
+def validate_format_release(value):
+    """Eight separately qualified routes; old image proofs never move implicitly."""
+    from .format_contract import ASSERTIONS,BASE_IMAGE,FAMILY,ISOLATION,SOURCE_FILES,TOOLS,VERSION
+    if not isinstance(value,dict) or value.get('family')!=FAMILY or value.get('version')!=VERSION:
+        raise ValueError('Unknown reviewed format runtime family or version')
+    if (value.get('base_image')!=BASE_IMAGE or value.get('image')==BASE_IMAGE
+            or not re.fullmatch(r'509505638328\.dkr\.ecr\.us-east-1\.amazonaws\.com/openngs-demo@sha256:[a-f0-9]{64}',value.get('image',''))):
+        raise ValueError('Formats require the exact reviewed base and a separate immutable private image')
+    if value.get('tools')!=sorted(TOOLS) or not re.fullmatch('[a-f0-9]{64}',value.get('source_sha256','')):
+        raise ValueError('Formats publication requires all eight exact routes and source provenance')
+    manifest=value.get('source_files',[])
+    if (len(manifest)!=len(SOURCE_FILES) or {r.get('path') for r in manifest}!=set(SOURCE_FILES)
+            or any(not re.fullmatch('[a-f0-9]{64}',r.get('sha256','')) or type(r.get('bytes')) is not int or r['bytes']<=0 for r in manifest)):
+        raise ValueError('Exact format implementation and qualifier source identities are required')
+    proof=value.get('qualification',{})
+    if (proof.get('schema')!=1 or proof.get('family')!=FAMILY or proof.get('version')!=VERSION
+            or proof.get('isolation')!=ISOLATION):
+        raise ValueError('Actual read-only, nonroot, network-isolated format execution is required')
+    versions=proof.get('versions',{})
+    if set(versions)!={'python','pysam','samtools'} or any(not isinstance(v,str) or not v for v in versions.values()):
+        raise ValueError('Actual Python, pysam and HTSlib/samtools versions are required')
+    expected_sources={row['path']:row['sha256'] for row in manifest if row['path'].startswith('backend/')}
+    if proof.get('implementation_sha256')!=expected_sources:
+        raise ValueError('Executed format modules differ from the reviewed source archive')
+    cases=proof.get('cases',[])
+    if len(cases)!=len(TOOLS) or {c.get('tool') for c in cases}!=TOOLS:
+        raise ValueError('Every format contract needs exactly one passing real execution case')
+    expected_formats={'vcf.bcf':'BCF','bcf.vcf':'VCF','contig.rename':'VCF','contig.rename.bed':'BED',
+        'gtf.bed':'BED','bed.gtf':'GTF','intervals.bed':'BED','reference.dictionary':'REFERENCE_DICTIONARY'}
+    for case in cases:
+        tool=case['tool'];outputs=case.get('outputs',[])
+        if case.get('status')!='passed' or case.get('assertions')!=ASSERTIONS[tool] or len(outputs)!=1:
+            raise ValueError('Format controls must prove complete records, coordinates and the reviewed rejection cases')
+        obj=outputs[0]
+        if (not isinstance(obj.get('name'),str) or obj['name'].split('/')[0]!=tool or obj['name'].count('/')!=1
+                or '..' in obj['name'] or obj.get('format')!=expected_formats[tool]
+                or type(obj.get('bytes')) is not int or not 0<obj['bytes']<=1024**2
+                or not re.fullmatch('[a-f0-9]{64}',obj.get('sha256',''))):
+            raise ValueError('Actual bounded format output identities and types are required')
+    expected_verification={'actual_output_files':8,'full_vcf_records':6,'breakend_orientations':4,
+                          'bed12_exons':2,'dictionary_sequence_checksums_verified':True}
+    if proof.get('artifact_verification')!=expected_verification or value.get('artifact_verification')!=expected_verification:
+        raise ValueError('The finalizer must independently verify all retained real format artifacts')
+    evidence=value.get('evidence',{})
+    if set(evidence)!={'source','qualification','outputs'}:
+        raise ValueError('Immutable format source, qualification and output evidence is required')
+    for obj in evidence.values():
+        if (not isinstance(obj,dict) or obj.get('version_id') in [None,'','null']
+                or not isinstance(obj.get('bucket'),str) or not obj['bucket']
+                or not isinstance(obj.get('key'),str) or not obj['key'].startswith('operations/builds/formats-')
+                or not re.fullmatch('[a-f0-9]{64}',obj.get('sha256',''))
+                or type(obj.get('bytes')) is not int or not 0<obj['bytes']<=8*1024**2):
+            raise ValueError('Formats evidence must retain its bounded immutable cloud identity')
+    if evidence['source']['sha256']!=value['source_sha256']:
+        raise ValueError('Format source evidence does not match the reviewed source SHA-256')
+    if (value.get('maximum_build_minutes')!=10 or value.get('maximum_build_usd')!=.10
+            or value.get('compute')!='BUILD_GENERAL1_MEDIUM' or not value.get('build_id')
+            or type(value.get('new_layer_compressed_bytes')) is not int
+            or not 0<value['new_layer_compressed_bytes']<=16*1024**2):
+        raise ValueError('Formats require the bounded build and small, verified derived image layers')
+    return value
+
+
+def published_formats():
+    row=db.query("SELECT value FROM controls WHERE key='runtime-release:portable-formats-v1'",one=True)
+    if not row:return None
+    try:return validate_format_release(json.loads(row['value']))
+    except (ValueError,TypeError,KeyError):return None

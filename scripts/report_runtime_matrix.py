@@ -35,6 +35,18 @@ def main():
             'assertions':positive['assertions'],'runtime_seconds':positive.get('seconds'),'output_count':len(positive['outputs']),
             'passed_controls':[c['id'] for c in proof['cases']],
             'required_dependencies':'Exact selected inputs and complete reference/cache bundles must independently pass live preflight'}
+    formats_path=Path('evidence/deployment/portable-formats-release.json')
+    formats=None
+    if formats_path.exists():
+        from backend.runtime_catalog import validate_format_release
+        formats=validate_format_release(json.loads(formats_path.read_text()))
+        for case in formats['qualification']['cases']:
+            verified[case['tool']]={'status':'executed-small-control','image':formats['image'],
+                'source_sha256':formats['source_sha256'],'runtime_family':formats['family'],
+                'packages':formats['qualification']['versions'],'upstream_base_image':formats['base_image'],
+                'scope':formats['qualification']['scope'],'assertions':case['assertions'],
+                'runtime_seconds':case['seconds'],'output_count':len(case['outputs']),
+                'required_dependencies':'Exact authorized inputs and compatible per-tier worker routes must independently pass live preflight'}
     rows=[]
     for node in sorted(BASE.values(),key=lambda n:n['id']):
         if node.get('hidden'):continue
@@ -50,7 +62,8 @@ def main():
             'clinical_or_full_scale_validated':False,'documentation':node.get('docs')})
     cloud=Path('evidence/deployment/extended-cloud-validation.json');observed=json.loads(cloud.read_text()) if cloud.exists() else {}
     report={'schema':1,'public_catalogue_count':len(rows),'native_small_control_verified':sum(bool(r['runtime_evidence']) and not BASE[r['id']].get('builtin') for r in rows),
-        'portable_refreshed_contracts':extension.get('portable_tools',[]),'capabilities':rows,
+        'portable_refreshed_contracts':extension.get('portable_tools',[]),
+        'portable_format_contracts':formats['tools'] if formats else [],'capabilities':rows,
         'cross_bucket_cloud_validation':{k:observed.get(k) for k in ['run_id','state','assertions','elapsed_seconds','scope']},
         'note':'Actual execution images/packages supersede illustrative registry tags. Qualified command contracts do not prove full assay accuracy or provision missing dependencies.'}
     raw=json.dumps(report,indent=2)

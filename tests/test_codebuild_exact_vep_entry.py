@@ -115,12 +115,15 @@ def test_new_terminal_successor_restores_private_upload_and_rehashes_without_reu
     assert failed['state']=='uploading' and failed['durable_failure']['exception']=='ConnectionError'
     assert len(failed['parts'])==34 and failed['upload_id']=='private-upload-1'
     aws.terminal(1)
-    monkeypatch.setattr(acquisition,'checkpoint',entry.wrapped_checkpoint(original,lambda:aws,{'value':verified(2)}))
+    successor=verified(2);successor.update(receipt_sha256='c'*64,receipt_version_id='new-source-new-admission')
+    monkeypatch.setattr(acquisition,'checkpoint',entry.wrapped_checkpoint(original,lambda:aws,{'value':successor}))
     provider=MemoryProvider(raw)
     acquisition.acquire_archive(aws,plan,obj,provider,tmp_path/'second-ephemeral-build',verified()['reservation'])
     assert aws.create_calls==1 and aws.part_calls.count(1)==before
-    assert provider.ranges[0]==(0,8) and len(provider.ranges)==71
+    assert sorted(provider.ranges)[0]==(0,8) and len(provider.ranges)==71
     assert snapshots(aws)[-1]['durable_worker']['build_arn']==build(2)
+    assert snapshots(aws)[-1]['durable_worker']['receipt_sha256']=='c'*64
+    assert snapshots(aws)[-1]['durable_worker']['receipt_version_id']=='new-source-new-admission'
     assert len({value['upload_id'] for value in snapshots(aws) if value.get('upload_id')})==1
 
 

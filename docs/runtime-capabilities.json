@@ -17,6 +17,16 @@
     "vcf.index",
     "vcf.stats"
   ],
+  "portable_format_contracts": [
+    "bcf.vcf",
+    "bed.gtf",
+    "contig.rename",
+    "contig.rename.bed",
+    "gtf.bed",
+    "intervals.bed",
+    "reference.dictionary",
+    "vcf.bcf"
+  ],
   "capabilities": [
     {
       "id": "alphamissense",
@@ -408,8 +418,8 @@
     {
       "id": "bcf.vcf",
       "name": "BCF \u2192 VCF",
-      "status": "awaiting-representative-runtime-validation",
-      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "status": "implemented-small-control-verified",
+      "reason": "Eight format and interval contracts on tiny known controls, including negative cases. Contig renaming does not perform liftover. GTF/BED conversion projects intervals and does not preserve complete annotation attributes or infer transcript biology. No full-assay, scientific accuracy or clinical validation claim.",
       "license_category": "FOSS",
       "inputs": [
         {
@@ -428,7 +438,32 @@
         }
       ],
       "registry_reference_image": null,
-      "runtime_evidence": null,
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:9a4b327b50cc3859cfdc624012f840fd3955ba476f055c2a7fb9cbc93624fafa",
+        "source_sha256": "a7cbee6ba0de67f947855532d7c8c4803f6135cc84ae980e4484cc131963785a",
+        "runtime_family": "portable-formats-v1",
+        "packages": {
+          "python": "3.12.15",
+          "pysam": "0.24.1",
+          "samtools": "1.24"
+        },
+        "upstream_base_image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "scope": "Eight format and interval contracts on tiny known controls, including negative cases. Contig renaming does not perform liftover. GTF/BED conversion projects intervals and does not preserve complete annotation attributes or infer transcript biology. No full-assay, scientific accuracy or clinical validation claim.",
+        "assertions": {
+          "records": 6,
+          "samples": [
+            "SAMPLE_A",
+            "SAMPLE_B"
+          ],
+          "multiallelic_records": 1,
+          "full_record_roundtrip": true,
+          "header_schema_preserved": true
+        },
+        "runtime_seconds": 0.002,
+        "output_count": 1,
+        "required_dependencies": "Exact authorized inputs and compatible per-tier worker routes must independently pass live preflight"
+      },
       "required_reference_or_database_ports": [],
       "clinical_or_full_scale_validated": false,
       "documentation": null
@@ -594,8 +629,8 @@
     {
       "id": "bed.gtf",
       "name": "BED \u2192 GTF",
-      "status": "awaiting-representative-runtime-validation",
-      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "status": "implemented-small-control-verified",
+      "reason": "Eight format and interval contracts on tiny known controls, including negative cases. Contig renaming does not perform liftover. GTF/BED conversion projects intervals and does not preserve complete annotation attributes or infer transcript biology. No full-assay, scientific accuracy or clinical validation claim.",
       "license_category": "FOSS",
       "inputs": [
         {
@@ -614,7 +649,53 @@
         }
       ],
       "registry_reference_image": null,
-      "runtime_evidence": null,
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:9a4b327b50cc3859cfdc624012f840fd3955ba476f055c2a7fb9cbc93624fafa",
+        "source_sha256": "a7cbee6ba0de67f947855532d7c8c4803f6135cc84ae980e4484cc131963785a",
+        "runtime_family": "portable-formats-v1",
+        "packages": {
+          "python": "3.12.15",
+          "pysam": "0.24.1",
+          "samtools": "1.24"
+        },
+        "upstream_base_image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "scope": "Eight format and interval contracts on tiny known controls, including negative cases. Contig renaming does not perform liftover. GTF/BED conversion projects intervals and does not preserve complete annotation attributes or infer transcript biology. No full-assay, scientific accuracy or clinical validation claim.",
+        "assertions": {
+          "records": 4,
+          "one_based_closed_intervals": [
+            [
+              1,
+              1
+            ],
+            [
+              10,
+              12
+            ],
+            [
+              21,
+              23
+            ],
+            [
+              28,
+              30
+            ]
+          ],
+          "strands": [
+            "+",
+            "-",
+            "-",
+            "-"
+          ],
+          "bed12_exons_split": true,
+          "generated_ids_group_blocks": true,
+          "zero_length_rejected": true,
+          "invalid_blocks_rejected": true
+        },
+        "runtime_seconds": 0.001,
+        "output_count": 1,
+        "required_dependencies": "Exact authorized inputs and compatible per-tier worker routes must independently pass live preflight"
+      },
       "required_reference_or_database_ports": [],
       "clinical_or_full_scale_validated": false,
       "documentation": null
@@ -1202,8 +1283,8 @@
     {
       "id": "contig.rename",
       "name": "Rename contigs",
-      "status": "awaiting-representative-runtime-validation",
-      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "status": "implemented-small-control-verified",
+      "reason": "Eight format and interval contracts on tiny known controls, including negative cases. Contig renaming does not perform liftover. GTF/BED conversion projects intervals and does not preserve complete annotation attributes or infer transcript biology. No full-assay, scientific accuracy or clinical validation claim.",
       "license_category": "FOSS",
       "inputs": [
         {
@@ -1222,7 +1303,34 @@
         }
       ],
       "registry_reference_image": null,
-      "runtime_evidence": null,
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:9a4b327b50cc3859cfdc624012f840fd3955ba476f055c2a7fb9cbc93624fafa",
+        "source_sha256": "a7cbee6ba0de67f947855532d7c8c4803f6135cc84ae980e4484cc131963785a",
+        "runtime_family": "portable-formats-v1",
+        "packages": {
+          "python": "3.12.15",
+          "pysam": "0.24.1",
+          "samtools": "1.24"
+        },
+        "upstream_base_image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "scope": "Eight format and interval contracts on tiny known controls, including negative cases. Contig renaming does not perform liftover. GTF/BED conversion projects intervals and does not preserve complete annotation attributes or infer transcript biology. No full-assay, scientific accuracy or clinical validation claim.",
+        "assertions": {
+          "records": 6,
+          "breakend_orientations": 4,
+          "multiallelic_genotypes_preserved": true,
+          "coordinates_unchanged": true,
+          "partner_contigs_renamed": true,
+          "header_attributes_preserved": true,
+          "collisions_rejected": true,
+          "malformed_breakend_rejected": true,
+          "unknown_style_rejected": true,
+          "liftover": false
+        },
+        "runtime_seconds": 0.001,
+        "output_count": 1,
+        "required_dependencies": "Exact authorized inputs and compatible per-tier worker routes must independently pass live preflight"
+      },
       "required_reference_or_database_ports": [],
       "clinical_or_full_scale_validated": false,
       "documentation": null
@@ -1230,8 +1338,8 @@
     {
       "id": "contig.rename.bed",
       "name": "Rename BED contigs",
-      "status": "awaiting-representative-runtime-validation",
-      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "status": "implemented-small-control-verified",
+      "reason": "Eight format and interval contracts on tiny known controls, including negative cases. Contig renaming does not perform liftover. GTF/BED conversion projects intervals and does not preserve complete annotation attributes or infer transcript biology. No full-assay, scientific accuracy or clinical validation claim.",
       "license_category": "FOSS",
       "inputs": [
         {
@@ -1250,7 +1358,31 @@
         }
       ],
       "registry_reference_image": null,
-      "runtime_evidence": null,
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:9a4b327b50cc3859cfdc624012f840fd3955ba476f055c2a7fb9cbc93624fafa",
+        "source_sha256": "a7cbee6ba0de67f947855532d7c8c4803f6135cc84ae980e4484cc131963785a",
+        "runtime_family": "portable-formats-v1",
+        "packages": {
+          "python": "3.12.15",
+          "pysam": "0.24.1",
+          "samtools": "1.24"
+        },
+        "upstream_base_image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "scope": "Eight format and interval contracts on tiny known controls, including negative cases. Contig renaming does not perform liftover. GTF/BED conversion projects intervals and does not preserve complete annotation attributes or infer transcript biology. No full-assay, scientific accuracy or clinical validation claim.",
+        "assertions": {
+          "records": 3,
+          "all_noncontig_columns_preserved": true,
+          "bed12_blocks_preserved": true,
+          "directives_preserved": true,
+          "coordinate_system_unchanged": true,
+          "collision_rejected": true,
+          "liftover": false
+        },
+        "runtime_seconds": 0.001,
+        "output_count": 1,
+        "required_dependencies": "Exact authorized inputs and compatible per-tier worker routes must independently pass live preflight"
+      },
       "required_reference_or_database_ports": [],
       "clinical_or_full_scale_validated": false,
       "documentation": null
@@ -2333,8 +2465,8 @@
     {
       "id": "gtf.bed",
       "name": "GTF / GFF3 \u2192 BED",
-      "status": "awaiting-representative-runtime-validation",
-      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "status": "implemented-small-control-verified",
+      "reason": "Eight format and interval contracts on tiny known controls, including negative cases. Contig renaming does not perform liftover. GTF/BED conversion projects intervals and does not preserve complete annotation attributes or infer transcript biology. No full-assay, scientific accuracy or clinical validation claim.",
       "license_category": "FOSS",
       "inputs": [
         {
@@ -2353,7 +2485,47 @@
         }
       ],
       "registry_reference_image": null,
-      "runtime_evidence": null,
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:9a4b327b50cc3859cfdc624012f840fd3955ba476f055c2a7fb9cbc93624fafa",
+        "source_sha256": "a7cbee6ba0de67f947855532d7c8c4803f6135cc84ae980e4484cc131963785a",
+        "runtime_family": "portable-formats-v1",
+        "packages": {
+          "python": "3.12.15",
+          "pysam": "0.24.1",
+          "samtools": "1.24"
+        },
+        "upstream_base_image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "scope": "Eight format and interval contracts on tiny known controls, including negative cases. Contig renaming does not perform liftover. GTF/BED conversion projects intervals and does not preserve complete annotation attributes or infer transcript biology. No full-assay, scientific accuracy or clinical validation claim.",
+        "assertions": {
+          "records": 3,
+          "zero_based_half_open_intervals": [
+            [
+              0,
+              1
+            ],
+            [
+              9,
+              12
+            ],
+            [
+              20,
+              22
+            ]
+          ],
+          "strands": [
+            "+",
+            "-",
+            "."
+          ],
+          "malformed_columns_rejected": true,
+          "invalid_strand_rejected": true,
+          "gff_fasta_tail_not_parsed": true
+        },
+        "runtime_seconds": 0.0,
+        "output_count": 1,
+        "required_dependencies": "Exact authorized inputs and compatible per-tier worker routes must independently pass live preflight"
+      },
       "required_reference_or_database_ports": [],
       "clinical_or_full_scale_validated": false,
       "documentation": null
@@ -2510,7 +2682,7 @@
       "id": "intervals.bed",
       "name": "IntervalList \u2192 BED",
       "status": "implemented-small-control-verified",
-      "reason": "Known-count and lossless round-trip engineering checks",
+      "reason": "Eight format and interval contracts on tiny known controls, including negative cases. Contig renaming does not perform liftover. GTF/BED conversion projects intervals and does not preserve complete annotation attributes or infer transcript biology. No full-assay, scientific accuracy or clinical validation claim.",
       "license_category": "FOSS",
       "inputs": [
         {
@@ -2531,22 +2703,38 @@
       "registry_reference_image": null,
       "runtime_evidence": {
         "status": "executed-small-control",
-        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
-        "source_sha256": "5e1b24174cb5b455c5e0522c5eeb29aa8206418eca2a3dda5baa7dde1b1038d1",
-        "runtime_family": "portable-refresh-v1",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:9a4b327b50cc3859cfdc624012f840fd3955ba476f055c2a7fb9cbc93624fafa",
+        "source_sha256": "a7cbee6ba0de67f947855532d7c8c4803f6135cc84ae980e4484cc131963785a",
+        "runtime_family": "portable-formats-v1",
         "packages": {
+          "python": "3.12.15",
           "pysam": "0.24.1",
-          "python": "3.12"
+          "samtools": "1.24"
         },
-        "scope": "Known-count and lossless round-trip engineering checks",
+        "upstream_base_image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "scope": "Eight format and interval contracts on tiny known controls, including negative cases. Contig renaming does not perform liftover. GTF/BED conversion projects intervals and does not preserve complete annotation attributes or infer transcript biology. No full-assay, scientific accuracy or clinical validation claim.",
         "assertions": {
-          "zero_based_half_open_round_trip": [
-            100,
-            200
-          ]
+          "records": 3,
+          "zero_based_half_open_intervals": [
+            [
+              0,
+              1
+            ],
+            [
+              9,
+              12
+            ],
+            [
+              20,
+              22
+            ]
+          ],
+          "typed_dictionary_rejected": true,
+          "legacy_header_only_rejected": true
         },
-        "runtime_seconds": 0.0,
-        "output_count": 1
+        "runtime_seconds": 0.008,
+        "output_count": 1,
+        "required_dependencies": "Exact authorized inputs and compatible per-tier worker routes must independently pass live preflight"
       },
       "required_reference_or_database_ports": [],
       "clinical_or_full_scale_validated": false,
@@ -3661,8 +3849,8 @@
     {
       "id": "reference.dictionary",
       "name": "Build reference dictionary",
-      "status": "awaiting-representative-runtime-validation",
-      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "status": "implemented-small-control-verified",
+      "reason": "Eight format and interval contracts on tiny known controls, including negative cases. Contig renaming does not perform liftover. GTF/BED conversion projects intervals and does not preserve complete annotation attributes or infer transcript biology. No full-assay, scientific accuracy or clinical validation claim.",
       "license_category": "FOSS",
       "inputs": [
         {
@@ -3675,13 +3863,41 @@
       "outputs": [
         {
           "key": "dictionary",
-          "type": "INTERVALLIST",
+          "type": "REFERENCE_DICTIONARY",
           "required": true,
           "many": false
         }
       ],
       "registry_reference_image": null,
-      "runtime_evidence": null,
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:9a4b327b50cc3859cfdc624012f840fd3955ba476f055c2a7fb9cbc93624fafa",
+        "source_sha256": "a7cbee6ba0de67f947855532d7c8c4803f6135cc84ae980e4484cc131963785a",
+        "runtime_family": "portable-formats-v1",
+        "packages": {
+          "python": "3.12.15",
+          "pysam": "0.24.1",
+          "samtools": "1.24"
+        },
+        "upstream_base_image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "scope": "Eight format and interval contracts on tiny known controls, including negative cases. Contig renaming does not perform liftover. GTF/BED conversion projects intervals and does not preserve complete annotation attributes or infer transcript biology. No full-assay, scientific accuracy or clinical validation claim.",
+        "assertions": {
+          "format": "REFERENCE_DICTIONARY",
+          "contigs": [
+            "1",
+            "2"
+          ],
+          "lengths": [
+            32,
+            24
+          ],
+          "uppercase_sequence_md5_verified": true,
+          "contains_no_interval_rows": true
+        },
+        "runtime_seconds": 0.0,
+        "output_count": 1,
+        "required_dependencies": "Exact authorized inputs and compatible per-tier worker routes must independently pass live preflight"
+      },
       "required_reference_or_database_ports": [
         {
           "key": "reference",
@@ -5147,8 +5363,8 @@
     {
       "id": "vcf.bcf",
       "name": "VCF \u2192 BCF",
-      "status": "awaiting-representative-runtime-validation",
-      "reason": "Existing source/operator implementation remains subject to input dependencies and execution validation",
+      "status": "implemented-small-control-verified",
+      "reason": "Eight format and interval contracts on tiny known controls, including negative cases. Contig renaming does not perform liftover. GTF/BED conversion projects intervals and does not preserve complete annotation attributes or infer transcript biology. No full-assay, scientific accuracy or clinical validation claim.",
       "license_category": "FOSS",
       "inputs": [
         {
@@ -5167,7 +5383,33 @@
         }
       ],
       "registry_reference_image": null,
-      "runtime_evidence": null,
+      "runtime_evidence": {
+        "status": "executed-small-control",
+        "image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:9a4b327b50cc3859cfdc624012f840fd3955ba476f055c2a7fb9cbc93624fafa",
+        "source_sha256": "a7cbee6ba0de67f947855532d7c8c4803f6135cc84ae980e4484cc131963785a",
+        "runtime_family": "portable-formats-v1",
+        "packages": {
+          "python": "3.12.15",
+          "pysam": "0.24.1",
+          "samtools": "1.24"
+        },
+        "upstream_base_image": "509505638328.dkr.ecr.us-east-1.amazonaws.com/openngs-demo@sha256:a8b97ecfe7212926fceffabc9956f7f358969b2c1d7e5497c15a8340f61c3b75",
+        "scope": "Eight format and interval contracts on tiny known controls, including negative cases. Contig renaming does not perform liftover. GTF/BED conversion projects intervals and does not preserve complete annotation attributes or infer transcript biology. No full-assay, scientific accuracy or clinical validation claim.",
+        "assertions": {
+          "records": 6,
+          "samples": [
+            "SAMPLE_A",
+            "SAMPLE_B"
+          ],
+          "multiallelic_records": 1,
+          "full_record_roundtrip": true,
+          "header_schema_preserved": true,
+          "undeclared_header_rejected": true
+        },
+        "runtime_seconds": 0.013,
+        "output_count": 1,
+        "required_dependencies": "Exact authorized inputs and compatible per-tier worker routes must independently pass live preflight"
+      },
       "required_reference_or_database_ports": [],
       "clinical_or_full_scale_validated": false,
       "documentation": null

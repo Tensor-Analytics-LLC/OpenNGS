@@ -74,6 +74,8 @@ def execute(job):
         return rows[0]
     def path(key):return first(key)['path']
     def vcf(path):return pysam.VariantFile(path)
+    from .format_operators import TOOLS as FORMAT_TOOLS,execute as format_execute
+    if tool in FORMAT_TOOLS:return format_execute(job)
     from .scientific import TOOLS,execute as scientific_execute
     if tool in TOOLS:return scientific_execute(job)
     if tool=='sample.clinvar':raise ValueError('The pinned ClinVar sample is unavailable in this runtime. Publish the verified sample bundle before execution.')
@@ -211,6 +213,8 @@ def execute(job):
                 if alternatives:sites.append({'contig':contig,'position':column.reference_pos+1,'reference':reference,'depth':depth,'base_counts':dict(counts),'alternate_fractions':alternatives})
         return {'report':[report(work,'mitochondrial-allele-fractions.json',{'method':'Quality-filtered pileup base-count QC','observed_positions':observed,'eligible_positions':eligible,'sites':sites,'parameters':params,'clinical_validation':False,'limitations':['No NUMT classification','No strand-bias model','No circular/rotated-reference reconciliation','No indel heteroplasmy model']})]}
     if tool in ['bed.intervals','intervals.bed','utility.scatter']:
+        if tool=='intervals.bed' and first('intervals').get('format')=='REFERENCE_DICTIONARY':
+            raise ValueError('A reference sequence dictionary contains no intervals; bind a Picard interval list with interval rows')
         source=Path(path('intervals'));opener=gzip.open if source.name.endswith('.gz') else open
         if tool=='utility.scatter':
             shards=max(1,min(32,int(params.get('shards',4))));paths=[work/f'part-{i:03}.bed' for i in range(shards)];handles=[p.open('w') for p in paths]
@@ -221,6 +225,7 @@ def execute(job):
                 for f in handles:f.close()
             return {'shards':[artifact(p,'BED',shard=i,shards=shards) for i,p in enumerate(paths)]}
         p=work/('regions.interval_list' if tool=='bed.intervals' else 'regions.bed')
+        interval_rows=0
         with opener(source,'rt') as f,p.open('w') as out:
             contigs={}
             if tool=='bed.intervals':
@@ -238,6 +243,12 @@ def execute(job):
                 else:
                     if start<1 or end<start:raise ValueError('Invalid one-based interval')
                     out.write(f'{cols[0]}\t{start-1}\t{end}\n')
+                interval_rows+=1
+        if tool=='intervals.bed' and not interval_rows:
+            # Historical dictionaries were mislabeled INTERVALLIST. Keep their
+            # stored identities intact, but never publish an empty converted BED.
+            p.unlink()
+            raise ValueError('Interval list contains no interval rows; a sequence dictionary alone cannot define regions')
         return {'intervals':[artifact(p,'INTERVALLIST' if tool=='bed.intervals' else 'BED')]}
     if tool in ['fastq.split','fastq.merge']:
         item=first('reads');source=Path(item['path']);opener=lambda p:gzip.open(p,'rt') if str(p).endswith('.gz') else open(p)

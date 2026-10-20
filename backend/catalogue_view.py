@@ -166,7 +166,10 @@ def _availability(node, evidence, settings, limited, credentials, shared):
     if limited and node['id'] not in demo.TOOLS:
         if state == 'Ready':
             state = 'Requires entitlement'
-        block('allowance', 'RESEARCH_ALLOWANCE', 'This workload needs an administrator-assigned Research Pro allowance.')
+        if evidence.get('runtime_family')=='portable-formats-v1':
+            block('runtime','EXPLORE_FORMATS_UNVERIFIED','This format runtime is verified for Research Pro. The Explore sample worker requires a separate cloud execution check before these tools can run there.')
+        else:
+            block('allowance', 'RESEARCH_ALLOWANCE', 'This workload needs an administrator-assigned Research Pro allowance.')
     reason = ' '.join(item['message'] for item in blockers) or 'Ready for compatible inputs within your allowance.'
     return {'state': state, 'reason': reason, 'blockers': blockers, 'tier': tier, 'validation': validation}
 

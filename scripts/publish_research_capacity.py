@@ -17,8 +17,16 @@ def optional_vep_release():
     from backend.vep_runtime import validate_release
     return validate_release(json.loads(path.read_text()))
 
+def optional_formats_release():
+    # Candidate evidence is reviewable without making it a deployment request.
+    path=Path('evidence/deployment/portable-formats-release.json')
+    if not path.exists():return None
+    from backend.runtime_catalog import validate_format_release
+    return validate_format_release(json.loads(path.read_text()))
+
 def main():
     vep=optional_vep_release()
+    formats=optional_formats_release()
     s=aws_session();iam=s.client('iam');cfn=s.client('cloudformation');account=s.client('sts').get_caller_identity()['Account']
     stack=cfn.describe_stacks(StackName='openngs-lean')['Stacks'][0];o={x['OutputKey']:x['OutputValue'] for x in stack['Outputs']}
     release=json.loads(Path('evidence/deployment/release.json').read_text());build=json.loads(Path('evidence/deployment/research-build.json').read_text())
@@ -63,7 +71,7 @@ def main():
     secondary=json.loads(secondary_path.read_text()) if secondary_path.exists() else None
     deepvariant_path=Path('evidence/deployment/deepvariant-release.json')
     deepvariant=json.loads(deepvariant_path.read_text()) if deepvariant_path.exists() else None
-    document=template(o['WorkerSubnet'],o['WorkerSecurity'],execution_arn,image,'arn:aws:ecr:us-east-1:'+account+':repository/openngs-demo',bucket,key,boundary,o['URL'],topic,extension,secondary,deepvariant,vep)
+    document=template(o['WorkerSubnet'],o['WorkerSecurity'],execution_arn,image,'arn:aws:ecr:us-east-1:'+account+':repository/openngs-demo',bucket,key,boundary,o['URL'],topic,extension,secondary,deepvariant,vep,formats)
     raw=json.dumps(document,sort_keys=True).encode();digest=hashlib.sha256(raw).hexdigest();object_key='operations/releases/'+digest+'/research-tenant.json'
     uploaded=s.client('s3').put_object(Bucket=bucket,Key=object_key,Body=raw,ServerSideEncryption='aws:kms',SSEKMSKeyId=key)
     url=f'https://{bucket}.s3.us-east-1.amazonaws.com/{object_key}?versionId='+quote(uploaded['VersionId'],safe='')
@@ -71,7 +79,7 @@ def main():
     app_statements=[{'Effect':'Allow','Action':['cloudformation:CreateStack','cloudformation:UpdateStack'],'Resource':arn,'Condition':{'StringEquals':{'cloudformation:TemplateUrl':url,'cloudformation:RoleArn':role_arn}}},{'Effect':'Allow','Action':['cloudformation:DescribeStacks'],'Resource':arn},{'Effect':'Allow','Action':['iam:PassRole'],'Resource':role_arn,'Condition':{'StringEquals':{'iam:PassedToService':'cloudformation.amazonaws.com'}}},{'Effect':'Allow','Action':['s3:ListBucket','s3:GetBucketLocation','s3:ListBucketMultipartUploads'],'Resource':pro_bucket},{'Effect':'Allow','Action':['s3:GetObject','s3:GetObjectVersion','s3:PutObject','s3:AbortMultipartUpload','s3:ListMultipartUploadParts'],'Resource':pro_bucket+'/tenants/*'},{'Effect':'Allow','Action':['batch:SubmitJob','batch:TagResource'],'Resource':[f'arn:aws:batch:us-east-1:{account}:job-queue/openngs-pro-*',f'arn:aws:batch:us-east-1:{account}:job-definition/openngs-pro-*']},{'Effect':'Allow','Action':['batch:TagResource'],'Resource':f'arn:aws:batch:us-east-1:{account}:job/*','Condition':{'StringEquals':{'aws:RequestTag/Project':'OpenNGS-Pro'}}},{'Effect':'Allow','Action':['batch:TerminateJob'],'Resource':f'arn:aws:batch:us-east-1:{account}:job/*','Condition':{'StringEquals':{'aws:ResourceTag/Project':'OpenNGS-Pro'}}}]
     iam.put_role_policy(RoleName=o['AppRole'],PolicyName='OpenNGSResearchLogRead',PolicyDocument=json.dumps({'Version':'2012-10-17','Statement':[{'Effect':'Allow','Action':['logs:GetLogEvents'],'Resource':f'arn:aws:logs:us-east-1:{account}:log-group:/openngs/pro/u_*:log-stream:research/*'}]}))
     iam.put_role_policy(RoleName=o['AppRole'],PolicyName='OnlyFixedFundedResearchTemplate',PolicyDocument=json.dumps({'Version':'2012-10-17','Statement':app_statements}))
-    record={'template_url':url,'template_sha256':digest,'cfn_role':role_arn,'runtime_image':image,'budget_topic':topic,'runtime_build':build['build_id'],'validation':'Build/version checks only; native assay and scale validation are separate','extension':extension,'secondary':secondary,'deepvariant':deepvariant,'vep':vep}
+    record={'template_url':url,'template_sha256':digest,'cfn_role':role_arn,'runtime_image':image,'budget_topic':topic,'runtime_build':build['build_id'],'validation':'Build/version checks only; native assay and scale validation are separate','extension':extension,'secondary':secondary,'deepvariant':deepvariant,'vep':vep,'formats':formats}
     Path('evidence/deployment/research-capacity.json').write_text(json.dumps(record,indent=2));print(json.dumps(record))
 
 if __name__=='__main__':main()

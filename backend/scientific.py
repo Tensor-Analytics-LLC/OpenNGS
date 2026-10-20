@@ -101,7 +101,7 @@ def execute(job):
         with pysam.FastxFile(path('reference')) as src,out.open('w') as dest:
             dest.write('@HD\tVN:1.6\tSO:unsorted\n')
             for rec in src:dest.write(f'@SQ\tSN:{rec.name}\tLN:{len(rec.sequence)}\tM5:{hashlib.md5(rec.sequence.upper().encode()).hexdigest()}\n')
-        return {'dictionary':[artifact(out,'INTERVALLIST',**meta('reference'))]}
+        return {'dictionary':[artifact(out,'REFERENCE_DICTIONARY',**meta('reference'))]}
     if tool in ['vcf.bcf','bcf.vcf']:
         out=work/('converted.bcf' if tool=='vcf.bcf' else 'converted.vcf')
         with pysam.VariantFile(path('variants')) as src,pysam.VariantFile(str(out),'wb' if tool=='vcf.bcf' else 'w',header=src.header) as dest:

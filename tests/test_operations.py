@@ -227,3 +227,22 @@ def test_idempotent_execution_binds_the_output_reservation(client,owner):
     g['maximum_output_bytes']=64*1024**2
     replay=client.post('/api/runs',headers={'Idempotency-Key':'output-identity-proof'},json={'graph':g})
     assert replay.status_code==422 and 'Idempotency' in replay.text
+
+
+def test_request_rate_limits_remain_active_and_tenant_isolated():
+    async def exercise():
+        async def serve(scope,receive,send):
+            await send({'type':'http.response.start','status':200,'headers':[]})
+            await send({'type':'http.response.body','body':b'ok'})
+        middleware=Admission(serve)
+        async def invoke(identity):
+            events=[]
+            async def send(event):events.append(event)
+            async def receive():return {'type':'http.request','body':b''}
+            await middleware({'type':'http','path':'/api/graphs','headers':[],'client':(identity,1)},receive,send)
+            return events[0]['status']
+        assert [await invoke('first') for _ in range(180)]==[200]*180
+        assert await invoke('first')==429
+        assert await invoke('second')==200
+        assert middleware.rejected['request-rate']==1 and middleware.active==0
+    asyncio.run(exercise())

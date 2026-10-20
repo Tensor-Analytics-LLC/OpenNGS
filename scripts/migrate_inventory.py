@@ -317,6 +317,20 @@ class Migrator:
         return {'plan_id': self.plan['plan_id'], 'updated': time.time(), 'total_objects': len(sizes), 'total_bytes': self.plan['total_bytes'], 'uploaded_objects': len(uploaded), 'uploaded_bytes': sum(sizes[r['sha256']] for r in uploaded), 'checkpointed_multipart_bytes': transferred_parts, 'blocked': errors[:30], 'transfer_complete': len(uploaded) == len(sizes), 'ready_status': 'Cloud verification and registry import are tracked separately', 'source_deleted': False}
 
 
+
+def transfer_selection(plan, limit=None, defer_sha256=()):
+    """Defer explicitly coordinated transfers without changing their plan or state."""
+    deferred = set(defer_sha256)
+    identities = {obj['sha256'] for obj in plan['objects']}
+    if (len(deferred) > 16 or any(not re.fullmatch(r'[a-f0-9]{64}', digest) for digest in deferred)
+            or not deferred.issubset(identities)):
+        raise ValueError('Deferred transfers require at most sixteen exact registered content hashes')
+    objects = sorted(plan['objects'], key=lambda x: (not bool(x.get('cloud_source')), x['bytes']))
+    if limit is not None:
+        if limit < 0:raise ValueError('Transfer limit cannot be negative')
+        objects = sorted(plan['objects'], key=lambda x:x['bytes'])[:limit]
+    return [obj for obj in objects if obj['sha256'] not in deferred]
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('action', choices=['prepare', 'run', 'status'])
@@ -328,7 +342,10 @@ def main():
     parser.add_argument('--kms')
     parser.add_argument('--max-bytes', type=int, default=500 * 1024**3)
     parser.add_argument('--limit', type=int)
-    args = parser.parse_args();folder = Path(args.directory);folder.mkdir(parents=True, exist_ok=True, mode=0o700)
+    parser.add_argument('--defer-sha256', action='append', default=[], help='Exact registered object coordinated by another transfer; preserve all checkpoints and readiness')
+    args = parser.parse_args()
+    if args.defer_sha256 and args.action != 'run':raise ValueError('Transfer deferral applies only to execution')
+    folder = Path(args.directory);folder.mkdir(parents=True, exist_ok=True, mode=0o700)
     plan_path = folder / 'plan.json';ledger = folder / 'checkpoint.sqlite'
     if args.action == 'prepare':
         plan = build_plan(args.inventory, args.source_db, args.owner, args.bucket, args.kms, args.max_bytes)
@@ -355,9 +372,8 @@ def main():
             raise ValueError('Cloud plan differs from the registered immutable checkpoint')
     registration = {'plan_id': plan['plan_id'], 'owner_id': plan['owner_id'], 'bucket': plan['bucket'], 'key': key, 'version_id': published['VersionId'], 'sha256': hashlib.sha256(payload).hexdigest()}
     (folder / 'registration.json').write_text(encode(registration))
-    objects = sorted(plan['objects'], key=lambda x: (not bool(x.get('cloud_source')), x['bytes']))
-    if args.limit is not None:
-        objects = sorted(plan['objects'],key=lambda x:x['bytes'])[:args.limit]
+    objects = transfer_selection(plan, args.limit, args.defer_sha256)
+    if args.defer_sha256:print(encode({'event':'migration.coordinated.deferral','sha256':sorted(set(args.defer_sha256)),'readiness_changed':False}),flush=True)
     stop_progress = threading.Event()
     def write_progress():
         progress = migrator.progress()

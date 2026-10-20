@@ -7,15 +7,21 @@ owns Ready status. This script never edits its transfer ledger or source files.
 """
 import argparse
 import base64
+from collections import deque
+import concurrent.futures
 import contextlib
 import fcntl
 import hashlib
 import json
 import os
+from http.client import IncompleteRead
 from pathlib import Path
 import re
 import ssl
+import socket
+import threading
 import time
+from urllib.error import HTTPError, URLError
 from urllib.request import Request, build_opener, ProxyHandler, HTTPSHandler, HTTPRedirectHandler
 
 from botocore.config import Config
@@ -28,6 +34,8 @@ SOURCE = 'https://ftp.ensembl.org/pub/release-115/variation/indexed_vep_cache/' 
 SOURCE_ETAG = '"5e262bb19-638db41fb105a"'
 SOURCE_MODIFIED = 'Tue, 01 Jul 2025 10:03:36 GMT'
 PART_BYTES = 8 * 1024**2
+PREFETCH_PARTS = 8
+UPLOAD_PARTS = 2
 MAX_SECONDS = 3600
 MIN_RESERVATION_MICRO = 100000
 BUILD_ACCOUNT = '509505638328'
@@ -213,6 +221,34 @@ class NoRedirect(HTTPRedirectHandler):
 class Provider:
     def __init__(self):
         self.opener = build_opener(ProxyHandler({}), HTTPSHandler(context=ssl.create_default_context()), NoRedirect())
+        self.cancelled=threading.Event();self.response_lock=threading.Lock();self.responses=set()
+
+    def _check_cancelled(self):
+        if getattr(self,'cancelled',None) is not None and self.cancelled.is_set():
+            raise TimeoutError('Conditional source reads were cancelled; no further range requests are permitted')
+
+    def cancel(self):
+        self.cancelled.set()
+        with self.response_lock:responses=list(self.responses)
+        for response in responses:
+            try:
+                sock=getattr(getattr(getattr(response,'fp',None),'raw',None),'_sock',None)
+                if sock is not None:sock.shutdown(socket.SHUT_RDWR)
+                response.close()
+            except OSError:pass
+
+    def _track(self,response,active):
+        if getattr(self,'response_lock',None) is not None:
+            with self.response_lock:
+                if active:self.responses.add(response)
+                else:self.responses.discard(response)
+
+    @staticmethod
+    def _transient(error):
+        if isinstance(error,HTTPError):return error.code in [408,429,500,502,503,504]
+        reason=error.reason if isinstance(error,URLError) else error
+        if isinstance(reason,ssl.SSLCertVerificationError):return False
+        return isinstance(reason,(TimeoutError,ConnectionError,IncompleteRead,OSError))
 
     def _open(self, method, extra=None):
         return self.opener.open(Request(SOURCE, method=method, headers={
@@ -233,15 +269,96 @@ class Provider:
         return {'url': SOURCE, 'etag': SOURCE_ETAG, 'last_modified': SOURCE_MODIFIED, 'bytes': ARCHIVE_BYTES}
 
     def read_range(self, offset, length):
-        with self._open('GET', {'Range': f'bytes={offset}-{offset + length - 1}'}) as response:
-            self._headers(response)
-            if (response.status != 206 or response.headers.get('Content-Length') != str(length)
-                    or response.headers.get('Content-Range') != f'bytes {offset}-{offset + length - 1}/{ARCHIVE_BYTES}'):
-                raise ValueError('Ensembl must return exactly the requested bounded original range')
-            body = response.read(length + 1)
-            if len(body) != length:
-                raise ValueError('Ensembl range was truncated or exceeded its admitted length')
-            return body
+        for attempt in range(3):
+            self._check_cancelled()
+            try:
+                with self._open('GET', {'Range': f'bytes={offset}-{offset + length - 1}'}) as response:
+                    self._track(response,True)
+                    try:
+                        self._check_cancelled();self._headers(response)
+                        if (response.status != 206 or response.headers.get('Content-Length') != str(length)
+                                or response.headers.get('Content-Range') != f'bytes {offset}-{offset + length - 1}/{ARCHIVE_BYTES}'):
+                            raise ValueError('Ensembl must return exactly the requested bounded original range')
+                        body = response.read(length + 1)
+                        self._check_cancelled()
+                        if len(body) != length:
+                            raise ValueError('Ensembl range was truncated or exceeded its admitted length')
+                        return body
+                    finally:self._track(response,False)
+            except (HTTPError,URLError,TimeoutError,ConnectionError,IncompleteRead,OSError) as error:
+                if isinstance(error,HTTPError):error.close()
+                self._check_cancelled()
+                if attempt==2 or not self._transient(error):raise
+                cancelled=getattr(self,'cancelled',None)
+                if cancelled is not None:cancelled.wait(.25*(attempt+1))
+
+
+def ordered_ranges(provider,size,within_admission,remaining_seconds,*,retained_parts=lambda:0,on_failure=lambda error:None):
+    """At most eight retained range buffers; only the next part is yielded.
+
+    Callers release their yielded bytes before advancing. A caller retaining
+    upload bodies reports their count; those slots are withheld from refills.
+    Futures are submitted incrementally and source retries retain all original
+    range and identity preconditions.
+    """
+    count=(size+PART_BYTES-1)//PART_BYTES
+    pool=concurrent.futures.ThreadPoolExecutor(max_workers=PREFETCH_PARTS)
+    pending={};stopped=threading.Event();lock=threading.Lock();failure=[];cancelled=False;finished=False
+    def stop(error=None):
+        nonlocal cancelled
+        with lock:
+            first_failure=error is not None and not failure
+            if first_failure:failure.append(error)
+            stopped.set();should_cancel=not cancelled;cancelled=True
+        if first_failure:on_failure(error)
+        if should_cancel and hasattr(provider,'cancel'):provider.cancel()
+    class RangeResult:
+        def __init__(self,raw):self.raw=raw
+    def read(number):
+        if stopped.is_set():raise TimeoutError('Range prefetch stopped before another source request')
+        within_admission();offset=(number-1)*PART_BYTES
+        return RangeResult(provider.read_range(offset,min(PART_BYTES,size-offset)))
+    def completed(future):
+        if not future.cancelled():
+            error=future.exception()
+            if error is not None:stop(error)
+    def submit(number):
+        within_admission()
+        if failure:raise failure[0]
+        future=pool.submit(read,number);pending[number]=future;future.add_done_callback(completed)
+    try:
+        initial=min(PREFETCH_PARTS,count)
+        for number in range(1,initial+1):submit(number)
+        next_number=initial+1
+        for number in range(1,count+1):
+            within_admission()
+            if failure:raise failure[0]
+            future=pending.pop(number)
+            try:result=future.result(timeout=max(.001,remaining_seconds()))
+            except BaseException:
+                if failure:raise failure[0]
+                raise
+            # A worker can retain its returned Future result while callbacks
+            # finish. Empty this envelope before transferring ownership so the
+            # executor cannot retain a ninth raw body after a refill.
+            raw=result.raw;result.raw=None;del result
+            within_admission()
+            if failure:raise failure[0]
+            yield number,raw
+            # Release both the generator and Future references before another
+            # source request is submitted, preserving the eight-buffer bound.
+            del raw,future
+            retained=retained_parts()
+            if type(retained) is not int or not 0<=retained<PREFETCH_PARTS:
+                raise ValueError('Retained upload bodies must share the bounded source buffer window')
+            while next_number<=count and len(pending)<PREFETCH_PARTS-retained:
+                submit(next_number);next_number+=1
+        finished=True
+    finally:
+        if not finished:
+            stop()
+            for future in pending.values():future.cancel()
+        pool.shutdown(wait=finished,cancel_futures=True)
 
 
 @contextlib.contextmanager
@@ -273,10 +390,16 @@ def checkpoint(directory, plan, obj, reservation):
 def acquire_archive(client, plan, obj, provider, directory, reservation, *, wall_seconds=MAX_SECONDS, expires_at=None):
     if not 1 <= wall_seconds <= MAX_SECONDS:
         raise ValueError('Acquisition wall time must remain within the reviewed one-hour bound')
-    started = time.monotonic()
-    def within_admission():
+    started = time.monotonic();upload_failures=[];upload_stopped=threading.Event();upload_lock=threading.Lock()
+    def within_deadline():
         if time.monotonic()-started>wall_seconds or expires_at is not None and time.time()>=expires_at:
             raise TimeoutError('Acquisition reached its admitted wall time or receipt expiry; private upload retained for safe resume')
+    def within_admission():
+        if upload_failures:raise upload_failures[0]
+        within_deadline()
+    def remaining_seconds():
+        remaining=wall_seconds-(time.monotonic()-started)
+        return min(remaining,expires_at-time.time()) if expires_at is not None else remaining
     with checkpoint(directory, plan, obj, reservation) as (state, save):
         within_admission()
         existing = migration.head_existing(client, plan, obj)
@@ -308,31 +431,87 @@ def acquire_archive(client, plan, obj, provider, directory, reservation, *, wall
         # Resumption re-reads the uploaded prefix from the pinned provider. This
         # rebuilds a real whole-object SHA-256 rather than serializing hash state
         # or confusing a composite multipart checksum with the original digest.
-        for number in range(1, count + 1):
-            within_admission()
-            offset = (number - 1) * PART_BYTES;length = min(PART_BYTES, obj['bytes'] - offset)
-            raw = provider.read_range(offset, length)
-            if len(raw) != length:raise ValueError('Provider did not return the exact admitted part length')
-            digest.update(raw);total += length
-            checksum = base64.b64encode(hashlib.sha256(raw).digest()).decode()
-            previous = known.get(number)
-            if previous and previous.get('Size') == length and previous.get('ChecksumSHA256') == checksum:
-                response = previous
-            else:
-                for attempt in range(3):
-                    try:
-                        response = client.upload_part(Bucket=plan['bucket'], Key=obj['key'], UploadId=upload,
-                            PartNumber=number, Body=raw, ChecksumSHA256=checksum)
-                        break
-                    except (ConnectionClosedError, EndpointConnectionError, ReadTimeoutError):
-                        # Only an identical part in the same private UploadId is
-                        # retryable. Create and Complete are never auto-retried.
-                        if attempt == 2:raise
-                if response.get('ChecksumSHA256') != checksum:
-                    raise ValueError('S3 did not attest the exact uploaded part SHA-256')
-            part = {'PartNumber': number, 'ETag': response['ETag'], 'ChecksumSHA256': checksum}
+        pending_uploads=deque();pool=concurrent.futures.ThreadPoolExecutor(max_workers=UPLOAD_PARTS)
+        class Upload:
+            # Submit this callable without a raw-byte argument. Clear the owned
+            # body before Future completion; executor WorkItem arguments must
+            # not retain a ninth payload after the coordinator frees a slot.
+            def __init__(self,number,raw,checksum):
+                self.number=number;self.raw=raw;self.checksum=checksum
+            def __call__(self):
+                try:
+                    for attempt in range(3):
+                        within_admission()
+                        if upload_stopped.is_set():raise TimeoutError('Private part uploads were cancelled')
+                        try:
+                            return client.upload_part(Bucket=plan['bucket'],Key=obj['key'],UploadId=upload,
+                                PartNumber=self.number,Body=self.raw,ChecksumSHA256=self.checksum)
+                        except (ConnectionClosedError,EndpointConnectionError,ReadTimeoutError):
+                            # Only identical bytes in the same private UploadId
+                            # are retryable. Check the admission before each try.
+                            if attempt==2:raise
+                finally:self.raw=None
+        def stop_uploads(error):
+            with upload_lock:
+                if not upload_failures:upload_failures.append(error)
+            upload_stopped.set()
+            if hasattr(provider,'cancel'):provider.cancel()
+        def failed(future):
+            if not future.cancelled() and future.exception() is not None:stop_uploads(future.exception())
+        def acknowledge(*,reconcile=False):
+            if not reconcile:within_deadline()
+            number,length,checksum,provider_bytes,future,response=pending_uploads[0]
+            if future is not None:response=future.result(timeout=max(.001,remaining_seconds()))
+            if not reconcile:within_deadline()
+            if response.get('ChecksumSHA256')!=checksum or not response.get('ETag'):
+                raise ValueError('S3 did not attest the exact uploaded part SHA-256 and ETag')
+            part={'PartNumber':number,'ETag':response['ETag'],'ChecksumSHA256':checksum}
             parts.append(part)
-            save(parts={**state['parts'], str(number): {**part, 'bytes': length}}, provider_bytes=total)
+            save(parts={**state['parts'],str(number):{**part,'bytes':length}},provider_bytes=provider_bytes)
+            pending_uploads.popleft()
+        try:
+            with contextlib.closing(ordered_ranges(provider,obj['bytes'],within_admission,remaining_seconds,
+                    retained_parts=lambda:len(pending_uploads),on_failure=stop_uploads)) as ranges:
+                for number,raw in ranges:
+                    within_admission()
+                    if len(pending_uploads)>=UPLOAD_PARTS:acknowledge()
+                    length=min(PART_BYTES,obj['bytes']-(number-1)*PART_BYTES)
+                    if len(raw)!=length:raise ValueError('Provider did not return the exact admitted part length')
+                    digest.update(raw);total+=length
+                    checksum=base64.b64encode(hashlib.sha256(raw).digest()).decode()
+                    previous=known.get(number);future=None;response=None
+                    if previous and previous.get('Size')==length and previous.get('ChecksumSHA256')==checksum:
+                        response=previous
+                    else:
+                        future=pool.submit(Upload(number,raw,checksum));future.add_done_callback(failed)
+                    pending_uploads.append((number,length,checksum,total,future,response))
+                    # Collect only the ordered head; later S3 acknowledgments
+                    # may arrive first but cannot reorder hashes or checkpoints.
+                    while pending_uploads and (pending_uploads[0][4] is None or pending_uploads[0][4].done()):
+                        acknowledge()
+                    del raw
+            while pending_uploads:acknowledge()
+        except BaseException:
+            upload_stopped.set()
+            for record in pending_uploads:
+                if record[4] is not None:record[4].cancel()
+            if hasattr(provider,'cancel'):provider.cancel()
+            pool.shutdown(wait=True,cancel_futures=True)
+            # Preserve the already-acknowledged ordered prefix, including a
+            # preceding request that finished while a later one failed. This
+            # performs bookkeeping only: no upload, retry or final commit.
+            # A failed checkpoint claim stops reconciliation immediately; the
+            # original error remains authoritative and ListParts recovers on
+            # the next admitted attempt.
+            try:
+                while pending_uploads:
+                    future=pending_uploads[0][4]
+                    if future is not None and (future.cancelled() or not future.done() or future.exception() is not None):break
+                    acknowledge(reconcile=True)
+            except Exception:pass
+            raise
+        finally:
+            pool.shutdown(wait=True,cancel_futures=True)
         if total != obj['bytes'] or digest.hexdigest() != obj['sha256']:
             save(state='failed-sha256', observed_bytes=total, observed_sha256=digest.hexdigest())
             raise ValueError('Complete Ensembl archive differs from the original inventoried SHA-256; no object committed')
@@ -392,6 +571,9 @@ def main():
               'bytes': obj['bytes'], 'source': SOURCE, 'etag': SOURCE_ETAG, 'last_modified': SOURCE_MODIFIED,
               'sha256_basis': 'Original immutable inventory; provider CHECKSUMS is non-cryptographic BSD sum',
               'maximum_memory_part_bytes': PART_BYTES, 'maximum_seconds': args.wall_seconds,
+              'maximum_prefetched_parts':PREFETCH_PARTS,'maximum_parallel_uploads':UPLOAD_PARTS,
+              'maximum_shared_raw_buffer_bytes':PART_BYTES*PREFETCH_PARTS,
+              'maximum_range_buffer_bytes':PART_BYTES*PREFETCH_PARTS,
               's3_part_count': (obj['bytes'] + PART_BYTES - 1) // PART_BYTES,
               'maximum_s3_kms_request_pretax_usd': .10, 'maximum_duplicate_temporary_7_day_storage_pretax_usd': .15,
               'retained_bytes_already_in_original_storage_envelope': True,
